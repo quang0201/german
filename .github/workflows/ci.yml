@@ -18,5 +18,16 @@ jobs:
         run: dotnet restore German.sln
       - name: Build
         run: dotnet build German.sln --no-restore --configuration Release
-      - name: Test
-        run: dotnet test German.sln --no-build --configuration Release
+      - name: Test domain
+        run: dotnet test tests/German.Domain.Tests/German.Domain.Tests.csproj --no-build --configuration Release
+      - name: Test application
+        run: dotnet test tests/German.Application.Tests/German.Application.Tests.csproj --no-build --configuration Release
+      - name: Test API
+        run: dotnet test tests/German.Api.Tests/German.Api.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=api-tests.trx"
+      - name: Upload API test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: tests/German.Api.Tests/TestResults/api-tests.trx
+          if-no-files-found: ignore
