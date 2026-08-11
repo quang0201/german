@@ -94,7 +94,7 @@ public sealed class ProductionCalculatorTests
     [TestMethod]
     public void AutoCalculation_WithOvertimeAndZeroHcHours_Throws()
     {
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             ProductionCalculator.Calculate(new ProductionCalculationInput(
                 ProductionEntryMode.TotalWithOvertime,
                 HcHours: 0m,
@@ -105,7 +105,7 @@ public sealed class ProductionCalculatorTests
     [TestMethod]
     public void NegativeQuantity_Throws()
     {
-        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
             ProductionCalculator.Calculate(new ProductionCalculationInput(
                 ProductionEntryMode.Direct,
                 HcHours: 0m,
