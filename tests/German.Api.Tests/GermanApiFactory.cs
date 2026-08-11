@@ -3,6 +3,7 @@ using German.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -17,6 +18,13 @@ public sealed class GermanApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.ConfigureServices(services =>
         {
+            var providerConfiguration = services.SingleOrDefault(
+                descriptor => descriptor.ServiceType == typeof(IDbContextOptionsConfiguration<GermanDbContext>));
+            if (providerConfiguration is not null)
+            {
+                services.Remove(providerConfiguration);
+            }
+
             services.RemoveAll<DbContextOptions<GermanDbContext>>();
             services.RemoveAll<GermanDbContext>();
             services.RemoveAll<IGermanDbContext>();
