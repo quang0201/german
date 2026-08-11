@@ -100,6 +100,84 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Manager_CanListProductionEntries()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager", "M003", UserRole.Manager, "secret");
+            var worker = new Employee { EmployeeCode = "E300", FullName = "Bạch Thị Đào" };
+            var order = new ProductionOrder { Code = "0701", ProductName = "Túi", PlannedQuantity = 5000m, Status = ProductionOrderStatus.InProduction };
+            var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 11, Name = "May dải khóa", Unit = "cái", SortOrder = 11 };
+            var entry = new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 8, 11),
+                EmployeeId = worker.Id,
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EntryMode = ProductionEntryMode.Direct,
+                DirectHcQuantity = 861m,
+                DirectTcQuantity = 269m,
+                HcQuantity = 861m,
+                TcQuantity = 269m,
+                TotalQuantity = 1130m,
+                SubmittedByUserId = Guid.NewGuid()
+            };
+            db.AddRange(worker, order, operation, entry);
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager", "secret");
+
+        var response = await client.GetAsync("/api/production-entries?date=2026-08-11");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var rows = json.RootElement;
+        Assert.AreEqual(1, rows.GetArrayLength());
+        Assert.AreEqual("Bạch Thị Đào", rows[0].GetProperty("employeeName").GetString());
+        Assert.AreEqual("0701", rows[0].GetProperty("productionOrderCode").GetString());
+        Assert.AreEqual(1130m, rows[0].GetProperty("totalQuantity").GetDecimal());
+    }
+
+    [TestMethod]
+    public async Task Admin_CanCreateWorkerAccount()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid workerId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "admin", "A001", UserRole.Admin, "admin-secret");
+            var worker = new Employee { EmployeeCode = "E400", FullName = "Hà Thị Quỳnh" };
+            db.Employees.Add(worker);
+            workerId = worker.Id;
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "admin", "admin-secret");
+
+        var response = await client.PostAsJsonAsync("/api/admin/user-accounts", new
+        {
+            username = "quynh",
+            password = "worker-secret",
+            role = "Worker",
+            employeeId = workerId
+        });
+        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+
+        await client.PostAsync("/api/auth/logout", null);
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            identifier = "E400",
+            password = "worker-secret"
+        });
+        Assert.AreEqual(HttpStatusCode.OK, login.StatusCode);
+    }
+
+    [TestMethod]
     public async Task Worker_CannotAccessManagerAdministrationEndpoints()
     {
         await using var factory = new GermanApiFactory();
@@ -115,9 +193,11 @@ public sealed class ManagerAdministrationApiTests
 
         var employees = await client.GetAsync("/api/employees");
         var orders = await client.GetAsync("/api/production-orders");
+        var entries = await client.GetAsync("/api/production-entries");
 
         Assert.AreEqual(HttpStatusCode.Forbidden, employees.StatusCode);
         Assert.AreEqual(HttpStatusCode.Forbidden, orders.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Forbidden, entries.StatusCode);
     }
 
     private static async Task AddAccountAsync(
