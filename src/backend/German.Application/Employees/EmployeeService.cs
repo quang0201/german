@@ -100,11 +100,17 @@ public sealed class EmployeeService(IGermanDbContext db)
             current.EffectiveTo = command.EffectiveFrom.AddDays(-1);
         }
 
+        var next = await db.EmployeeShiftAssignments.AsNoTracking()
+            .Where(x => x.EmployeeId == employeeId && x.EffectiveFrom > command.EffectiveFrom)
+            .OrderBy(x => x.EffectiveFrom)
+            .FirstOrDefaultAsync(cancellationToken);
+
         var assignment = new EmployeeShiftAssignment
         {
             EmployeeId = employeeId,
             ShiftTemplateId = command.ShiftTemplateId,
-            EffectiveFrom = command.EffectiveFrom
+            EffectiveFrom = command.EffectiveFrom,
+            EffectiveTo = next is null ? null : next.EffectiveFrom.AddDays(-1)
         };
         db.EmployeeShiftAssignments.Add(assignment);
         await db.SaveChangesAsync(cancellationToken);
