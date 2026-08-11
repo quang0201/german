@@ -5,6 +5,7 @@ on:
     branches: [ "feat/production-mvp" ]
     paths:
       - ".github/workflows/generate-initial-migration.yml"
+      - "src/backend/German.Api/German.Api.csproj"
 
 permissions:
   contents: write
