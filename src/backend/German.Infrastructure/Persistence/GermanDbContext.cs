@@ -39,6 +39,10 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.Property(x => x.PasswordHash).HasMaxLength(1000).IsRequired();
             builder.HasIndex(x => x.NormalizedUsername).IsUnique();
             builder.HasIndex(x => x.EmployeeId).IsUnique();
+            builder.HasOne<Employee>()
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ShiftTemplate>(builder =>
@@ -59,6 +63,14 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
         modelBuilder.Entity<EmployeeShiftAssignment>(builder =>
         {
             builder.HasIndex(x => new { x.EmployeeId, x.EffectiveFrom });
+            builder.HasOne<Employee>()
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<ShiftTemplate>()
+                .WithMany()
+                .HasForeignKey(x => x.ShiftTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ProductionOrder>(builder =>
@@ -70,7 +82,7 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.HasMany(x => x.Operations)
                 .WithOne()
                 .HasForeignKey(x => x.ProductionOrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ProductionOperation>(builder =>
@@ -96,6 +108,27 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.Property(x => x.Version).IsConcurrencyToken();
             builder.HasIndex(x => new { x.WorkDate, x.EmployeeId });
             builder.HasQueryFilter(x => !x.IsDeleted);
+
+            builder.HasOne<Employee>()
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<ProductionOrder>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductionOrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<ProductionOperation>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductionOperationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(x => x.SubmittedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(x => x.DeletedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<AuditLog>(builder =>
@@ -104,6 +137,10 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.Property(x => x.BeforeJson).HasColumnType("jsonb");
             builder.Property(x => x.AfterJson).HasColumnType("jsonb");
             builder.HasIndex(x => new { x.EntityType, x.EntityId, x.PerformedAt });
+            builder.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(x => x.PerformedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
