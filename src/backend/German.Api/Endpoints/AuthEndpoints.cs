@@ -13,7 +13,7 @@ public static class AuthEndpoints
         var group = endpoints.MapGroup("/api/auth");
 
         group.MapPost("/login", LoginAsync).AllowAnonymous();
-        group.MapPost("/logout", LogoutAsync).RequireAuthorization();
+        group.MapPost("/logout", (Delegate)LogoutAsync).RequireAuthorization();
         group.MapGet("/me", Me).RequireAuthorization();
 
         return endpoints;
