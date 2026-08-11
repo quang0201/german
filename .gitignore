@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+.env
+.env.*
+!.env.example
+src/frontend/node_modules/
+src/frontend/dist/
+src/frontend/src/tailwind.css
+.worktrees/
