@@ -12,24 +12,6 @@ namespace German.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "AuditLogs",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EntityType = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
-                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Action = table.Column<int>(type: "integer", nullable: false),
-                    PerformedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PerformedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    BeforeJson = table.Column<string>(type: "jsonb", nullable: true),
-                    AfterJson = table.Column<string>(type: "jsonb", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AuditLogs", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Employees",
                 columns: table => new
                 {
@@ -43,57 +25,6 @@ namespace German.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Employees", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "EmployeeShiftAssignments",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EmployeeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ShiftTemplateId = table.Column<Guid>(type: "uuid", nullable: false),
-                    EffectiveFrom = table.Column<DateOnly>(type: "date", nullable: false),
-                    EffectiveTo = table.Column<DateOnly>(type: "date", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_EmployeeShiftAssignments", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProductionEntries",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WorkDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    EmployeeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionOrderId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProductionOperationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    EntryMode = table.Column<int>(type: "integer", nullable: false),
-                    Shift1Quantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    Shift2Quantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    DirectHcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    DirectTcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    TotalInputQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    OvertimeHours = table.Column<decimal>(type: "numeric(8,2)", precision: 8, scale: 2, nullable: true),
-                    OvertimeQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    WorkStart = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
-                    WorkEnd = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
-                    HcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    TcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    TotalQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Note = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    SubmittedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    DeletedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Version = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProductionEntries", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -147,6 +78,12 @@ namespace German.Infrastructure.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_UserAccounts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserAccounts_Employees_EmployeeId",
+                        column: x => x.EmployeeId,
+                        principalTable: "Employees",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -171,7 +108,34 @@ namespace German.Infrastructure.Persistence.Migrations
                         column: x => x.ProductionOrderId,
                         principalTable: "ProductionOrders",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EmployeeShiftAssignments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    EmployeeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ShiftTemplateId = table.Column<Guid>(type: "uuid", nullable: false),
+                    EffectiveFrom = table.Column<DateOnly>(type: "date", nullable: false),
+                    EffectiveTo = table.Column<DateOnly>(type: "date", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmployeeShiftAssignments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_EmployeeShiftAssignments_Employees_EmployeeId",
+                        column: x => x.EmployeeId,
+                        principalTable: "Employees",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_EmployeeShiftAssignments_ShiftTemplates_ShiftTemplateId",
+                        column: x => x.ShiftTemplateId,
+                        principalTable: "ShiftTemplates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -196,10 +160,105 @@ namespace German.Infrastructure.Persistence.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "AuditLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntityType = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Action = table.Column<int>(type: "integer", nullable: false),
+                    PerformedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PerformedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    BeforeJson = table.Column<string>(type: "jsonb", nullable: true),
+                    AfterJson = table.Column<string>(type: "jsonb", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuditLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuditLogs_UserAccounts_PerformedByUserId",
+                        column: x => x.PerformedByUserId,
+                        principalTable: "UserAccounts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductionEntries",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    EmployeeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionOrderId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductionOperationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntryMode = table.Column<int>(type: "integer", nullable: false),
+                    Shift1Quantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    Shift2Quantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    DirectHcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    DirectTcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    TotalInputQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    OvertimeHours = table.Column<decimal>(type: "numeric(8,2)", precision: 8, scale: 2, nullable: true),
+                    OvertimeQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    WorkStart = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
+                    WorkEnd = table.Column<TimeOnly>(type: "time without time zone", nullable: true),
+                    HcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    TcQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    TotalQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Note = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    SubmittedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    DeletedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Version = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductionEntries", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductionEntries_Employees_EmployeeId",
+                        column: x => x.EmployeeId,
+                        principalTable: "Employees",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ProductionEntries_ProductionOperations_ProductionOperationId",
+                        column: x => x.ProductionOperationId,
+                        principalTable: "ProductionOperations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ProductionEntries_ProductionOrders_ProductionOrderId",
+                        column: x => x.ProductionOrderId,
+                        principalTable: "ProductionOrders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ProductionEntries_UserAccounts_DeletedByUserId",
+                        column: x => x.DeletedByUserId,
+                        principalTable: "UserAccounts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ProductionEntries_UserAccounts_SubmittedByUserId",
+                        column: x => x.SubmittedByUserId,
+                        principalTable: "UserAccounts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_EntityType_EntityId_PerformedAt",
                 table: "AuditLogs",
                 columns: new[] { "EntityType", "EntityId", "PerformedAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_PerformedByUserId",
+                table: "AuditLogs",
+                column: "PerformedByUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Employees_EmployeeCode",
@@ -211,6 +270,36 @@ namespace German.Infrastructure.Persistence.Migrations
                 name: "IX_EmployeeShiftAssignments_EmployeeId_EffectiveFrom",
                 table: "EmployeeShiftAssignments",
                 columns: new[] { "EmployeeId", "EffectiveFrom" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmployeeShiftAssignments_ShiftTemplateId",
+                table: "EmployeeShiftAssignments",
+                column: "ShiftTemplateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionEntries_DeletedByUserId",
+                table: "ProductionEntries",
+                column: "DeletedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionEntries_EmployeeId",
+                table: "ProductionEntries",
+                column: "EmployeeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionEntries_ProductionOperationId",
+                table: "ProductionEntries",
+                column: "ProductionOperationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionEntries_ProductionOrderId",
+                table: "ProductionEntries",
+                column: "ProductionOrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductionEntries_SubmittedByUserId",
+                table: "ProductionEntries",
+                column: "SubmittedByUserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProductionEntries_WorkDate_EmployeeId",
@@ -254,28 +343,28 @@ namespace German.Infrastructure.Persistence.Migrations
                 name: "AuditLogs");
 
             migrationBuilder.DropTable(
-                name: "Employees");
-
-            migrationBuilder.DropTable(
                 name: "EmployeeShiftAssignments");
 
             migrationBuilder.DropTable(
                 name: "ProductionEntries");
 
             migrationBuilder.DropTable(
-                name: "ProductionOperations");
+                name: "ShiftPeriods");
 
             migrationBuilder.DropTable(
-                name: "ShiftPeriods");
+                name: "ProductionOperations");
 
             migrationBuilder.DropTable(
                 name: "UserAccounts");
 
             migrationBuilder.DropTable(
+                name: "ShiftTemplates");
+
+            migrationBuilder.DropTable(
                 name: "ProductionOrders");
 
             migrationBuilder.DropTable(
-                name: "ShiftTemplates");
+                name: "Employees");
         }
     }
 }

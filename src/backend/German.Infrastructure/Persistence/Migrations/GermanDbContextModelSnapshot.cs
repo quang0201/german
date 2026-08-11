@@ -53,6 +53,8 @@ namespace German.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PerformedByUserId");
+
                     b.HasIndex("EntityType", "EntityId", "PerformedAt");
 
                     b.ToTable("AuditLogs");
@@ -233,6 +235,16 @@ namespace German.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeletedByUserId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("ProductionOperationId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("SubmittedByUserId");
+
                     b.HasIndex("WorkDate", "EmployeeId");
 
                     b.ToTable("ProductionEntries");
@@ -343,6 +355,8 @@ namespace German.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ShiftTemplateId");
+
                     b.HasIndex("EmployeeId", "EffectiveFrom");
 
                     b.ToTable("EmployeeShiftAssignments");
@@ -403,12 +417,76 @@ namespace German.Infrastructure.Persistence.Migrations
                     b.ToTable("ShiftTemplates");
                 });
 
+            modelBuilder.Entity("German.Domain.Auditing.AuditLog", b =>
+                {
+                    b.HasOne("German.Domain.Auth.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("PerformedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("German.Domain.Auth.UserAccount", b =>
+                {
+                    b.HasOne("German.Domain.Employees.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("German.Domain.Production.ProductionEntry", b =>
+                {
+                    b.HasOne("German.Domain.Auth.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("German.Domain.Employees.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("German.Domain.Production.ProductionOperation", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionOperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("German.Domain.Production.ProductionOrder", null)
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("German.Domain.Auth.UserAccount", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("German.Domain.Production.ProductionOperation", b =>
                 {
                     b.HasOne("German.Domain.Production.ProductionOrder", null)
                         .WithMany("Operations")
                         .HasForeignKey("ProductionOrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("German.Domain.Shifts.EmployeeShiftAssignment", b =>
+                {
+                    b.HasOne("German.Domain.Employees.Employee", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("German.Domain.Shifts.ShiftTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("ShiftTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
