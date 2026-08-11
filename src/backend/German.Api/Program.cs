@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
 using German.Api.Endpoints;
 using German.Application.Auth;
+using German.Application.Employees;
 using German.Application.ProductionEntries;
+using German.Application.ProductionOrders;
+using German.Application.Shifts;
 using German.Domain.Auth;
 using German.Infrastructure;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -11,6 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProductionEntryService>();
+builder.Services.AddScoped<EmployeeService>();
+builder.Services.AddScoped<ShiftTemplateService>();
+builder.Services.AddScoped<ProductionOrderService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -38,7 +44,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("ManagerOrAdmin", policy =>
-        policy.RequireRole(UserRole.Manager.ToString(), UserRole.Admin.ToString()));
+        policy.RequireRole(UserRole.Manager.ToString(), UserRole.Admin.ToString()))
+    .AddPolicy("AdminOnly", policy => policy.RequireRole(UserRole.Admin.ToString()));
 
 var app = builder.Build();
 
@@ -49,6 +56,9 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthEndpoints();
 app.MapProductionEntryEndpoints();
 app.MapLookupEndpoints();
+app.MapEmployeeEndpoints();
+app.MapShiftTemplateEndpoints();
+app.MapProductionOrderAdminEndpoints();
 
 app.Run();
 
