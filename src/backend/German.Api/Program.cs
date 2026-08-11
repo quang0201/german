@@ -7,7 +7,10 @@ using German.Application.ProductionOrders;
 using German.Application.Shifts;
 using German.Domain.Auth;
 using German.Infrastructure;
+using German.Infrastructure.Bootstrap;
+using German.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +54,21 @@ builder.Services.AddAuthorizationBuilder()
 
 var app = builder.Build();
 
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<GermanDbContext>();
+    await db.Database.MigrateAsync();
+
+    var bootstrapOptions = builder.Configuration
+        .GetSection("BootstrapAdmin")
+        .Get<BootstrapAdminOptions>() ?? new BootstrapAdminOptions();
+    var bootstrapSeeder = scope.ServiceProvider.GetRequiredService<BootstrapAdminSeeder>();
+    await bootstrapSeeder.SeedAsync(bootstrapOptions, CancellationToken.None);
+}
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -62,6 +80,7 @@ app.MapLookupEndpoints();
 app.MapEmployeeEndpoints();
 app.MapShiftTemplateEndpoints();
 app.MapProductionOrderAdminEndpoints();
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

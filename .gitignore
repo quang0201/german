@@ -10,4 +10,5 @@ obj/
 src/frontend/node_modules/
 src/frontend/dist/
 src/frontend/src/tailwind.css
+src/backend/German.Api/wwwroot/
 .worktrees/
