@@ -1,4 +1,6 @@
 using German.Application.Abstractions;
+using German.Application.Auth;
+using German.Infrastructure.Auth;
 using German.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +17,7 @@ public static class DependencyInjection
 
         services.AddDbContext<GermanDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IGermanDbContext>(sp => sp.GetRequiredService<GermanDbContext>());
+        services.AddSingleton<IPasswordService, PasswordService>();
         return services;
     }
 }
