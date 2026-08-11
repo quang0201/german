@@ -18,5 +18,5 @@ jobs:
         run: dotnet restore German.sln
       - name: Build
         run: dotnet build German.sln --no-restore --configuration Release
-      - name: Test domain
-        run: dotnet test tests/German.Domain.Tests/German.Domain.Tests.csproj --no-build --configuration Release
+      - name: Test
+        run: dotnet test German.sln --no-build --configuration Release
