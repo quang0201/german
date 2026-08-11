@@ -7,14 +7,16 @@ on:
     branches: [ "main" ]
 
 jobs:
-  backend-domain:
+  backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
-      - name: Restore domain tests
-        run: dotnet restore tests/German.Domain.Tests/German.Domain.Tests.csproj
+      - name: Restore
+        run: dotnet restore German.sln
+      - name: Build
+        run: dotnet build German.sln --no-restore --configuration Release
       - name: Test domain
-        run: dotnet test tests/German.Domain.Tests/German.Domain.Tests.csproj --no-restore --configuration Release
+        run: dotnet test tests/German.Domain.Tests/German.Domain.Tests.csproj --no-build --configuration Release
