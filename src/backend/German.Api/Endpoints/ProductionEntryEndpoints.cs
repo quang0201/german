@@ -10,11 +10,24 @@ public static class ProductionEntryEndpoints
     {
         var group = endpoints.MapGroup("/api/production-entries").RequireAuthorization();
 
+        group.MapGet("/", ListAsync).RequireAuthorization("ManagerOrAdmin");
         group.MapPost("/", CreateAsync);
         group.MapPut("/{id:guid}", UpdateAsync).RequireAuthorization("ManagerOrAdmin");
         group.MapDelete("/{id:guid}", DeleteAsync).RequireAuthorization("ManagerOrAdmin");
 
         return endpoints;
+    }
+
+    private static async Task<IResult> ListAsync(
+        DateOnly? date,
+        Guid? employeeId,
+        Guid? orderId,
+        Guid? operationId,
+        ProductionEntryQueryService service,
+        CancellationToken cancellationToken)
+    {
+        var rows = await service.ListAsync(date, employeeId, orderId, operationId, cancellationToken);
+        return Results.Ok(rows);
     }
 
     private static async Task<IResult> CreateAsync(

@@ -16,7 +16,12 @@ public static class ApiResultMapper
             "production_entry.not_found" => StatusCodes.Status404NotFound,
             "production_entry.employee_not_found" => StatusCodes.Status404NotFound,
             "production_entry.order_not_found" => StatusCodes.Status404NotFound,
+            "user_account.employee_not_found" => StatusCodes.Status404NotFound,
             "production_entry.version_conflict" => StatusCodes.Status409Conflict,
+            "user_account.duplicate_username" => StatusCodes.Status409Conflict,
+            "user_account.employee_already_linked" => StatusCodes.Status409Conflict,
+            "production_order.duplicate_code" => StatusCodes.Status409Conflict,
+            "production_operation.duplicate_number" => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
         };
 

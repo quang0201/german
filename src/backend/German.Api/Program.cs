@@ -13,7 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<ProductionEntryService>();
+builder.Services.AddScoped<ProductionEntryQueryService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<ShiftTemplateService>();
 builder.Services.AddScoped<ProductionOrderService>();
@@ -54,6 +56,7 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthEndpoints();
+app.MapUserAccountAdminEndpoints();
 app.MapProductionEntryEndpoints();
 app.MapLookupEndpoints();
 app.MapEmployeeEndpoints();
