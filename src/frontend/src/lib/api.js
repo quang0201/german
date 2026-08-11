@@ -1,3 +1,5 @@
+import { toApiTime } from "./time.js";
+
 export class ApiError extends Error {
   constructor(message, code = "request_failed", status = 0) {
     super(message);
@@ -5,6 +7,22 @@ export class ApiError extends Error {
     this.code = code;
     this.status = status;
   }
+}
+
+function normalizeBody(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return body;
+  }
+
+  if (!("workStart" in body) && !("workEnd" in body)) {
+    return body;
+  }
+
+  return {
+    ...body,
+    workStart: toApiTime(body.workStart),
+    workEnd: toApiTime(body.workEnd),
+  };
 }
 
 async function request(path, options = {}) {
@@ -49,10 +67,10 @@ export const api = {
     return request(path);
   },
   post(path, body) {
-    return request(path, { method: "POST", body: JSON.stringify(body) });
+    return request(path, { method: "POST", body: JSON.stringify(normalizeBody(body)) });
   },
   put(path, body) {
-    return request(path, { method: "PUT", body: JSON.stringify(body) });
+    return request(path, { method: "PUT", body: JSON.stringify(normalizeBody(body)) });
   },
   delete(path) {
     return request(path, { method: "DELETE" });
