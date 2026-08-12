@@ -26,20 +26,24 @@ export function calculatePreview(input) {
   const mode = input.mode;
 
   if (mode === "ByShift") {
-    const hc = valueOrZero(input.shift1Quantity) + valueOrZero(input.shift2Quantity);
-    let tc = 0;
+    const total = valueOrZero(input.shift1Quantity) + valueOrZero(input.shift2Quantity);
 
     if (input.overtimeQuantity !== null && input.overtimeQuantity !== undefined && input.overtimeQuantity !== "") {
-      tc = valueOrZero(input.overtimeQuantity);
-    } else {
-      const overtimeHours = valueOrZero(input.overtimeHours);
-      if (overtimeHours > 0) {
-        const hcHours = requireHcHours(input.hcHours);
-        tc = roundQuantity((hc / hcHours) * overtimeHours);
+      const tc = valueOrZero(input.overtimeQuantity);
+      if (tc > total) {
+        throw new RangeError("Sản lượng TC thực tế không được lớn hơn tổng Ca 1 + Ca 2.");
       }
+      return { hc: total - tc, tc, total };
     }
 
-    return { hc, tc, total: hc + tc };
+    const overtimeHours = valueOrZero(input.overtimeHours);
+    if (overtimeHours <= 0) {
+      return { hc: total, tc: 0, total };
+    }
+
+    const hcHours = requireHcHours(input.hcHours);
+    const hc = roundQuantity((total * hcHours) / (hcHours + overtimeHours));
+    return { hc, tc: total - hc, total };
   }
 
   if (mode === "Direct") {
