@@ -134,7 +134,7 @@ public sealed class ManagerAdministrationApiTests
         var response = await client.GetAsync("/api/production-entries?date=2026-08-11");
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var rows = json.RootElement;
+        var rows = json.RootElement.GetProperty("items");
         Assert.AreEqual(1, rows.GetArrayLength());
         Assert.AreEqual("Bạch Thị Đào", rows[0].GetProperty("employeeName").GetString());
         Assert.AreEqual("0701", rows[0].GetProperty("productionOrderCode").GetString());

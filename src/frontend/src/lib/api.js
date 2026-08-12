@@ -62,6 +62,20 @@ async function request(path, options = {}) {
   return payload;
 }
 
+async function download(path, filename) {
+  const response = await fetch(path, { credentials: "include" });
+  if (!response.ok) {
+    throw new ApiError("Không thể tải file.", "download_failed", response.status);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   get(path) {
     return request(path);
@@ -75,4 +89,5 @@ export const api = {
   delete(path) {
     return request(path, { method: "DELETE" });
   },
+  download,
 };

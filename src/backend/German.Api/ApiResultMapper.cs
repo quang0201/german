@@ -11,6 +11,8 @@ public static class ApiResultMapper
         {
             "auth.invalid_credentials" => StatusCodes.Status401Unauthorized,
             "production_entry.forbidden_employee" => StatusCodes.Status403Forbidden,
+            "production_entry.history_forbidden" => StatusCodes.Status403Forbidden,
+            "production_entry.read_forbidden" => StatusCodes.Status403Forbidden,
             "production_entry.update_forbidden" => StatusCodes.Status403Forbidden,
             "production_entry.delete_forbidden" => StatusCodes.Status403Forbidden,
             "shift.forbidden_employee" => StatusCodes.Status403Forbidden,

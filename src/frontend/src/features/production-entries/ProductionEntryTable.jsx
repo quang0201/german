@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
+import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { buildDirectUpdatePayload, buildProductionEntryQuery } from "./productionEntryManagement.js";
 
 function localToday() {
@@ -18,6 +19,8 @@ export function ProductionEntryTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([api.get("/api/employees"), api.get("/api/production-orders")])
@@ -44,13 +47,22 @@ export function ProductionEntryTable() {
   useEffect(() => { loadRows(); }, [loadRows]);
 
   async function remove(row) {
-    if (!window.confirm(`Xóa sản lượng ${row.employeeName} - ${row.productionOrderCode} - CĐ${row.operationNumber}?`)) return;
+    setDeleting(row);
+  }
+
+  async function confirmRemove() {
+    if (!deleting) return;
+    const row = deleting;
+    setDeletingLoading(true);
     setError("");
     try {
       await api.delete(`/api/production-entries/${row.id}?version=${row.version}`);
+      setDeleting(null);
       await loadRows();
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setDeletingLoading(false);
     }
   }
 
@@ -115,6 +127,7 @@ export function ProductionEntryTable() {
       {loading && <div className="mt-6 text-center text-sm text-slate-400">Đang tải...</div>}
 
       {editing && <EditEntryPanel row={editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await loadRows(); }} />}
+      <ConfirmDialog open={Boolean(deleting)} title="Xóa sản lượng?" confirmLabel="Xóa sản lượng" loading={deletingLoading} onClose={() => setDeleting(null)} onConfirm={confirmRemove}>Xóa mềm bản ghi {deleting?.employeeName} — {deleting?.productionOrderCode} — CĐ{deleting?.operationNumber}?</ConfirmDialog>
     </section>
   );
 }

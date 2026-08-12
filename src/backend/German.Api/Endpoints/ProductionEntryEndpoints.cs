@@ -1,5 +1,6 @@
 using German.Api.Auth;
 using German.Api.Contracts.ProductionEntries;
+using German.Application.Common;
 using German.Application.ProductionEntries;
 
 namespace German.Api.Endpoints;
@@ -11,6 +12,8 @@ public static class ProductionEntryEndpoints
         var group = endpoints.MapGroup("/api/production-entries").RequireAuthorization();
 
         group.MapGet("/", ListAsync).RequireAuthorization("ManagerOrAdmin");
+        group.MapGet("/mine", ListMineAsync);
+        group.MapGet("/{id:guid}", GetDetailAsync);
         group.MapPost("/", CreateAsync);
         group.MapPut("/{id:guid}", UpdateAsync).RequireAuthorization("ManagerOrAdmin");
         group.MapDelete("/{id:guid}", DeleteAsync).RequireAuthorization("ManagerOrAdmin");
@@ -20,14 +23,71 @@ public static class ProductionEntryEndpoints
 
     private static async Task<IResult> ListAsync(
         DateOnly? date,
+        DateOnly? fromDate,
+        DateOnly? untilDate,
         Guid? employeeId,
         Guid? orderId,
         Guid? operationId,
+        string? search,
+        int? page,
+        int? pageSize,
         ProductionEntryQueryService service,
         CancellationToken cancellationToken)
     {
-        var rows = await service.ListAsync(date, employeeId, orderId, operationId, cancellationToken);
-        return Results.Ok(rows);
+        var result = await service.ListAsync(
+            new ProductionEntryListQuery(
+                date,
+                fromDate,
+                untilDate,
+                employeeId,
+                orderId,
+                operationId,
+                search,
+                page,
+                pageSize),
+            cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
+    }
+
+    private static async Task<IResult> ListMineAsync(
+        DateOnly? date,
+        DateOnly? fromDate,
+        DateOnly? untilDate,
+        string? search,
+        int? page,
+        int? pageSize,
+        HttpContext httpContext,
+        ProductionEntryQueryService service,
+        CancellationToken cancellationToken)
+    {
+        var actor = httpContext.User.ToCurrentActor();
+        var result = await service.ListMineAsync(
+            actor,
+            new ProductionEntryListQuery(
+                date,
+                fromDate,
+                untilDate,
+                null,
+                null,
+                null,
+                search,
+                page,
+                pageSize),
+            cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
+    }
+
+    private static async Task<IResult> GetDetailAsync(
+        Guid id,
+        HttpContext httpContext,
+        ProductionEntryQueryService service,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.GetDetailAsync(
+            httpContext.User.ToCurrentActor(),
+            id,
+            cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
     }
 
     private static async Task<IResult> CreateAsync(

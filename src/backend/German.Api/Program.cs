@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using German.Api.Endpoints;
 using German.Api.Startup;
 using German.Application.Auth;
+using German.Application.Auditing;
 using German.Application.Employees;
 using German.Application.Lookups;
 using German.Application.ProductionEntries;
@@ -29,6 +30,7 @@ builder.Services.AddScoped<ShiftTemplateService>();
 builder.Services.AddScoped<ProductionOrderService>();
 builder.Services.AddScoped<LookupService>();
 builder.Services.AddScoped<ProductionReportService>();
+builder.Services.AddScoped<AuditLogQueryService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -100,6 +102,7 @@ app.MapEmployeeEndpoints();
 app.MapShiftTemplateEndpoints();
 app.MapProductionOrderAdminEndpoints();
 app.MapReportEndpoints();
+app.MapAuditLogEndpoints();
 app.MapFallbackToFile("index.html");
 
 app.Run();
