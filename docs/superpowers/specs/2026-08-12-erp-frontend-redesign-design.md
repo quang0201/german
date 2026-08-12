@@ -12,7 +12,7 @@ Redesign frontend German Production theo hướng ERP thực tế, lấy cảm h
 - Dashboard chỉ là workspace tổng hợp, không phải màn hình mặc định cho mọi nghiệp vụ.
 - Các feature độc lập, không tạo lại một `ManagerWorkspace` khổng lồ.
 
-Phase này chủ yếu thay đổi frontend, nhưng có một thay đổi backend có kiểm soát cho read/query path của ProductionEntry. Không thay đổi domain calculation, EF entity, schema, migration, Excel export contract hoặc business authorization của create/update/delete.
+Phase này chủ yếu thay đổi frontend, nhưng có các thay đổi backend read-only có kiểm soát cho ProductionEntry và AuditLog. Không thay đổi domain calculation, EF entity, schema, migration, Excel export contract hoặc business authorization của create/update/delete.
 
 ## 2. Phạm vi triển khai
 
@@ -80,7 +80,7 @@ Mỗi feature tự sở hữu page, API loading, filter state, mutation state v�
 
 ## 4. Routing và navigation
 
-Không thêm router dependency. Router nhỏ dùng `window.location.pathname`, `history.pushState()` và `popstate`.
+Không thêm router dependency. Router nhỏ dùng `window.location.pathname`, `history.pushState()` và `popstate`, thông qua một abstraction `navigate()` duy nhất.
 
 `routes.js` là nguồn duy nhất cho metadata điều hướng:
 
@@ -100,6 +100,26 @@ Không thêm router dependency. Router nhỏ dùng `window.location.pathname`, `
 Route metadata chỉ chứa path, segment matcher, role metadata dùng cho UX, breadcrumb, nav label và component. `navLabel` có thể là label tĩnh hoặc resolver theo role để cùng route hiển thị `Lịch sử của tôi` cho Worker và `Sản lượng` cho Manager/Admin; resolver này chỉ phục vụ navigation display. Không đưa API calls, filter state, mutation, calculation hoặc feature-specific business permission vào `routes.js`.
 
 Router match theo segment. `/orders/new` phải được match trước hoặc khác với `/orders/:id`; không dùng `startsWith` để suy đoán route.
+
+Navigation contract:
+
+```js
+navigate("/production/entry-id", {
+  presentation: "panel",
+  backgroundRoute: "/production",
+});
+```
+
+`navigate()` phải cập nhật cả `history.pushState()` và router state trong React; không giả định `pushState()` tự phát `popstate`. Khi `presentation: "panel"`, state lưu trong history entry phải có dạng tương đương:
+
+```js
+{
+  presentation: "panel",
+  backgroundRoute: "/production",
+}
+```
+
+App router dùng `pathname` và `history.state` cùng nhau. Nếu pathname là `/production/:id` và history entry có `presentation: "panel"` với `backgroundRoute: "/production"`, router giữ `ProductionEntryListPage` mounted và render `DetailPanel`. `popstate` phải đọc lại cả pathname và history state để Back/Forward khôi phục đúng presentation. Initial load, refresh hoặc direct deep-link không có navigation context thì render `ProductionEntryDetailPage` độc lập; không cố khôi phục panel.
 
 Các route chính:
 
@@ -322,6 +342,9 @@ Response shape cố định:
 Rules:
 
 - `pageSize` chỉ nhận `25`, `50`, `100`; giá trị khác trả `400`, không âm thầm clamp.
+- `page` mặc định là `1`; `page < 1` hoặc không parse được trả `400`.
+- `page > totalPages` trả `200` với `items: []`, giữ nguyên `page` được request và trả `totalCount`/`totalPages` thực tế.
+- `pageSize` mặc định là `50`.
 - Không truyền ngày: `today..today`.
 - Chỉ `fromDate`: `fromDate..fromDate`.
 - Chỉ `untilDate`: `untilDate..untilDate`.
@@ -338,10 +361,23 @@ Rules:
 
 Authorization:
 
-- Manager/Admin đọc được list toàn bộ theo filter.
-- Worker chỉ đọc được lịch sử của chính mình nếu gọi read list/history route.
+- Manager/Admin dùng `GET /api/production-entries` để đọc list toàn bộ theo filter.
+- Worker dùng `GET /api/production-entries/mine` để đọc lịch sử của chính mình.
 - Worker không được update/delete; thay đổi read query không mở quyền mutation.
 - Backend vẫn là security boundary, không dựa vào việc ẩn menu frontend.
+
+Worker history endpoint:
+
+```http
+GET /api/production-entries/mine
+  ?fromDate=2026-08-01
+  &untilDate=2026-08-31
+  &search=E001
+  &page=1
+  &pageSize=50
+```
+
+Endpoint `/mine` dùng cùng response shape, date semantics, 31-day limit, search, page/pageSize validation và stable sort như list Manager. Nó lấy `EmployeeId` từ authenticated actor và luôn áp ownership predicate trong Application query. Không nhận `employeeId` từ query để tránh client tự chọn ownership. Worker không được dùng endpoint list toàn bộ.
 
 ### Detail navigation
 
@@ -362,6 +398,47 @@ Semantics:
 404 → không tồn tại hoặc đã soft-delete
 403 → tồn tại nhưng user không có quyền đọc
 ```
+
+Response contract dùng DTO riêng, không tái sử dụng DTO mutation hoặc chỉ trả entity IDs:
+
+```csharp
+public sealed record ProductionEntryDetailDto(
+    Guid Id,
+    int Version,
+    DateOnly WorkDate,
+    Guid EmployeeId,
+    string EmployeeCode,
+    string EmployeeName,
+    Guid ProductionOrderId,
+    string ProductionOrderCode,
+    string ProductName,
+    Guid ProductionOperationId,
+    int OperationNumber,
+    string OperationName,
+    string Unit,
+    ProductionEntryMode EntryMode,
+    decimal? Shift1Quantity,
+    decimal? Shift2Quantity,
+    decimal? DirectHcQuantity,
+    decimal? DirectTcQuantity,
+    decimal? TotalInputQuantity,
+    decimal? OvertimeHours,
+    decimal? OvertimeQuantity,
+    TimeOnly? WorkStart,
+    TimeOnly? WorkEnd,
+    decimal HcQuantity,
+    decimal TcQuantity,
+    decimal TotalQuantity,
+    string? Note,
+    Guid SubmittedByUserId,
+    string SubmittedByUsername,
+    string? SubmittedByEmployeeCode,
+    string? SubmittedByEmployeeName,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+```
+
+Application query join phải lấy display fields từ Employee, ProductionOrder, ProductionOperation và UserAccount/submitter Employee. Soft-deleted entries bị loại bởi query filter. Worker chỉ nhận detail nếu `EmployeeId` của entry trùng actor ownership; Manager/Admin đọc được entry hợp lệ. Không thay đổi mutation DTO hoặc entity schema.
 
 Detail nhóm theo nội dung phẳng:
 
@@ -467,7 +544,23 @@ features/admin/
   AuditLogListPage
 ```
 
-Employee local search là giới hạn có chủ ý theo API hiện tại; không áp dụng pattern này mặc định cho ProductionEntry. ProductionOrder operations là table trong detail, không tạo workspace riêng. Reports dùng filter và export endpoint, không thay bằng dashboard. Audit là read-only.
+Employee local search là giới hạn có chủ ý theo API hiện tại; không áp dụng pattern này mặc định cho ProductionEntry. ProductionOrder operations là table trong detail, không tạo workspace riêng. Reports dùng filter và export endpoint, không thay bằng dashboard. Audit là read-only và có backend query contract riêng trong phase này.
+
+Audit read contract:
+
+```http
+GET /api/audit-logs
+  ?fromDate=2026-08-01
+  &untilDate=2026-08-31
+  &entityType=ProductionEntry
+  &entityId=...
+  &action=Update
+  &performedByUserId=...
+  &page=1
+  &pageSize=50
+```
+
+Endpoint `GET /api/audit-logs` yêu cầu policy `AdminOnly`, trả paged response cố định và chỉ đọc. Filter chạy trước `CountAsync`, sort ổn định theo `PerformedAt DESC`, `Id DESC`. DTO phải có entity type/id, action, performed-at, performed-by user display fields và before/after JSON khi người gọi là Admin. Không thêm migration hoặc mutation endpoint; `Program.cs` map endpoint và đăng ký Application query service.
 
 ## 11. Responsive behavior
 
@@ -514,9 +607,13 @@ Backend tests cần bổ sung cho read/query path:
 - filter trước count/pagination;
 - stable sort có Id tie-breaker;
 - fixed empty response shape;
+- `page` default, invalid page và page vượt totalPages;
 - soft-delete exclusion;
 - Manager/Admin list authorization;
+- Worker `/mine` ownership predicate, không nhận employee override;
 - Worker ownership read và 403/404 semantics của detail.
+- `ProductionEntryDetailDto` có raw edit values, version, display fields và submitted-user display fields;
+- Audit endpoint AdminOnly, filters, stable ordering, pagination và read-only behavior.
 
 Không thay đổi hoặc test lại ngoài phạm vi phase này:
 
