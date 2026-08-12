@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
-import { buildDirectUpdatePayload, buildProductionEntryQuery } from "../manager/managerProduction.js";
+import { buildDirectUpdatePayload, buildProductionEntryQuery } from "./productionEntryManagement.js";
 
 function localToday() {
   const date = new Date();
