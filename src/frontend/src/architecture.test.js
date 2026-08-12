@@ -57,6 +57,31 @@ describe("architecture guardrails", () => {
     expect(read("src/backend/German.Infrastructure/German.Infrastructure.csproj")).toContain("DocumentFormat.OpenXml");
   });
 
+  test("database lifecycle is split into migrations seed and app start modes", () => {
+    const program = read("src/backend/German.Api/Program.cs");
+    const migrationsStart = program.indexOf("case StartMode.Migrations:");
+    const seedStart = program.indexOf("case StartMode.Seed:");
+    const appStart = program.indexOf("case StartMode.App:");
+    const middlewareStart = program.indexOf("app.UseDefaultFiles();");
+
+    expect(migrationsStart).toBeGreaterThanOrEqual(0);
+    expect(seedStart).toBeGreaterThan(migrationsStart);
+    expect(appStart).toBeGreaterThan(seedStart);
+    expect(middlewareStart).toBeGreaterThan(appStart);
+
+    const migrationsBlock = program.slice(migrationsStart, seedStart);
+    const seedBlock = program.slice(seedStart, appStart);
+    const appBlock = program.slice(appStart, middlewareStart);
+
+    expect(migrationsBlock).toContain("Database.MigrateAsync()");
+    expect(migrationsBlock).not.toContain("SeedAsync");
+    expect(seedBlock).toContain("bootstrapSeeder.SeedAsync");
+    expect(seedBlock).not.toContain("MigrateAsync");
+    expect(appBlock).not.toContain("MigrateAsync");
+    expect(appBlock).not.toContain("SeedAsync");
+    expect(read("Dockerfile")).toContain('CMD ["app"]');
+  });
+
   test("production entry feature does not depend on manager feature internals", () => {
     const violations = readdirSync(resolve(repoRoot, "src/frontend/src/features/production-entries"), { withFileTypes: true })
       .filter((entry) => entry.isFile() && /\.(js|jsx)$/.test(entry.name))
