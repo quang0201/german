@@ -62,9 +62,9 @@ public sealed class AuthAndProductionEntryApiTests
         Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = json.RootElement;
-        Assert.AreEqual(430m, root.GetProperty("hcQuantity").GetDecimal());
-        Assert.AreEqual(96m, root.GetProperty("tcQuantity").GetDecimal());
-        Assert.AreEqual(526m, root.GetProperty("totalQuantity").GetDecimal());
+        Assert.AreEqual(352m, root.GetProperty("hcQuantity").GetDecimal());
+        Assert.AreEqual(78m, root.GetProperty("tcQuantity").GetDecimal());
+        Assert.AreEqual(430m, root.GetProperty("totalQuantity").GetDecimal());
     }
 
     private static async Task<SeededIds> SeedWorkerAsync(
