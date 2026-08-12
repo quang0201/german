@@ -12,6 +12,7 @@ export function DataTable({
   rowKey = "id",
   onRowClick,
   selectedRowKey,
+  className = "",
 }) {
   if (loading) {
     return <div className="erp-table-state" role="status">Đang tải dữ liệu...</div>;
@@ -26,7 +27,7 @@ export function DataTable({
   }
 
   return (
-    <div className={`erp-table-wrap erp-table-${density}`}>
+    <div className={`erp-table-wrap erp-table-${density} ${className}`.trim()}>
       <table className="erp-table">
         <thead>
           <tr>{columns.map((column) => <th key={column.key} scope="col" className={column.className}>{column.label}</th>)}</tr>

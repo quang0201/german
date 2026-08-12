@@ -12,22 +12,33 @@ function navItems(role) {
   });
 }
 
-export function Sidebar({ role, pathname, collapsed, onToggle }) {
+const icons = {
+  "/overview": "⌂",
+  "/production": "▤",
+  "/employees": "♙",
+  "/orders": "▣",
+  "/shifts": "◷",
+  "/reports": "▥",
+  "/admin/accounts": "⚙",
+  "/admin/audit": "≡",
+};
+
+export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
   const items = navItems(role);
   return (
     <aside className={`erp-sidebar ${collapsed ? "is-collapsed" : ""}`}>
       <div className="erp-sidebar-brand">
         <div className="erp-brand-mark">G</div>
-        {!collapsed && <div><strong>German</strong><span>Production ERP</span></div>}
+        <div className="erp-sidebar-brand-copy"><strong>German</strong><span>Production ERP</span></div>
       </div>
       <nav className="erp-sidebar-nav" aria-label="Điều hướng chính">
         {items.map((route) => {
           const active = pathname === route.path || (route.path === "/production" && pathname.startsWith("/production/"));
           const label = typeof route.navLabel === "function" ? route.navLabel(role) : route.navLabel;
           return (
-            <button key={route.path} type="button" className={`erp-nav-item ${active ? "is-active" : ""}`} onClick={() => navigate(route.path)} title={collapsed ? label : undefined}>
-              <span className="erp-nav-icon" aria-hidden="true">{label.slice(0, 1)}</span>
-              {!collapsed && <span>{label}</span>}
+            <button key={route.path} type="button" className={`erp-nav-item ${active ? "is-active" : ""}`} onClick={() => { navigate(route.path); onNavigate?.(); }} title={collapsed ? label : undefined}>
+              <span className="erp-nav-icon" aria-hidden="true">{icons[route.path] || "•"}</span>
+              <span className="erp-nav-label">{label}</span>
             </button>
           );
         })}

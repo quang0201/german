@@ -7,6 +7,7 @@ import { Field } from "../../components/erp/Field.jsx";
 import { FilterBar } from "../../components/erp/FilterBar.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
+import { Pagination } from "../../components/erp/Pagination.jsx";
 import { buildProductionEntryListQuery, normalizeProductionEntryListResponse } from "./productionEntryQuery.js";
 import { ProductionEntryDetailPage } from "./ProductionEntryDetailPage.jsx";
 
@@ -60,17 +61,17 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
   }, [filters, isWorker, reloadKey]);
 
   const columns = useMemo(() => [
-    { key: "workDate", label: "Ngày", render: (row) => row.workDate },
-    { key: "employeeCode", label: "Mã NV", render: (row) => <strong>{row.employeeCode}</strong> },
-    { key: "employeeName", label: "Họ tên", render: (row) => row.employeeName },
+    { key: "workDate", label: "Ngày", className: "erp-column-sticky-mobile", render: (row) => row.workDate },
+    { key: "employeeCode", label: "Mã NV", className: isWorker ? "erp-column-mobile-hidden" : "", render: (row) => <strong>{row.employeeCode}</strong> },
+    { key: "employeeName", label: "Họ tên", className: "erp-column-mobile-hidden", render: (row) => row.employeeName },
     { key: "productionOrderCode", label: "Mã SX", render: (row) => row.productionOrderCode },
     { key: "operationNumber", label: "CĐ", render: (row) => `CĐ${row.operationNumber}` },
-    { key: "hcQuantity", label: "HC", className: "text-right", render: (row) => row.hcQuantity },
-    { key: "tcQuantity", label: "TC", className: "text-right", render: (row) => row.tcQuantity },
+    { key: "hcQuantity", label: "HC", className: "text-right erp-column-mobile-hidden", render: (row) => row.hcQuantity },
+    { key: "tcQuantity", label: "TC", className: "text-right erp-column-mobile-hidden", render: (row) => row.tcQuantity },
     { key: "totalQuantity", label: "Tổng", className: "text-right font-bold", render: (row) => row.totalQuantity },
-    { key: "entryMode", label: "Kiểu nhập", render: (row) => row.entryMode },
+    { key: "entryMode", label: "Kiểu nhập", className: "erp-column-mobile-hidden", render: (row) => row.entryMode },
     { key: "actions", label: "Thao tác", className: "text-right", render: () => <span className="text-blue-700">Xem →</span> },
-  ], []);
+  ], [isWorker]);
 
   function updateDraft(key, value) {
     setDraft((current) => ({ ...current, [key]: value, ...(key === "orderId" ? { operationId: "" } : {}) }));
@@ -115,16 +116,8 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
         <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} onChange={(event) => updateDraft("operationId", event.target.value)}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => updateDraft("search", event.target.value)} placeholder="Mã NV, họ tên, mã SX..." /></Field>
       </FilterBar>}
-      <DataTable columns={columns} rows={data.items} loading={loading} error={error} density="compact" emptyMessage="Không có sản lượng phù hợp bộ lọc." rowKey="id" onRowClick={(row) => { const mobile = window.matchMedia?.("(max-width: 768px)").matches; navigate(`/production/${row.id}`, mobile ? {} : { presentation: "panel", backgroundRoute: "/production" }); }} />
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-        <span>{data.totalCount === 0 ? "0 bản ghi" : `${(data.page - 1) * data.pageSize + 1}–${Math.min(data.page * data.pageSize, data.totalCount)} / ${data.totalCount}`}</span>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2">Dòng/trang<select className="erp-control !w-auto" value={filters.pageSize} onChange={(event) => { const pageSize = Number(event.target.value); setFilters((current) => ({ ...current, page: 1, pageSize })); setDraft((current) => ({ ...current, page: 1, pageSize })); }}><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
-          <button className="erp-button erp-button-secondary" type="button" disabled={filters.page <= 1 || loading} onClick={() => changePage(filters.page - 1)}>‹</button>
-          <span>Trang {data.page} / {data.totalPages || 0}</span>
-          <button className="erp-button erp-button-secondary" type="button" disabled={filters.page >= data.totalPages || loading} onClick={() => changePage(filters.page + 1)}>›</button>
-        </div>
-      </div>
+      <DataTable columns={columns} rows={data.items} loading={loading} error={error} density="compact" className={`erp-production-table ${isWorker ? "erp-production-table-worker" : "erp-production-table-manager"}`} emptyMessage="Không có sản lượng phù hợp bộ lọc." rowKey="id" onRowClick={(row) => { const mobile = window.matchMedia?.("(max-width: 767px)").matches; navigate(`/production/${row.id}`, mobile ? {} : { presentation: "panel", backgroundRoute: "/production" }); }} />
+      <Pagination page={data.page} pageSize={filters.pageSize} totalCount={data.totalCount} totalPages={data.totalPages} loading={loading} onPageChange={changePage} onPageSizeChange={(pageSize) => { setFilters((current) => ({ ...current, page: 1, pageSize })); setDraft((current) => ({ ...current, page: 1, pageSize })); }} />
       <DetailPanel open={Boolean(panelEntryId)} title="Chi tiết sản lượng" onClose={onPanelClose}>
         {panelEntryId && <ProductionEntryDetailPage session={session} entryId={panelEntryId} inPanel onClose={onPanelClose} onChanged={() => setReloadKey((value) => value + 1)} />}
       </DetailPanel>
