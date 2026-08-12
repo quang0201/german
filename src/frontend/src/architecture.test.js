@@ -82,6 +82,17 @@ describe("architecture guardrails", () => {
     expect(read("Dockerfile")).toContain('CMD ["app"]');
   });
 
+  test("deployment compose uses Linux host networking without a local database", () => {
+    const compose = read("compose.yaml");
+
+    expect(compose).toContain("network_mode: host");
+    expect(compose).not.toContain("\n    ports:");
+    expect(compose).toContain('ASPNETCORE_URLS: "http://+:${APP_PORT:-8080}"');
+    expect(compose).toContain("http://localhost:${APP_PORT:-8080}/health");
+    expect(compose).not.toContain("image: postgres");
+    expect(compose).not.toContain("\n  postgres:");
+  });
+
   test("production entry feature does not depend on manager feature internals", () => {
     const violations = readdirSync(resolve(repoRoot, "src/frontend/src/features/production-entries"), { withFileTypes: true })
       .filter((entry) => entry.isFile() && /\.(js|jsx)$/.test(entry.name))
