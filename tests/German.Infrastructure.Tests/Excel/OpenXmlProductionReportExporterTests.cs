@@ -1,0 +1,95 @@
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+using German.Application.Reports;
+using German.Domain.Production;
+using German.Infrastructure.Excel;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace German.Infrastructure.Tests.Excel;
+
+[TestClass]
+public sealed class OpenXmlProductionReportExporterTests
+{
+    [TestMethod]
+    public void Export_CreatesWorkbookWithProductionSheetAndHeaders()
+    {
+        var exporter = new OpenXmlProductionReportExporter();
+        var bytes = exporter.Export(CreateReport());
+
+        using var stream = new MemoryStream(bytes);
+        using var document = SpreadsheetDocument.Open(stream, false);
+        var workbookPart = document.WorkbookPart!;
+        var sheet = workbookPart.Workbook.Sheets!.Elements<Sheet>().Single(x => x.Name == "Sản lượng");
+        var worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!);
+        var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()!.Elements<Row>().ToList();
+
+        var expectedHeaders = new[]
+        {
+            "Ngày", "Mã NV", "Họ tên", "Mã SX", "Sản phẩm", "CĐ", "Tên công đoạn",
+            "Đơn vị", "HC", "TC", "Tổng", "Giờ TC", "Kiểu nhập", "Ghi chú"
+        };
+        CollectionAssert.AreEqual(expectedHeaders, rows[0].Elements<Cell>().Select(x => x.InnerText).ToArray());
+    }
+
+    [TestMethod]
+    public void Export_WritesQuantitiesAsNumericCells()
+    {
+        var exporter = new OpenXmlProductionReportExporter();
+        var bytes = exporter.Export(CreateReport());
+
+        using var stream = new MemoryStream(bytes);
+        using var document = SpreadsheetDocument.Open(stream, false);
+        var sheet = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>().Single(x => x.Name == "Sản lượng");
+        var worksheetPart = (WorksheetPart)document.WorkbookPart.GetPartById(sheet.Id!);
+        var dataRow = worksheetPart.Worksheet.GetFirstChild<SheetData>()!.Elements<Row>().Skip(1).Single();
+        var cells = dataRow.Elements<Cell>().ToArray();
+
+        foreach (var index in new[] { 8, 9, 10, 11 })
+        {
+            Assert.IsTrue(cells[index].DataType is null || cells[index].DataType!.Value == CellValues.Number);
+        }
+        Assert.AreEqual("100", cells[8].CellValue!.Text);
+        Assert.AreEqual("20", cells[9].CellValue!.Text);
+        Assert.AreEqual("120", cells[10].CellValue!.Text);
+        Assert.AreEqual("2", cells[11].CellValue!.Text);
+    }
+
+    [TestMethod]
+    public void Export_EmptyRowsStillCreatesValidWorkbook()
+    {
+        var exporter = new OpenXmlProductionReportExporter();
+        var bytes = exporter.Export(new ProductionReportData(
+            new DateOnly(2026, 8, 12),
+            new DateOnly(2026, 8, 12),
+            Array.Empty<ProductionReportRow>()));
+
+        Assert.IsTrue(bytes.Length > 0);
+        using var stream = new MemoryStream(bytes);
+        using var document = SpreadsheetDocument.Open(stream, false);
+        var sheet = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>().Single(x => x.Name == "Sản lượng");
+        var worksheetPart = (WorksheetPart)document.WorkbookPart.GetPartById(sheet.Id!);
+        Assert.AreEqual(1, worksheetPart.Worksheet.GetFirstChild<SheetData>()!.Elements<Row>().Count());
+    }
+
+    private static ProductionReportData CreateReport() => new(
+        new DateOnly(2026, 8, 12),
+        new DateOnly(2026, 8, 12),
+        new[]
+        {
+            new ProductionReportRow(
+                new DateOnly(2026, 8, 12),
+                "E001",
+                "Nguyễn Văn A",
+                "0417",
+                "Túi 0417",
+                11,
+                "May thân",
+                "cái",
+                100m,
+                20m,
+                120m,
+                2m,
+                ProductionEntryMode.Direct,
+                "Ca chiều")
+        });
+}
