@@ -25,7 +25,7 @@ export function LoginPage({ onLoggedIn }) {
     <main className="min-h-screen bg-slate-950 px-4 py-10 sm:py-16">
       <div className="mx-auto max-w-md">
         <div className="mb-8 text-white">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-300">German Production</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-300">German · Hệ thống sản xuất</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight">Nhập sản lượng</h1>
           <p className="mt-2 text-sm leading-6 text-slate-300">Đăng nhập bằng tên tài khoản hoặc mã nhân viên.</p>
         </div>

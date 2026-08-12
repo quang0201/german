@@ -6,4 +6,49 @@ import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 
 function localToday() { return new Date().toISOString().slice(0, 10); }
-export function ReportPage() { const [fromDate, setFromDate] = useState(localToday()); const [untilDate, setUntilDate] = useState(localToday()); const [error, setError] = useState(""); const toast = useToast(); async function exportReport() { setError(""); try { await api.download(`/api/reports/production/export.xlsx?fromDate=${encodeURIComponent(fromDate)}&untilDate=${encodeURIComponent(untilDate)}`, "bao-cao-san-luong.xlsx"); toast.success("Đã tải báo cáo sản lượng."); } catch (e) { setError(e.message || "Không thể xuất báo cáo."); } } return <div className="erp-feature-page"><PageHeader title="Báo cáo" description="Xuất báo cáo sản lượng theo khoảng thời gian." />{error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}<div className="erp-report-toolbar"><Field label="Từ ngày"><input className="erp-control" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></Field><Field label="Đến ngày"><input className="erp-control" type="date" value={untilDate} onChange={(e) => setUntilDate(e.target.value)} /></Field><button className="erp-button erp-button-primary" type="button" onClick={exportReport}>Xuất Excel</button></div></div>; }
+
+export function buildProductionReportExportUrl(fromDate, untilDate) {
+  const params = new URLSearchParams({ fromDate, untilDate });
+  return `/api/reports/production/export.xlsx?${params.toString()}`;
+}
+
+export function ReportPage() {
+  const [fromDate, setFromDate] = useState(localToday());
+  const [untilDate, setUntilDate] = useState(localToday());
+  const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const toast = useToast();
+
+  async function exportReport() {
+    setError("");
+    if (!fromDate || !untilDate || fromDate > untilDate) {
+      setError("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+      return;
+    }
+    if (typeof api.download !== "function") {
+      setError("Chức năng xuất báo cáo chưa sẵn sàng. Vui lòng tải lại trang.");
+      return;
+    }
+    setExporting(true);
+    try {
+      await api.download(buildProductionReportExportUrl(fromDate, untilDate), "bao-cao-san-luong.xlsx");
+      toast.success("Đã tải báo cáo sản lượng.");
+    } catch (requestError) {
+      setError(requestError.message || "Không thể xuất báo cáo.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  return (
+    <div className="erp-feature-page">
+      <PageHeader title="Báo cáo" description="Xuất báo cáo sản lượng theo khoảng thời gian." />
+      {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
+      <div className="erp-report-toolbar">
+        <Field label="Từ ngày"><input className="erp-control" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></Field>
+        <Field label="Đến ngày"><input className="erp-control" type="date" value={untilDate} onChange={(event) => setUntilDate(event.target.value)} /></Field>
+        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
+      </div>
+    </div>
+  );
+}

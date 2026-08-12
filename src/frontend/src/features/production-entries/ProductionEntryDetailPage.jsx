@@ -8,6 +8,7 @@ import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { ProductionEntryFormPage } from "./ProductionEntryFormPage.jsx";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
+import { entryModeLabel } from "../../lib/i18n.js";
 
 export function ProductionEntryDetailPage({ session, params, entryId, onChanged, onClose, inPanel = false }) {
   const id = entryId ?? params?.id;
@@ -74,7 +75,7 @@ export function ProductionEntryDetailPage({ session, params, entryId, onChanged,
         <ReadField label="Công đoạn" value={`CĐ${entry.operationNumber} — ${entry.operationName} (${entry.unit})`} />
       </FormSection>
       <FormSection title="Sản lượng">
-        <ReadField label="Chế độ" value={entry.entryMode} />
+        <ReadField label="Chế độ" value={entryModeLabel(entry.entryMode)} />
         <ReadField label="HC" value={entry.hcQuantity} />
         <ReadField label="TC" value={entry.tcQuantity} />
         <ReadField label="Tổng" value={entry.totalQuantity} />

@@ -10,6 +10,7 @@ import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
 import { Pagination } from "../../components/erp/Pagination.jsx";
 import { buildProductionEntryListQuery, normalizeProductionEntryListResponse } from "./productionEntryQuery.js";
 import { ProductionEntryDetailPage } from "./ProductionEntryDetailPage.jsx";
+import { entryModeLabel } from "../../lib/i18n.js";
 
 function localToday() {
   const date = new Date();
@@ -69,7 +70,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
     { key: "hcQuantity", label: "HC", className: "text-right erp-column-mobile-hidden", render: (row) => row.hcQuantity },
     { key: "tcQuantity", label: "TC", className: "text-right erp-column-mobile-hidden", render: (row) => row.tcQuantity },
     { key: "totalQuantity", label: "Tổng", className: "text-right font-bold", render: (row) => row.totalQuantity },
-    { key: "entryMode", label: "Kiểu nhập", className: "erp-column-mobile-hidden", render: (row) => row.entryMode },
+    { key: "entryMode", label: "Kiểu nhập", className: "erp-column-mobile-hidden", render: (row) => entryModeLabel(row.entryMode) },
     { key: "actions", label: "Thao tác", className: "text-right", render: () => <span className="text-blue-700">Xem →</span> },
   ], [isWorker]);
 

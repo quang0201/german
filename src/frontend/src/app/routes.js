@@ -22,7 +22,7 @@ export const routes = [
   { path: "/shifts", roles: ["Manager", "Admin"], navLabel: "Ca làm việc", breadcrumb: () => [{ label: "Ca làm việc" }], component: ShiftListPage },
   { path: "/reports", roles: ["Manager", "Admin"], navLabel: "Báo cáo", breadcrumb: () => [{ label: "Báo cáo" }], component: ReportPage },
   { path: "/admin/accounts", roles: ["Admin"], navLabel: "Tài khoản", breadcrumb: () => [{ label: "Tài khoản" }], component: UserAccountPage },
-  { path: "/admin/audit", roles: ["Admin"], navLabel: "Audit log", breadcrumb: () => [{ label: "Audit log" }], component: AuditLogListPage },
+  { path: "/admin/audit", roles: ["Admin"], navLabel: "Nhật ký kiểm tra", breadcrumb: () => [{ label: "Nhật ký kiểm tra" }], component: AuditLogListPage },
 ];
 
 function segments(path) {

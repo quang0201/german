@@ -1,6 +1,7 @@
 import React from "react";
 import { navigate } from "./navigation.js";
 import { routes } from "./routes.js";
+import { Icon } from "../components/erp/Icon.jsx";
 
 function navItems(role) {
   const seen = new Set();
@@ -13,14 +14,14 @@ function navItems(role) {
 }
 
 const icons = {
-  "/overview": "⌂",
-  "/production": "▤",
-  "/employees": "♙",
-  "/orders": "▣",
-  "/shifts": "◷",
-  "/reports": "▥",
-  "/admin/accounts": "⚙",
-  "/admin/audit": "≡",
+  "/overview": "overview",
+  "/production": "production",
+  "/employees": "employees",
+  "/orders": "orders",
+  "/shifts": "shifts",
+  "/reports": "reports",
+  "/admin/accounts": "accounts",
+  "/admin/audit": "audit",
 };
 
 export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
@@ -29,7 +30,7 @@ export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
     <aside className={`erp-sidebar ${collapsed ? "is-collapsed" : ""}`}>
       <div className="erp-sidebar-brand">
         <div className="erp-brand-mark">G</div>
-        <div className="erp-sidebar-brand-copy"><strong>German</strong><span>Production ERP</span></div>
+        <div className="erp-sidebar-brand-copy"><strong>German</strong><span>Hệ thống sản xuất</span></div>
       </div>
       <nav className="erp-sidebar-nav" aria-label="Điều hướng chính">
         {items.map((route) => {
@@ -37,13 +38,16 @@ export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
           const label = typeof route.navLabel === "function" ? route.navLabel(role) : route.navLabel;
           return (
             <button key={route.path} type="button" className={`erp-nav-item ${active ? "is-active" : ""}`} onClick={() => { navigate(route.path); onNavigate?.(); }} title={collapsed ? label : undefined}>
-              <span className="erp-nav-icon" aria-hidden="true">{icons[route.path] || "•"}</span>
+              <span className="erp-nav-icon"><Icon name={icons[route.path] || "production"} label={label} size={16} /></span>
               <span className="erp-nav-label">{label}</span>
             </button>
           );
         })}
       </nav>
-      <button type="button" className="erp-sidebar-toggle" onClick={onToggle}>{collapsed ? "→" : "← Thu gọn"}</button>
+      <button type="button" className="erp-sidebar-toggle" onClick={onToggle} aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}>
+        <Icon name={collapsed ? "chevronRight" : "chevronLeft"} size={16} />
+        <span>{collapsed ? "Mở rộng" : "Thu gọn"}</span>
+      </button>
     </aside>
   );
 }
