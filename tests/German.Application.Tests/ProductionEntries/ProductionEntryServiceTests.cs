@@ -31,7 +31,7 @@ public sealed class ProductionEntryServiceTests
     }
 
     [TestMethod]
-    public async Task ByShift_UsesEffectiveShiftHoursForOvertimeCalculation()
+    public async Task ByShift_UsesEffectiveShiftHoursToSplitReportedTotal()
     {
         await using var db = CreateDbContext();
         var employee = new Employee { EmployeeCode = "E001", FullName = "Quỳnh" };
@@ -52,9 +52,9 @@ public sealed class ProductionEntryServiceTests
             ProductionEntryMode.ByShift, Shift1Quantity: 310m, Shift2Quantity: 120m, OvertimeHours: 2m), CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess, result.Error?.Message);
-        Assert.AreEqual(430m, result.Value?.HcQuantity);
-        Assert.AreEqual(96m, result.Value?.TcQuantity);
-        Assert.AreEqual(526m, result.Value?.TotalQuantity);
+        Assert.AreEqual(352m, result.Value?.HcQuantity);
+        Assert.AreEqual(78m, result.Value?.TcQuantity);
+        Assert.AreEqual(430m, result.Value?.TotalQuantity);
         Assert.AreEqual(1, await db.ProductionEntries.CountAsync());
     }
 
