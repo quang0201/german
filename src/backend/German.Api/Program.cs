@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
 var startMode = StartModeParser.Parse(args);
-var builder = WebApplication.CreateBuilder(args.Length > 0 ? args[1..] : args);
+var builder = WebApplication.CreateBuilder(StartModeParser.GetHostArguments(args));
 
 builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
