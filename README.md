@@ -73,7 +73,7 @@ dotnet build German.sln --no-restore
 dotnet test German.sln --no-build
 ```
 
-Frontend:
+Frontend + architecture guardrails:
 
 ```bash
 cd src/frontend
@@ -106,10 +106,22 @@ dotnet ef database update \
 
 ```text
 German.Domain          business entities + calculation engine
-German.Application     use cases, authorization rules, validation
+German.Application     use cases, authorization rules, validation, application queries
 German.Infrastructure  EF Core/PostgreSQL, password hashing, bootstrap
-German.Api             HTTP/auth/static frontend host
-src/frontend           React worker + manager/admin UI
+German.Api             HTTP/auth/composition/static frontend host
+src/frontend           React worker + manager/admin UI theo feature
 ```
 
-Thiết kế chi tiết nằm trong `docs/superpowers/specs/` và implementation plan trong `docs/superpowers/plans/`.
+Architecture contract bắt buộc của dự án nằm tại [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). CI có architecture tests để chặn dependency đi ngược tầng và endpoint truy cập persistence trực tiếp.
+
+## Branch workflow
+
+```text
+main  <- stable/release
+dev   <- integration
+feat/*, fix/*, review/* -> dev -> main
+```
+
+Tính năng mới nên tách từ `dev`; không phát triển trực tiếp trên `main`. CI chạy trên `main`, `dev`, `feat/**`, `review/**` và pull request vào `main`/`dev`.
+
+Thiết kế chi tiết ban đầu nằm trong `docs/superpowers/specs/` và implementation plan trong `docs/superpowers/plans/`.
