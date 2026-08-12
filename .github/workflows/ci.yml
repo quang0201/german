@@ -43,3 +43,14 @@ jobs:
         run: bun test
       - name: Build
         run: bun run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate Compose
+        run: |
+          cp .env.example .env
+          docker compose config >/dev/null
+      - name: Build image
+        run: docker build -t german:ci .
