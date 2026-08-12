@@ -12,22 +12,28 @@ function read(relativePath) {
 }
 
 describe("Industrial Clarity visual system", () => {
-  test("uses readable typography and touch-friendly control tokens", () => {
+  test("honors the locked ERP density and radius contract", () => {
     const styles = read("src/styles.css");
 
-    expect(styles).toContain("--control-height: 44px;");
-    expect(styles).toContain("--font-size-body: 15px;");
+    expect(styles).toContain("--radius-sm: 4px;");
+    expect(styles).toContain("--radius-md: 6px;");
+    expect(styles).toContain("--control-height: 38px;");
+    expect(styles).toContain("--table-row-height: 42px;");
     expect(styles).toContain("--color-text-muted: #475569;");
     expect(styles).toContain("--color-focus-ring: #2563eb;");
-    expect(styles).toContain("font-size: var(--font-size-body);");
+    expect(styles).toMatch(/\.erp-page-title\s*\{[^}]*font-size:\s*24px/s);
+    expect(styles).toMatch(/\.erp-nav-item\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
   });
 
-  test("groups filters and forms into visible surfaces", () => {
+  test("keeps workflow sections flat instead of turning each group into a card", () => {
     const styles = read("src/styles.css");
 
-    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*background:\s*var\(--color-surface\)/s);
-    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border:\s*1px solid var\(--color-border\)/s);
-    expect(styles).toMatch(/\.erp-form-section\s*\{[^}]*background:\s*var\(--color-surface\)/s);
+    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s);
+    expect(styles).not.toMatch(/\.erp-filter-bar\s*\{[^}]*box-shadow:/s);
+    expect(styles).toMatch(/\.erp-form-section\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s);
+    expect(styles).not.toMatch(/\.erp-form-section\s*\{[^}]*box-shadow:/s);
+    expect(styles).toMatch(/\.erp-report-toolbar\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s);
+    expect(styles).not.toMatch(/\.erp-summary-grid\s*>\s*div\s*\{[^}]*box-shadow:/s);
   });
 
   test("uses a shared SVG icon component instead of text glyph navigation icons", () => {
