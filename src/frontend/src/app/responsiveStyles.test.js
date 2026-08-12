@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import React from "react";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { renderToString } from "react-dom/server";
+import { AppShell } from "./AppShell.jsx";
 
 const styles = readFileSync(resolve(import.meta.dir, "../styles.css"), "utf8");
 
@@ -11,9 +14,48 @@ describe("ERP responsive CSS contract", () => {
     expect(styles).toContain("@media (max-width: 767px)");
   });
 
+  test("defaults compact desktop to collapsed while preserving a real expand toggle", () => {
+    const originalWindow = globalThis.window;
+    globalThis.window = {
+      matchMedia: () => ({ matches: true, addEventListener() {}, removeEventListener() {} })
+    };
+
+    try {
+      const html = renderToString(
+        React.createElement(
+          AppShell,
+          {
+            session: { role: "Admin", username: "quang" },
+            pathname: "/overview",
+            breadcrumbs: [],
+            onLogout() {}
+          },
+          React.createElement("div", null, "Nội dung")
+        )
+      );
+      const compactStyles = styles.slice(
+        styles.indexOf("@media (min-width: 1024px) and (max-width: 1279px)"),
+        styles.indexOf("@media (min-width: 768px) and (max-width: 1023px)")
+      );
+
+      expect(html).toContain("sidebar-collapsed");
+      expect(html).toContain('aria-label="Mở rộng menu"');
+      expect(compactStyles).not.toContain(".erp-sidebar-layer { width: var(--sidebar-width-collapsed); }");
+      expect(compactStyles).not.toContain(".erp-nav-label { display: none; }");
+    } finally {
+      globalThis.window = originalWindow;
+    }
+  });
+
   test("keeps mobile navigation expanded and locks body scroll", () => {
     expect(styles).toContain("body.erp-mobile-nav-open { overflow: hidden; }");
     expect(styles).toContain(".mobile-nav-open .erp-nav-label { display: block; }");
+  });
+
+  test("hides the desktop collapse control inside tablet and mobile drawers", () => {
+    expect(styles).toMatch(
+      /@media \(max-width: 1023px\)\s*\{\s*\.mobile-nav-open \.erp-sidebar-toggle\s*\{\s*display:\s*none;/s
+    );
   });
 
   test("uses mobile priority columns and multi-row pagination", () => {

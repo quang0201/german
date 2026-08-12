@@ -1,7 +1,7 @@
 import React from "react";
+import { Icon } from "../components/erp/Icon.jsx";
 import { navigate } from "./navigation.js";
 import { routes } from "./routes.js";
-import { Icon } from "../components/erp/Icon.jsx";
 
 function navItems(role) {
   const seen = new Set();
@@ -37,15 +37,15 @@ export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
           const active = pathname === route.path || (route.path === "/production" && pathname.startsWith("/production/"));
           const label = typeof route.navLabel === "function" ? route.navLabel(role) : route.navLabel;
           return (
-            <button key={route.path} type="button" className={`erp-nav-item ${active ? "is-active" : ""}`} onClick={() => { navigate(route.path); onNavigate?.(); }} title={collapsed ? label : undefined}>
-              <span className="erp-nav-icon"><Icon name={icons[route.path] || "production"} label={label} size={16} /></span>
+            <button key={route.path} type="button" className={`erp-nav-item ${active ? "is-active" : ""}`} onClick={() => { navigate(route.path); onNavigate?.(); }} title={collapsed ? label : undefined} aria-label={label}>
+              <span className="erp-nav-icon"><Icon name={icons[route.path] || "production"} size={20} /></span>
               <span className="erp-nav-label">{label}</span>
             </button>
           );
         })}
       </nav>
       <button type="button" className="erp-sidebar-toggle" onClick={onToggle} aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}>
-        <Icon name={collapsed ? "chevronRight" : "chevronLeft"} size={16} />
+        <Icon name={collapsed ? "chevronRight" : "chevronLeft"} size={18} />
         <span>{collapsed ? "Mở rộng" : "Thu gọn"}</span>
       </button>
     </aside>

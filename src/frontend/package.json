@@ -7,7 +7,7 @@
   "scripts": {
     "test": "bun test",
     "styles": "bunx @tailwindcss/cli -i ./src/styles.css -o ./src/tailwind.css --minify",
-    "build": "bun run styles && bun build ./index.html --outdir ./dist --production",
+    "build": "bun run styles && bun build ./index.html --outdir ./dist --production --public-path /",
     "build:api": "bun run build && bun ./scripts/copy-to-api.js"
   },
   "dependencies": {
