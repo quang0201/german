@@ -75,7 +75,8 @@ public sealed class ProductionReportServiceTests
     {
         await using var db = CreateDb();
         var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
-        seed.Entry.IsDeleted = true;
+        var entry = await db.ProductionEntries.IgnoreQueryFilters().SingleAsync(x => x.Id == seed.Entry.Id);
+        entry.IsDeleted = true;
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
 
