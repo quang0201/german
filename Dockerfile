@@ -24,3 +24,4 @@ COPY --from=backend-build /app/publish ./
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "German.Api.dll"]
+CMD ["app"]
