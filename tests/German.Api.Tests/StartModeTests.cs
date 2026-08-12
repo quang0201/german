@@ -25,6 +25,28 @@ public sealed class StartModeTests
     }
 
     [TestMethod]
+    public void Parse_AspNetOption_DefaultsToApp()
+    {
+        Assert.AreEqual(StartMode.App, StartModeParser.Parse(["--environment", "Development"]));
+    }
+
+    [TestMethod]
+    public void HostArguments_ExplicitMode_RemovesOnlyModeArgument()
+    {
+        CollectionAssert.AreEqual(
+            new[] { "--environment", "Development" },
+            StartModeParser.GetHostArguments(["migrations", "--environment", "Development"]));
+    }
+
+    [TestMethod]
+    public void HostArguments_NoExplicitMode_PreservesAllArguments()
+    {
+        CollectionAssert.AreEqual(
+            new[] { "--environment", "Development" },
+            StartModeParser.GetHostArguments(["--environment", "Development"]));
+    }
+
+    [TestMethod]
     public void Parse_UnknownMode_Throws()
     {
         var exception = Assert.ThrowsExactly<InvalidOperationException>(
