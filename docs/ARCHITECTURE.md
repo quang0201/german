@@ -32,7 +32,26 @@ File trong `German.Api/Endpoints` phải mỏng:
 3. gọi Application service;
 4. map kết quả sang HTTP response.
 
-Endpoint không được dùng `IGermanDbContext`, `DbContext` hoặc LINQ/EF Core để truy vấn persistence trực tiếp. Ngoại lệ duy nhất cho truy cập infrastructure trong API là composition/startup code như `Program.cs` để đăng ký dependency, migration và bootstrap.
+Endpoint không được dùng `IGermanDbContext`, `DbContext` hoặc LINQ/EF Core để truy vấn persistence trực tiếp. Ngoại lệ duy nhất cho truy cập infrastructure trong API là composition/startup code như `Program.cs` để đăng ký dependency và thực thi process lifecycle đã định nghĩa.
+
+### Process start modes
+
+`German.Api` có ba process mode tách biệt:
+
+```text
+migrations  -> chỉ Database.MigrateAsync() rồi exit
+seed        -> chỉ chạy bootstrap seed rồi exit
+app         -> chỉ chạy ASP.NET Core/Minimal API + React static host
+```
+
+Các ràng buộc bắt buộc:
+
+- `app` không tự chạy migration và không tự seed.
+- `migrations` không seed và không start HTTP server.
+- `seed` không migrate và không start HTTP server; schema phải tồn tại trước.
+- Docker image mặc định chạy `app`.
+- Deployment dùng cùng một image theo thứ tự `migrations` -> `seed` khi cần -> `app`.
+- Parsing/start-mode orchestration nằm ở `German.Api` vì đây là process/composition concern; business logic không được chuyển vào startup layer.
 
 ## 2. Persistence
 
@@ -42,6 +61,7 @@ Endpoint không được dùng `IGermanDbContext`, `DbContext` hoặc LINQ/EF Co
 - `ProductionEntry` dùng soft delete; query mặc định không trả bản ghi đã xóa.
 - Sửa/xóa sản lượng của Manager/Admin phải ghi audit log.
 - Không đặt raw SQL hoặc persistence logic trong endpoint/frontend.
+- Migration phải được tạo và commit cùng feature thay đổi schema; không sửa production schema thủ công rồi mới đồng bộ code sau.
 
 ## 3. Business calculation
 
@@ -102,6 +122,8 @@ feat/*, fix/*, review/*
 
 - project reference backend không đi ngược tầng;
 - endpoint không query EF/DbContext trực tiếp;
+- OpenXML không rò khỏi Infrastructure;
+- process lifecycle giữ tách biệt `migrations` / `seed` / `app`;
 - production-entry feature không phụ thuộc ngược vào manager internals.
 
 Khi thêm một layer/module mới, cập nhật guardrails thay vì bỏ hoặc nới test để đi vòng kiến trúc.
@@ -116,5 +138,6 @@ Trước khi merge vào `dev`:
 - endpoint chỉ map HTTP → Application;
 - persistence mapping/FK/migration phù hợp;
 - không có dependency ngược giữa layers/features;
+- process start mode không trộn migration/seed vào app runtime;
 - build + backend tests + frontend tests + architecture tests xanh;
 - nếu thay đổi architecture contract, phải nêu rõ lý do trong review và cập nhật tài liệu này.

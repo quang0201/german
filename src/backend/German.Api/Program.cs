@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using German.Api.Endpoints;
+using German.Api.Startup;
 using German.Application.Auth;
 using German.Application.Employees;
 using German.Application.Lookups;
@@ -14,7 +15,8 @@ using German.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
+var startMode = StartModeParser.Parse(args);
+var builder = WebApplication.CreateBuilder(StartModeParser.GetHostArguments(args));
 
 builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
@@ -59,17 +61,29 @@ builder.Services.AddAuthorizationBuilder()
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing"))
+switch (startMode)
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<GermanDbContext>();
-    await db.Database.MigrateAsync();
-
-    var bootstrapOptions = builder.Configuration
-        .GetSection("BootstrapAdmin")
-        .Get<BootstrapAdminOptions>() ?? new BootstrapAdminOptions();
-    var bootstrapSeeder = scope.ServiceProvider.GetRequiredService<BootstrapAdminSeeder>();
-    await bootstrapSeeder.SeedAsync(bootstrapOptions, CancellationToken.None);
+    case StartMode.Migrations:
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GermanDbContext>();
+        await db.Database.MigrateAsync();
+        return;
+    }
+    case StartMode.Seed:
+    {
+        using var scope = app.Services.CreateScope();
+        var bootstrapOptions = builder.Configuration
+            .GetSection("BootstrapAdmin")
+            .Get<BootstrapAdminOptions>() ?? new BootstrapAdminOptions();
+        var bootstrapSeeder = scope.ServiceProvider.GetRequiredService<BootstrapAdminSeeder>();
+        await bootstrapSeeder.SeedAsync(bootstrapOptions, CancellationToken.None);
+        return;
+    }
+    case StartMode.App:
+        break;
+    default:
+        throw new InvalidOperationException($"Unsupported start mode: {startMode}.");
 }
 
 app.UseDefaultFiles();

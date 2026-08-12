@@ -39,11 +39,32 @@ BootstrapAdmin__Password=change-this-password
 
 Không commit `.env`. Repo chỉ lưu `.env.example`.
 
-Build và chạy:
+Build image:
 
 ```bash
-docker compose up -d --build
+docker compose build german-app
 ```
+
+Container có ba start mode độc lập:
+
+```text
+migrations  chỉ áp dụng EF Core migrations rồi exit
+seed        chỉ chạy bootstrap seed rồi exit
+app         chỉ chạy ASP.NET Core + React, không tự migrate/seed
+```
+
+Docker image mặc định dùng mode `app`.
+
+Quy trình deploy:
+
+```bash
+docker compose build german-app
+docker compose run --rm german-app migrations
+docker compose run --rm german-app seed   # chỉ khi cần seed/bootstrap
+docker compose up -d german-app
+```
+
+Nếu migration thất bại thì không chạy bước `app`. `seed` không tự chạy migration; database phải có schema phù hợp trước.
 
 Xem log:
 
@@ -59,9 +80,7 @@ docker compose down
 
 Mặc định app được publish tại port `8080`. Có thể thay bằng `APP_PORT` trong `.env`.
 
-Container chạy ASP.NET Core Minimal API và React static frontend trong cùng process/application origin. `/health` được dùng làm Docker healthcheck.
-
-Khi API khởi động, EF Core tự áp dụng migration còn thiếu. Nếu PostgreSQL remote không kết nối được hoặc migration thất bại, startup sẽ thất bại và Compose sẽ restart container theo policy `unless-stopped`.
+Container chạy ASP.NET Core Minimal API và React static frontend trong cùng process/application origin. `/health` được dùng làm Docker healthcheck cho mode `app`.
 
 ## PostgreSQL remote
 
@@ -83,11 +102,19 @@ BootstrapAdmin__Username=admin
 BootstrapAdmin__Password=change-this-password
 ```
 
+Sau khi đã chạy migration, tạo Admin bằng:
+
+```bash
+docker compose run --rm german-app seed
+```
+
 Sau khi tạo tài khoản đầu tiên, nên đặt lại:
 
 ```text
 BootstrapAdmin__Enabled=false
 ```
+
+Seed hiện tại là idempotent theo bootstrap rule: nếu database đã có tài khoản thì không tạo thêm bootstrap Admin.
 
 ## Xuất Excel sản lượng
 
@@ -137,14 +164,33 @@ Thiết lập connection string:
 export ConnectionStrings__German='Host=db.example.com;Port=5432;Database=german;Username=german;Password=your-password;SSL Mode=Require'
 ```
 
-Build frontend vào `German.Api/wwwroot` rồi chạy API:
+Build frontend vào `German.Api/wwwroot`:
 
 ```bash
 cd src/frontend
 bun install --frozen-lockfile
 bun run build:api
 cd ../backend/German.Api
+```
+
+Chạy từng mode trực tiếp:
+
+```bash
+dotnet run -- migrations
+dotnet run -- seed
+dotnet run -- app
+```
+
+Không truyền mode cũng mặc định là `app`:
+
+```bash
 dotnet run
+```
+
+Có thể truyền ASP.NET host options sau mode, ví dụ:
+
+```bash
+dotnet run -- app --environment Development
 ```
 
 ## Chạy test
@@ -189,7 +235,7 @@ dotnet ef migrations add <MigrationName> \
   --output-dir Persistence/Migrations
 ```
 
-Cập nhật database thủ công:
+Có thể cập nhật database bằng EF tooling:
 
 ```bash
 dotnet ef database update \
@@ -197,13 +243,15 @@ dotnet ef database update \
   --startup-project src/backend/German.Api
 ```
 
+Trong deployment bằng Docker nên dùng start mode `migrations` để image đang deploy tự áp dụng migration của chính nó.
+
 ## Kiến trúc
 
 ```text
 German.Domain          business entities + calculation engine
 German.Application     use cases, authorization rules, validation, application queries/report abstractions
 German.Infrastructure  EF Core/PostgreSQL, password hashing, bootstrap, OpenXML exporter
-German.Api             Minimal API/auth/composition/static frontend host
+German.Api             Minimal API/auth/composition/start modes/static frontend host
 src/frontend           React worker + manager/admin UI theo feature
 ```
 
