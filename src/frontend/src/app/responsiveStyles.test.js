@@ -52,6 +52,12 @@ describe("ERP responsive CSS contract", () => {
     expect(styles).toContain(".mobile-nav-open .erp-nav-label { display: block; }");
   });
 
+  test("hides the desktop collapse control inside tablet and mobile drawers", () => {
+    expect(styles).toMatch(
+      /@media \(max-width: 1023px\)\s*\{\s*\.mobile-nav-open \.erp-sidebar-toggle\s*\{\s*display:\s*none;/s
+    );
+  });
+
   test("uses mobile priority columns and multi-row pagination", () => {
     expect(styles).toContain(".erp-column-mobile-hidden { display: none; }");
     expect(styles).toContain(".erp-pagination { grid-template-columns: 1fr auto; gap: 10px 14px; }");

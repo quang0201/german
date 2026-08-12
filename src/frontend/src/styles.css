@@ -257,6 +257,10 @@
   .erp-filter-fields .erp-field:last-child { grid-column: span 2; }
 }
 
+@media (max-width: 1023px) {
+  .mobile-nav-open .erp-sidebar-toggle { display: none; }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   .erp-sidebar-layer { z-index: 40; display: none; width: 100vw; background: rgb(15 23 42 / 42%); }
   .erp-sidebar-layer.is-open { display: block; }
@@ -308,7 +312,6 @@
   .mobile-nav-open .erp-sidebar-brand { justify-content: flex-start; padding: 0 16px; }
   .mobile-nav-open .erp-sidebar-brand-copy, .mobile-nav-open .erp-nav-label { display: block; }
   .mobile-nav-open .erp-nav-item { justify-content: flex-start; padding: 0 10px; }
-  .mobile-nav-open .erp-sidebar-toggle span { display: inline; }
 }
 
 @media (max-width: 640px) {
