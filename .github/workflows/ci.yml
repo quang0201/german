@@ -48,9 +48,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Test deployment helper
+        run: |
+          bash -n deploy.sh
+          bash -n tests/deploy-script.test.sh
+          bash tests/deploy-script.test.sh
       - name: Validate Compose
         run: |
           cp .env.example .env
-          docker compose config >/dev/null
+          docker compose config > /tmp/german-compose.yml
+          grep -q 'network_mode: host' /tmp/german-compose.yml
+          ! grep -q 'image: postgres' /tmp/german-compose.yml
       - name: Build image
         run: docker build -t german:ci .

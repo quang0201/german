@@ -53,6 +53,30 @@ Các ràng buộc bắt buộc:
 - Deployment dùng cùng một image theo thứ tự `migrations` -> `seed` khi cần -> `app`.
 - Parsing/start-mode orchestration nằm ở `German.Api` vì đây là process/composition concern; business logic không được chuyển vào startup layer.
 
+### Deployment lifecycle và networking
+
+Deployment helper Linux ở root repo (`deploy.sh`) chỉ orchestration các process mode đã có; không được đưa migration/seed trở lại app startup.
+
+`compose.yaml` chỉ có service `german-app`, không có PostgreSQL service. PostgreSQL luôn nằm ngoài Compose project, có thể là:
+
+```text
+127.0.0.1       PostgreSQL trên cùng Linux host
+10.x/172.x/...  PostgreSQL trong LAN
+hostname/domain PostgreSQL remote
+```
+
+`german-app` dùng `network_mode: host` trên Linux. Quyết định này cho phép `127.0.0.1` trong application process truy cập PostgreSQL đang bind trên host loopback, đồng thời vẫn cho phép kết nối tới IP/domain remote. Vì dùng host networking, Compose không publish `ports:`; `APP_PORT` được truyền vào `ASPNETCORE_URLS` và là port bind trực tiếp trên host.
+
+Ràng buộc deployment:
+
+- DB host bỏ trống trong `deploy.sh setup` được chuẩn hóa thành `127.0.0.1`.
+- Loopback mặc định `SSL Mode=Disable`; host remote mặc định `SSL Mode=Require`.
+- `.env` là secret runtime, git-ignored, do helper tạo với mode `0600`.
+- `deploy` chỉ build/start app và health-check; không tự migrate/seed.
+- `update` chỉ fast-forward branch `dev` từ `origin/dev`, không checkout/merge `main`, không tự seed.
+- `update` dừng app trước migration; nếu migration thất bại thì app mới không được start.
+- Hướng dẫn vận hành chi tiết nằm ở `docs/DEPLOYMENT.md`; file này chỉ giữ contract kiến trúc.
+
 ## 2. Persistence
 
 - Entity mapping và migration nằm trong `German.Infrastructure/Persistence`.
@@ -124,6 +148,7 @@ feat/*, fix/*, review/*
 - endpoint không query EF/DbContext trực tiếp;
 - OpenXML không rò khỏi Infrastructure;
 - process lifecycle giữ tách biệt `migrations` / `seed` / `app`;
+- deployment Compose giữ host networking, không publish bridge port và không thêm PostgreSQL service;
 - production-entry feature không phụ thuộc ngược vào manager internals.
 
 Khi thêm một layer/module mới, cập nhật guardrails thay vì bỏ hoặc nới test để đi vòng kiến trúc.
@@ -139,5 +164,6 @@ Trước khi merge vào `dev`:
 - persistence mapping/FK/migration phù hợp;
 - không có dependency ngược giữa layers/features;
 - process start mode không trộn migration/seed vào app runtime;
+- deployment không thêm database service hoặc bridge behavior phá host-local PostgreSQL contract ngoài ý muốn;
 - build + backend tests + frontend tests + architecture tests xanh;
 - nếu thay đổi architecture contract, phải nêu rõ lý do trong review và cập nhật tài liệu này.
