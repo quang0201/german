@@ -61,32 +61,29 @@ builder.Services.AddAuthorizationBuilder()
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Testing"))
+switch (startMode)
 {
-    switch (startMode)
+    case StartMode.Migrations:
     {
-        case StartMode.Migrations:
-        {
-            using var scope = app.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<GermanDbContext>();
-            await db.Database.MigrateAsync();
-            return;
-        }
-        case StartMode.Seed:
-        {
-            using var scope = app.Services.CreateScope();
-            var bootstrapOptions = builder.Configuration
-                .GetSection("BootstrapAdmin")
-                .Get<BootstrapAdminOptions>() ?? new BootstrapAdminOptions();
-            var bootstrapSeeder = scope.ServiceProvider.GetRequiredService<BootstrapAdminSeeder>();
-            await bootstrapSeeder.SeedAsync(bootstrapOptions, CancellationToken.None);
-            return;
-        }
-        case StartMode.App:
-            break;
-        default:
-            throw new InvalidOperationException($"Unsupported start mode: {startMode}.");
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<GermanDbContext>();
+        await db.Database.MigrateAsync();
+        return;
     }
+    case StartMode.Seed:
+    {
+        using var scope = app.Services.CreateScope();
+        var bootstrapOptions = builder.Configuration
+            .GetSection("BootstrapAdmin")
+            .Get<BootstrapAdminOptions>() ?? new BootstrapAdminOptions();
+        var bootstrapSeeder = scope.ServiceProvider.GetRequiredService<BootstrapAdminSeeder>();
+        await bootstrapSeeder.SeedAsync(bootstrapOptions, CancellationToken.None);
+        return;
+    }
+    case StartMode.App:
+        break;
+    default:
+        throw new InvalidOperationException($"Unsupported start mode: {startMode}.");
 }
 
 app.UseDefaultFiles();
