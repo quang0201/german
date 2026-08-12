@@ -1,0 +1,11 @@
+.git
+.github
+.worktrees
+**/bin
+**/obj
+**/node_modules
+src/frontend/dist
+src/backend/German.Api/wwwroot
+.env
+.env.*
+!.env.example

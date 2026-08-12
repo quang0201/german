@@ -43,6 +43,20 @@ describe("architecture guardrails", () => {
     expect(violations).toEqual([]);
   });
 
+  test("report export keeps OpenXML in Infrastructure", () => {
+    const files = [
+      ...csFiles("src/backend/German.Application/Reports"),
+      ...csFiles("src/backend/German.Api/Endpoints"),
+    ];
+    const forbidden = ["DocumentFormat.OpenXml", "German.Infrastructure.Excel", "OpenXmlProductionReportExporter"];
+    const violations = files
+      .flatMap((path) => forbidden.filter((token) => read(path).includes(token)).map((token) => `${path}: ${token}`));
+
+    expect(violations).toEqual([]);
+    expect(read("src/backend/German.Application/German.Application.csproj")).not.toContain("DocumentFormat.OpenXml");
+    expect(read("src/backend/German.Infrastructure/German.Infrastructure.csproj")).toContain("DocumentFormat.OpenXml");
+  });
+
   test("production entry feature does not depend on manager feature internals", () => {
     const violations = readdirSync(resolve(repoRoot, "src/frontend/src/features/production-entries"), { withFileTypes: true })
       .filter((entry) => entry.isFile() && /\.(js|jsx)$/.test(entry.name))

@@ -5,6 +5,7 @@ using German.Application.Employees;
 using German.Application.Lookups;
 using German.Application.ProductionEntries;
 using German.Application.ProductionOrders;
+using German.Application.Reports;
 using German.Application.Shifts;
 using German.Domain.Auth;
 using German.Infrastructure;
@@ -16,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGermanInfrastructure(builder.Configuration);
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<ProductionEntryService>();
@@ -24,6 +26,7 @@ builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<ShiftTemplateService>();
 builder.Services.AddScoped<ProductionOrderService>();
 builder.Services.AddScoped<LookupService>();
+builder.Services.AddScoped<ProductionReportService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -82,6 +85,7 @@ app.MapLookupEndpoints();
 app.MapEmployeeEndpoints();
 app.MapShiftTemplateEndpoints();
 app.MapProductionOrderAdminEndpoints();
+app.MapReportEndpoints();
 app.MapFallbackToFile("index.html");
 
 app.Run();
