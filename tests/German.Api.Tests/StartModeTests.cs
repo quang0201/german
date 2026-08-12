@@ -49,9 +49,14 @@ public sealed class StartModeTests
     [TestMethod]
     public void Parse_UnknownMode_Throws()
     {
-        var exception = Assert.ThrowsExactly<InvalidOperationException>(
-            () => StartModeParser.Parse(["unknown"]));
-
-        StringAssert.Contains(exception.Message, "unknown");
+        try
+        {
+            _ = StartModeParser.Parse(["unknown"]);
+            Assert.Fail("Expected InvalidOperationException.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            StringAssert.Contains(exception.Message, "unknown");
+        }
     }
 }
