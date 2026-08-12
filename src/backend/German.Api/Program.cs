@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using German.Api.Endpoints;
 using German.Application.Auth;
 using German.Application.Employees;
+using German.Application.Lookups;
 using German.Application.ProductionEntries;
 using German.Application.ProductionOrders;
 using German.Application.Shifts;
@@ -22,6 +23,7 @@ builder.Services.AddScoped<ProductionEntryQueryService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<ShiftTemplateService>();
 builder.Services.AddScoped<ProductionOrderService>();
+builder.Services.AddScoped<LookupService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
