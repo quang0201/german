@@ -37,5 +37,5 @@ public static class StartModeParser
         return args[1..];
     }
 
-    private static bool IsHostOption(string value) => value.StartsWith('-', StringComparison.Ordinal);
+    private static bool IsHostOption(string value) => value.StartsWith("-", StringComparison.Ordinal);
 }
