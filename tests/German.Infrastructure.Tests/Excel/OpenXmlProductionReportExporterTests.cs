@@ -18,9 +18,7 @@ public sealed class OpenXmlProductionReportExporterTests
 
         using var stream = new MemoryStream(bytes);
         using var document = SpreadsheetDocument.Open(stream, false);
-        var worksheetPart = GetProductionWorksheet(document);
-        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
-            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
+        var sheetData = GetSheetData(document);
         var rows = sheetData.Elements<Row>().ToList();
 
         var expectedHeaders = new[]
@@ -39,9 +37,7 @@ public sealed class OpenXmlProductionReportExporterTests
 
         using var stream = new MemoryStream(bytes);
         using var document = SpreadsheetDocument.Open(stream, false);
-        var worksheetPart = GetProductionWorksheet(document);
-        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
-            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
+        var sheetData = GetSheetData(document);
         var dataRow = sheetData.Elements<Row>().Skip(1).Single();
         var cells = dataRow.Elements<Cell>().ToArray();
 
@@ -68,17 +64,26 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.IsTrue(bytes.Length > 0);
         using var stream = new MemoryStream(bytes);
         using var document = SpreadsheetDocument.Open(stream, false);
-        var worksheetPart = GetProductionWorksheet(document);
-        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
-            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
+        var sheetData = GetSheetData(document);
         Assert.AreEqual(1, sheetData.Elements<Row>().Count());
+    }
+
+    private static SheetData GetSheetData(SpreadsheetDocument document)
+    {
+        var worksheetPart = GetProductionWorksheet(document);
+        var worksheet = worksheetPart.Worksheet
+            ?? throw new AssertFailedException("Worksheet root is missing.");
+        return worksheet.GetFirstChild<SheetData>()
+            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
     }
 
     private static WorksheetPart GetProductionWorksheet(SpreadsheetDocument document)
     {
         var workbookPart = document.WorkbookPart
             ?? throw new AssertFailedException("WorkbookPart is missing.");
-        var sheets = workbookPart.Workbook.Sheets
+        var workbook = workbookPart.Workbook
+            ?? throw new AssertFailedException("Workbook root is missing.");
+        var sheets = workbook.Sheets
             ?? throw new AssertFailedException("Workbook Sheets collection is missing.");
         var sheet = sheets.Elements<Sheet>().Single(x => x.Name?.Value == "Sản lượng");
         var relationshipId = sheet.Id?.Value
