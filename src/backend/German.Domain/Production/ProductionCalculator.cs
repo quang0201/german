@@ -25,24 +25,30 @@ public static class ProductionCalculator
 
     private static ProductionCalculationResult CalculateByShift(ProductionCalculationInput input)
     {
-        var hc = (input.Shift1Quantity ?? 0m) + (input.Shift2Quantity ?? 0m);
-        decimal tc;
+        var total = (input.Shift1Quantity ?? 0m) + (input.Shift2Quantity ?? 0m);
 
         if (input.OvertimeQuantity.HasValue)
         {
-            tc = input.OvertimeQuantity.Value;
-        }
-        else if ((input.OvertimeHours ?? 0m) > 0m)
-        {
-            EnsureHcHours(input.HcHours);
-            tc = RoundQuantity(hc / input.HcHours * input.OvertimeHours!.Value);
-        }
-        else
-        {
-            tc = 0m;
+            var tc = input.OvertimeQuantity.Value;
+            if (tc > total)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(input.OvertimeQuantity),
+                    "Actual overtime quantity cannot be greater than the reported shift total.");
+            }
+
+            return new ProductionCalculationResult(total - tc, tc, total);
         }
 
-        return new ProductionCalculationResult(hc, tc, hc + tc);
+        var overtimeHours = input.OvertimeHours ?? 0m;
+        if (overtimeHours <= 0m)
+        {
+            return new ProductionCalculationResult(total, 0m, total);
+        }
+
+        EnsureHcHours(input.HcHours);
+        var hc = RoundQuantity(total * input.HcHours / (input.HcHours + overtimeHours));
+        return new ProductionCalculationResult(hc, total - hc, total);
     }
 
     private static ProductionCalculationResult CalculateDirect(ProductionCalculationInput input)
