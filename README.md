@@ -15,37 +15,42 @@ MVP nhập và quản lý sản lượng sản xuất. Backend dùng .NET 10 + E
 - Admin tạo tài khoản nội bộ.
 - Audit log khi Manager/Admin sửa hoặc xóa sản lượng.
 - Manager/Admin xuất báo cáo sản lượng `.xlsx` bằng OpenXML.
-- Có Docker/Compose production runtime một container app, kết nối PostgreSQL remote.
+- Docker runtime một container app, kết nối PostgreSQL ngoài Compose.
 
-## Chạy bằng Docker Compose
+## Deploy trên Linux
 
-Docker Compose không chạy PostgreSQL local. PostgreSQL phải là server remote có thể truy cập từ máy chạy Docker.
+Cách khuyến nghị là dùng helper `deploy.sh`. PostgreSQL không được tạo bởi `compose.yaml`; database có thể ở cùng máy Linux hoặc ở một IP/domain khác.
 
-Tạo file cấu hình:
-
-```bash
-cp .env.example .env
-```
-
-Sửa `.env` với connection string thật, ví dụ:
-
-```text
-APP_PORT=8080
-ConnectionStrings__German=Host=db.example.com;Port=5432;Database=german;Username=german;Password=your-password;SSL Mode=Require
-BootstrapAdmin__Enabled=false
-BootstrapAdmin__Username=admin
-BootstrapAdmin__Password=change-this-password
-```
-
-Không commit `.env`. Repo chỉ lưu `.env.example`.
-
-Build image:
+Deploy lần đầu:
 
 ```bash
-docker compose build german-app
+./deploy.sh setup
+./deploy.sh migrate
+./deploy.sh seed      # chỉ khi BootstrapAdmin__Enabled=true
+./deploy.sh deploy
 ```
 
-Container có ba start mode độc lập:
+Các lệnh hỗ trợ:
+
+```bash
+./deploy.sh setup
+./deploy.sh migrate
+./deploy.sh seed
+./deploy.sh deploy
+./deploy.sh update
+./deploy.sh status
+./deploy.sh logs
+```
+
+Nếu để trống PostgreSQL host trong `setup`, script dùng `127.0.0.1` và mặc định `SSL Mode=Disable`. Nếu nhập IP/domain khác, mặc định là `SSL Mode=Require`.
+
+Compose dùng Linux host networking. Vì vậy `APP_PORT` là port ASP.NET Core bind trực tiếp trên host; mặc định `8080`.
+
+Tài liệu vận hành đầy đủ: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+### Start modes
+
+Container có ba mode độc lập:
 
 ```text
 migrations  chỉ áp dụng EF Core migrations rồi exit
@@ -53,65 +58,76 @@ seed        chỉ chạy bootstrap seed rồi exit
 app         chỉ chạy ASP.NET Core + React, không tự migrate/seed
 ```
 
-Docker image mặc định dùng mode `app`.
+Docker image mặc định dùng `app`.
 
-Quy trình deploy:
+Các lệnh Docker Compose cấp thấp tương đương:
 
 ```bash
 docker compose build german-app
-docker compose run --rm german-app migrations
-docker compose run --rm german-app seed   # chỉ khi cần seed/bootstrap
-docker compose up -d german-app
+docker compose run --rm --no-deps german-app migrations
+docker compose run --rm --no-deps german-app seed
+docker compose up -d --force-recreate german-app
 ```
 
-Nếu migration thất bại thì không chạy bước `app`. `seed` không tự chạy migration; database phải có schema phù hợp trước.
+Nếu migration thất bại thì không chạy app mới. `seed` không tự chạy migration; database phải có schema phù hợp trước.
 
 Xem log:
 
 ```bash
-docker compose logs -f german-app
+./deploy.sh logs
 ```
 
-Dừng app:
+Kiểm tra health mặc định:
 
 ```bash
-docker compose down
+curl http://127.0.0.1:8080/health
 ```
 
-Mặc định app được publish tại port `8080`. Có thể thay bằng `APP_PORT` trong `.env`.
+## PostgreSQL
 
-Container chạy ASP.NET Core Minimal API và React static frontend trong cùng process/application origin. `/health` được dùng làm Docker healthcheck cho mode `app`.
-
-## PostgreSQL remote
-
-Biến cấu hình bắt buộc:
+Biến cấu hình ứng dụng:
 
 ```text
 ConnectionStrings__German
 ```
 
-Server PostgreSQL cần cho phép kết nối từ Docker host. Nên bật SSL/TLS theo cấu hình của nhà cung cấp database.
+Ví dụ PostgreSQL cùng máy host:
+
+```text
+ConnectionStrings__German=Host=127.0.0.1;Port=5432;Database=german;Username=german;Password=your-password;SSL Mode=Disable
+```
+
+Ví dụ PostgreSQL remote:
+
+```text
+ConnectionStrings__German=Host=db.example.com;Port=5432;Database=german;Username=german;Password=your-password;SSL Mode=Require
+```
+
+Server PostgreSQL cần cho phép kết nối từ máy deploy. Với kết nối remote nên bật SSL/TLS theo cấu hình của nhà cung cấp/database server.
 
 ## Tạo Admin đầu tiên
 
 Bootstrap chỉ tạo Admin khi database chưa có tài khoản nào và `BootstrapAdmin__Enabled=true`. Không có mật khẩu production mặc định trong code.
 
+`./deploy.sh setup` có thể tạo cấu hình bootstrap:
+
 ```text
 BootstrapAdmin__Enabled=true
 BootstrapAdmin__Username=admin
-BootstrapAdmin__Password=change-this-password
+BootstrapAdmin__Password=<secret>
 ```
 
-Sau khi đã chạy migration, tạo Admin bằng:
+Sau khi migration thành công:
 
 ```bash
-docker compose run --rm german-app seed
+./deploy.sh seed
 ```
 
 Sau khi tạo tài khoản đầu tiên, nên đặt lại:
 
 ```text
 BootstrapAdmin__Enabled=false
+BootstrapAdmin__Password=
 ```
 
 Seed hiện tại là idempotent theo bootstrap rule: nếu database đã có tài khoản thì không tạo thêm bootstrap Admin.
@@ -215,6 +231,14 @@ bun test
 bun run build
 ```
 
+Deployment helper:
+
+```bash
+bash -n deploy.sh
+bash -n tests/deploy-script.test.sh
+bash tests/deploy-script.test.sh
+```
+
 Docker validation:
 
 ```bash
@@ -243,7 +267,7 @@ dotnet ef database update \
   --startup-project src/backend/German.Api
 ```
 
-Trong deployment bằng Docker nên dùng start mode `migrations` để image đang deploy tự áp dụng migration của chính nó.
+Trong deployment bằng Docker nên dùng `./deploy.sh migrate` để image đang deploy tự áp dụng migration của chính nó.
 
 ## Kiến trúc
 
@@ -255,7 +279,7 @@ German.Api             Minimal API/auth/composition/start modes/static frontend 
 src/frontend           React worker + manager/admin UI theo feature
 ```
 
-Architecture contract bắt buộc nằm tại [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). CI có architecture tests để chặn dependency đi ngược tầng, endpoint truy cập persistence trực tiếp và OpenXML rò khỏi Infrastructure.
+Architecture contract bắt buộc nằm tại [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). CI có architecture tests để chặn dependency đi ngược tầng, endpoint truy cập persistence trực tiếp, OpenXML rò khỏi Infrastructure và deployment lifecycle/networking bị thay đổi ngoài ý muốn.
 
 ## Branch workflow
 
