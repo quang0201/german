@@ -4,7 +4,7 @@ import { navigate } from "./navigation.js";
 export function Breadcrumbs({ items = [] }) {
   if (!items.length) return null;
   return (
-    <nav className="mb-4 flex items-center gap-2 text-xs text-slate-500" aria-label="Breadcrumb">
+    <nav className="mb-4 flex items-center gap-2 text-xs text-slate-500" aria-label="Điều hướng phân cấp">
       {items.map((item, index) => (
         <React.Fragment key={`${item.label}-${index}`}>
           {index > 0 && <span aria-hidden="true">/</span>}

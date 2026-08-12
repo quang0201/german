@@ -3,7 +3,7 @@ import { displayName } from "./session.js";
 import { roleLabel } from "../lib/i18n.js";
 
 export function Topbar({ session, breadcrumbs = [], onLogout, onMenu }) {
-  const context = breadcrumbs.at(-1)?.label || "German";
+  const context = breadcrumbs.at(-1)?.label || "Hệ thống sản xuất";
   return (
     <header className="erp-topbar">
       <button type="button" className="erp-mobile-menu" onClick={onMenu} aria-label="Mở menu">☰</button>
