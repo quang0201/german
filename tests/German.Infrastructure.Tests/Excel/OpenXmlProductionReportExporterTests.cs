@@ -18,10 +18,10 @@ public sealed class OpenXmlProductionReportExporterTests
 
         using var stream = new MemoryStream(bytes);
         using var document = SpreadsheetDocument.Open(stream, false);
-        var workbookPart = document.WorkbookPart!;
-        var sheet = workbookPart.Workbook.Sheets!.Elements<Sheet>().Single(x => x.Name == "Sản lượng");
-        var worksheetPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!);
-        var rows = worksheetPart.Worksheet.GetFirstChild<SheetData>()!.Elements<Row>().ToList();
+        var worksheetPart = GetProductionWorksheet(document);
+        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
+            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
+        var rows = sheetData.Elements<Row>().ToList();
 
         var expectedHeaders = new[]
         {
@@ -39,19 +39,21 @@ public sealed class OpenXmlProductionReportExporterTests
 
         using var stream = new MemoryStream(bytes);
         using var document = SpreadsheetDocument.Open(stream, false);
-        var sheet = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>().Single(x => x.Name == "Sản lượng");
-        var worksheetPart = (WorksheetPart)document.WorkbookPart.GetPartById(sheet.Id!);
-        var dataRow = worksheetPart.Worksheet.GetFirstChild<SheetData>()!.Elements<Row>().Skip(1).Single();
+        var worksheetPart = GetProductionWorksheet(document);
+        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
+            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
+        var dataRow = sheetData.Elements<Row>().Skip(1).Single();
         var cells = dataRow.Elements<Cell>().ToArray();
 
         foreach (var index in new[] { 8, 9, 10, 11 })
         {
-            Assert.IsTrue(cells[index].DataType is null || cells[index].DataType!.Value == CellValues.Number);
+            var dataType = cells[index].DataType?.Value;
+            Assert.IsTrue(dataType is null || dataType == CellValues.Number);
         }
-        Assert.AreEqual("100", cells[8].CellValue!.Text);
-        Assert.AreEqual("20", cells[9].CellValue!.Text);
-        Assert.AreEqual("120", cells[10].CellValue!.Text);
-        Assert.AreEqual("2", cells[11].CellValue!.Text);
+        Assert.AreEqual("100", cells[8].CellValue?.Text);
+        Assert.AreEqual("20", cells[9].CellValue?.Text);
+        Assert.AreEqual("120", cells[10].CellValue?.Text);
+        Assert.AreEqual("2", cells[11].CellValue?.Text);
     }
 
     [TestMethod]
@@ -66,9 +68,22 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.IsTrue(bytes.Length > 0);
         using var stream = new MemoryStream(bytes);
         using var document = SpreadsheetDocument.Open(stream, false);
-        var sheet = document.WorkbookPart!.Workbook.Sheets!.Elements<Sheet>().Single(x => x.Name == "Sản lượng");
-        var worksheetPart = (WorksheetPart)document.WorkbookPart.GetPartById(sheet.Id!);
-        Assert.AreEqual(1, worksheetPart.Worksheet.GetFirstChild<SheetData>()!.Elements<Row>().Count());
+        var worksheetPart = GetProductionWorksheet(document);
+        var sheetData = worksheetPart.Worksheet.GetFirstChild<SheetData>()
+            ?? throw new AssertFailedException("Worksheet does not contain SheetData.");
+        Assert.AreEqual(1, sheetData.Elements<Row>().Count());
+    }
+
+    private static WorksheetPart GetProductionWorksheet(SpreadsheetDocument document)
+    {
+        var workbookPart = document.WorkbookPart
+            ?? throw new AssertFailedException("WorkbookPart is missing.");
+        var sheets = workbookPart.Workbook.Sheets
+            ?? throw new AssertFailedException("Workbook Sheets collection is missing.");
+        var sheet = sheets.Elements<Sheet>().Single(x => x.Name?.Value == "Sản lượng");
+        var relationshipId = sheet.Id?.Value
+            ?? throw new AssertFailedException("Production sheet relationship id is missing.");
+        return (WorksheetPart)workbookPart.GetPartById(relationshipId);
     }
 
     private static ProductionReportData CreateReport() => new(
