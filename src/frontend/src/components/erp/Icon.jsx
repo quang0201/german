@@ -9,6 +9,9 @@ const paths = {
   reports: <><path d="M5 19V9M12 19V5M19 19v-7" /><path d="M3 19h18" /></>,
   accounts: <><circle cx="12" cy="8" r="3" /><path d="M5 21a7 7 0 0 1 14 0M19 8h3M20.5 6.5v3" /></>,
   audit: <><path d="M5 5h14M5 12h14M5 19h14" /><circle cx="3" cy="5" r=".8" fill="currentColor" /><circle cx="3" cy="12" r=".8" fill="currentColor" /><circle cx="3" cy="19" r=".8" fill="currentColor" /></>,
+  menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
+  logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" /></>,
   chevronLeft: <path d="m15 18-6-6 6-6" />,
   chevronRight: <path d="m9 18 6-6-6-6" />,
 };

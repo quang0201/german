@@ -10,4 +10,16 @@ describe("ERP icons", () => {
     expect(html).toContain('aria-label="Sản lượng"');
     expect(html).not.toContain("▤");
   });
+
+  test("provides distinct shell icons for menu search and logout", () => {
+    const production = renderToString(React.createElement(Icon, { name: "production" }));
+    const menu = renderToString(React.createElement(Icon, { name: "menu" }));
+    const search = renderToString(React.createElement(Icon, { name: "search" }));
+    const logout = renderToString(React.createElement(Icon, { name: "logout" }));
+
+    expect(menu).not.toBe(production);
+    expect(search).not.toBe(production);
+    expect(logout).not.toBe(production);
+    expect(new Set([menu, search, logout]).size).toBe(3);
+  });
 });
