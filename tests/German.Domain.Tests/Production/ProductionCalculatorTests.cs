@@ -7,7 +7,7 @@ namespace German.Domain.Tests.Production;
 public sealed class ProductionCalculatorTests
 {
     [TestMethod]
-    public void ByShift_WithoutOvertime_UsesShiftQuantitiesAsHc()
+    public void ByShift_WithoutOvertime_UsesShiftTotalAsHc()
     {
         var result = ProductionCalculator.Calculate(new ProductionCalculationInput(
             ProductionEntryMode.ByShift,
@@ -21,7 +21,7 @@ public sealed class ProductionCalculatorTests
     }
 
     [TestMethod]
-    public void ByShift_WithOvertimeHours_CalculatesTcFromConfiguredHcHours()
+    public void ByShift_WithOvertimeHours_SplitsShiftTotalUsingConfiguredHcHours()
     {
         var result = ProductionCalculator.Calculate(new ProductionCalculationInput(
             ProductionEntryMode.ByShift,
@@ -30,13 +30,13 @@ public sealed class ProductionCalculatorTests
             Shift2Quantity: 120m,
             OvertimeHours: 2m));
 
-        Assert.AreEqual(430m, result.Hc);
-        Assert.AreEqual(96m, result.Tc);
-        Assert.AreEqual(526m, result.Total);
+        Assert.AreEqual(352m, result.Hc);
+        Assert.AreEqual(78m, result.Tc);
+        Assert.AreEqual(430m, result.Total);
     }
 
     [TestMethod]
-    public void ByShift_WithActualOvertimeQuantity_PrefersActualQuantity()
+    public void ByShift_WithActualOvertimeQuantity_TreatsActualTcAsPartOfShiftTotal()
     {
         var result = ProductionCalculator.Calculate(new ProductionCalculationInput(
             ProductionEntryMode.ByShift,
@@ -46,9 +46,21 @@ public sealed class ProductionCalculatorTests
             OvertimeHours: 2m,
             OvertimeQuantity: 108m));
 
-        Assert.AreEqual(430m, result.Hc);
+        Assert.AreEqual(322m, result.Hc);
         Assert.AreEqual(108m, result.Tc);
-        Assert.AreEqual(538m, result.Total);
+        Assert.AreEqual(430m, result.Total);
+    }
+
+    [TestMethod]
+    public void ByShift_WithActualOvertimeGreaterThanTotal_Throws()
+    {
+        Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+            ProductionCalculator.Calculate(new ProductionCalculationInput(
+                ProductionEntryMode.ByShift,
+                HcHours: 9m,
+                Shift1Quantity: 50m,
+                Shift2Quantity: 50m,
+                OvertimeQuantity: 101m)));
     }
 
     [TestMethod]
