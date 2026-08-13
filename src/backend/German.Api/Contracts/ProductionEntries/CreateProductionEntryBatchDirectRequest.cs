@@ -1,4 +1,15 @@
 namespace German.Api.Contracts.ProductionEntries;
 
-public sealed record CreateProductionEntryBatchDirectItemRequest(Guid ProductionOperationId, decimal? DirectHcQuantity, decimal? DirectTcQuantity, string? Note);
-public sealed record CreateProductionEntryBatchDirectRequest(DateOnly WorkDate, Guid EmployeeId, Guid ProductionOrderId, IReadOnlyList<CreateProductionEntryBatchDirectItemRequest> Items);
+public sealed record CreateProductionEntryBatchDirectItemRequest(
+    Guid ProductionOperationId,
+    decimal? DirectHcQuantity,
+    decimal? DirectTcQuantity,
+    string? Note);
+
+public sealed class CreateProductionEntryBatchDirectRequest
+{
+    public DateOnly WorkDate { get; init; }
+    public Guid EmployeeId { get; init; }
+    public Guid ProductionOrderId { get; init; }
+    public IReadOnlyList<CreateProductionEntryBatchDirectItemRequest> Items { get; init; } = Array.Empty<CreateProductionEntryBatchDirectItemRequest>();
+}
