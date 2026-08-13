@@ -53,7 +53,7 @@ export function ProductionEntryGroupedTable({
         </thead>
         {groups.map((group, groupIndex) => (
           <tbody key={`${group.workDate}-${groupIndex}`} aria-label={multiDay ? `Ngày ${formatDisplayDate(group.workDate)}` : undefined}>
-            {multiDay && <tr className="erp-production-date-group"><th colSpan={columns.length} scope="rowgroup">{formatDisplayDate(group.workDate)} <span>{group.rows.length} bản ghi</span></th></tr>}
+            {multiDay && <tr className="erp-production-date-group"><th colSpan={columns.length} scope="rowgroup">{formatDisplayDate(group.workDate)} <span>{group.rows.length} bản ghi trên trang này</span></th></tr>}
             {group.rows.map((row) => {
               const key = typeof rowKey === "function" ? rowKey(row) : row[rowKey];
               const selected = selectedRowKey !== undefined && String(selectedRowKey) === String(key);

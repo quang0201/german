@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using German.Application.Reports;
+using German.Domain.Production;
 
 namespace German.Infrastructure.Excel;
 
@@ -175,10 +176,18 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             NumberCell(data.TcQuantity),
             NumberCell(data.TotalQuantity),
             data.OvertimeHours.HasValue ? NumberCell(data.OvertimeHours.Value) : TextCell(string.Empty),
-            TextCell(data.EntryMode.ToString()),
+            TextCell(EntryModeLabel(data.EntryMode)),
             TextCell(data.Note ?? string.Empty));
         return row;
     }
+
+    private static string EntryModeLabel(ProductionEntryMode entryMode) => entryMode switch
+    {
+        ProductionEntryMode.ByShift => "Theo ca",
+        ProductionEntryMode.Direct => "HC / TC trực tiếp",
+        ProductionEntryMode.TotalWithOvertime => "Tổng + giờ tăng ca",
+        _ => entryMode.ToString()
+    };
 
     private static void AppendRow(SheetData sheetData, uint rowIndex, params Cell[] cells)
     {

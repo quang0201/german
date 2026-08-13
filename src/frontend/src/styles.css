@@ -221,6 +221,12 @@
 .erp-dialog { width: min(420px, 100%); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-panel); padding: 20px; outline: none; }
 .erp-dialog h2 { margin: 0; font-size: 18px; }
 .erp-dialog-body { margin-top: 10px; color: var(--color-text-muted); font-size: 14px; line-height: 1.5; }
+.erp-export-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.erp-export-presets [aria-pressed="true"] { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-hover); }
+.erp-export-date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.erp-export-date-fields label { display: grid; gap: 7px; color: var(--color-text); font-size: 13px; font-weight: 750; }
+.erp-export-range { margin: 16px 0 0; color: var(--color-text); }
+.erp-export-range strong { color: var(--color-primary-strong); }
 .erp-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .erp-toast-stack { position: fixed; z-index: 60; right: 16px; bottom: 16px; display: grid; gap: 8px; width: min(360px, calc(100vw - 32px)); }
 .erp-toast { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--color-border); border-left: 4px solid var(--color-primary); border-radius: var(--radius-sm); background: var(--color-surface); box-shadow: var(--shadow-panel); padding: 12px; font-size: 13px; }

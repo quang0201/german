@@ -12,6 +12,8 @@ import { ProductionEntryDetailPage } from "./ProductionEntryDetailPage.jsx";
 import { ProductionEntryGroupedTable } from "./ProductionEntryGroupedTable.jsx";
 import { PeriodSelector } from "./PeriodSelector.jsx";
 import { ProductionSummary } from "./ProductionSummary.jsx";
+import { ProductionExportDialog } from "./ProductionExportDialog.jsx";
+import { listRangeError } from "./productionExport.js";
 import { derivePeriodRange, formatDisplayDate, localIsoDate, shiftPeriod } from "./productionPeriod.js";
 import { entryModeLabel } from "../../lib/i18n.js";
 
@@ -23,25 +25,11 @@ function initialFilters(today) {
   return { fromDate: today, untilDate: today, ...emptyBusinessFilters(), page: 1, pageSize: 50 };
 }
 
-function calendarDayNumber(isoDate) {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  return Date.UTC(year, month - 1, day);
-}
-
 function customRangeError(fromDate, untilDate) {
-  if (!fromDate || !untilDate) return "Chọn đầy đủ từ ngày và đến ngày.";
-  if (fromDate > untilDate) return "Từ ngày phải trước hoặc bằng đến ngày.";
-
-  const from = calendarDayNumber(fromDate);
-  const until = calendarDayNumber(untilDate);
-  if ((until - from) / 86_400_000 > 30) return "Khoảng ngày danh sách tối đa 31 ngày.";
-  return "";
+  return listRangeError(fromDate, untilDate);
 }
 
-function exportLabel(periodMode) {
-  if (periodMode === "day") return "Xuất ngày";
-  if (periodMode === "week") return "Xuất tuần";
-  if (periodMode === "month") return "Xuất tháng";
+function exportLabel() {
   return "Xuất Excel";
 }
 
@@ -51,6 +39,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
   const [appliedPeriod, setAppliedPeriod] = useState(() => ({ periodMode: "day", anchorDate: today, customFromDate: today, customUntilDate: today }));
   const [customDraft, setCustomDraft] = useState(() => ({ fromDate: today, untilDate: today }));
   const [isCustomEditing, setIsCustomEditing] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [filters, setFilters] = useState(() => initialFilters(today));
   const [draft, setDraft] = useState(emptyBusinessFilters);
   const [employees, setEmployees] = useState([]);
@@ -160,9 +149,14 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
     setFilters((current) => ({ ...current, page }));
   }
 
-  async function exportRows() {
+  function openExportDialog() {
+    setExportDialogOpen(true);
+  }
+
+  async function exportRows(exportRange) {
     try {
-      await api.download(buildProductionExportUrl(filters), "san-luong.xlsx");
+      await api.download(buildProductionExportUrl({ ...filters, ...exportRange }), "san-luong.xlsx");
+      setExportDialogOpen(false);
       toast.success("Đã chuẩn bị file Excel.");
     } catch (requestError) {
       toast.error(requestError.message || "Không thể xuất Excel.");
@@ -174,7 +168,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
       <PageHeader
         title="Sản lượng"
         description="Theo dõi và quản lý sản lượng sản xuất"
-        actions={!isWorker && <><button type="button" className="erp-button erp-button-secondary" onClick={exportRows}>{exportLabel(appliedPeriod.periodMode)}</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>}
+        actions={!isWorker && <><button type="button" className="erp-button erp-button-secondary" onClick={openExportDialog}>{exportLabel(appliedPeriod.periodMode)}</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>}
       />
       <PeriodSelector
         periodMode={appliedPeriod.periodMode}
@@ -201,6 +195,15 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
       </FilterBar>}
       <ProductionEntryGroupedTable columns={columns} rows={data.items} loading={loading} error={error} density="normal" className={`erp-production-table ${isWorker ? "erp-production-table-worker" : "erp-production-table-manager"}`} emptyMessage="Không có sản lượng phù hợp bộ lọc." rowKey="id" multiDay={filters.fromDate !== filters.untilDate} onRowClick={(row) => { const mobile = window.matchMedia?.("(max-width: 767px)").matches; navigate(`/production/${row.id}`, mobile ? {} : { presentation: "panel", backgroundRoute: "/production" }); }} />
       <Pagination page={data.page} pageSize={filters.pageSize} totalCount={data.totalCount} totalPages={data.totalPages} loading={loading} onPageChange={changePage} onPageSizeChange={(pageSize) => setFilters((current) => ({ ...current, page: 1, pageSize }))} />
+      <ProductionExportDialog
+        open={exportDialogOpen}
+        initialMode={appliedPeriod.periodMode}
+        initialAnchorDate={appliedPeriod.anchorDate}
+        initialFromDate={filters.fromDate}
+        initialUntilDate={filters.untilDate}
+        onClose={() => setExportDialogOpen(false)}
+        onExport={exportRows}
+      />
       <DetailPanel open={Boolean(panelEntryId)} title="Chi tiết sản lượng" onClose={onPanelClose}>
         {panelEntryId && <ProductionEntryDetailPage session={session} entryId={panelEntryId} inPanel onClose={onPanelClose} onChanged={() => setReloadKey((value) => value + 1)} />}
       </DetailPanel>
