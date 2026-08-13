@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { deriveExportRange, exportRangeError } from "./productionExport.js";
+import { formatDisplayDate } from "./productionPeriod.js";
 
 const presets = [
   { key: "day", label: "Ngày" },
@@ -14,6 +15,10 @@ function initialDraft({ initialMode, initialAnchorDate, initialFromDate, initial
     ? { fromDate: initialFromDate, untilDate: initialUntilDate }
     : deriveExportRange({ periodMode: mode, anchorDate: initialAnchorDate, customFromDate: initialFromDate, customUntilDate: initialUntilDate });
   return { periodMode: mode, anchorDate: initialAnchorDate, ...range };
+}
+
+function displayDate(isoDate) {
+  return isoDate ? formatDisplayDate(isoDate) : "—";
 }
 
 export function ProductionExportDialog({
@@ -90,7 +95,7 @@ export function ProductionExportDialog({
               </label>
             </div>
           )}
-          <p className="erp-export-range">Khoảng chọn: <strong>{draft.fromDate || "—"} → {draft.untilDate || "—"}</strong></p>
+          <p className="erp-export-range">Khoảng chọn: <strong>{displayDate(draft.fromDate)} → {displayDate(draft.untilDate)}</strong></p>
           {rangeError && <p className="erp-inline-message erp-inline-error" role="alert">{rangeError}</p>}
         </div>
         <div className="erp-dialog-actions">

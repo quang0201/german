@@ -32,3 +32,7 @@ Checkpoint commits:
 
 - `4366122` — regression tests (RED evidence preserved).
 - `a5042a3` — implementation and GREEN validation.
+
+## Follow-up design-contract fix
+
+The export dialog's visible range now formats ISO values through `formatDisplayDate()` while date inputs and API query values remain ISO. The regression assertion is in `ProductionExportDialog.test.js` and passed with `bun test`.
