@@ -25,6 +25,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<ProductionEntryService>();
 builder.Services.AddScoped<ProductionEntryQueryService>();
+builder.Services.AddScoped<ProductionMonthlyMatrixService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<ShiftTemplateService>();
 builder.Services.AddScoped<ProductionOrderService>();
