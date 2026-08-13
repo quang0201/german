@@ -22,8 +22,9 @@ The approved HTML prototype is represented by the following interaction model:
 - Employee names use row grouping/rowspan semantics. If one employee works three operations, the employee name is rendered once spanning the three operation rows instead of leaving two visually blank employee cells.
 - `Mã SX` and `ĐVT` are not regular table columns.
 - If the month contains multiple production orders, the table uses one shared day header and renders production orders as vertical blocks such as `Mã SX: 0417 — Mã hàng 0417` and `Mã SX: 0521 — Áo 0521`.
-- The month toolbar provides `Tất cả mã SX` plus one compact selector/tab for each production order present in the selected month. Selecting a code hides other blocks without changing the month axis.
-- If only one production order exists in the month, the toolbar can collapse to `08/2026 • Mã SX: 0417`.
+- The month toolbar provides `Tất cả mã SX` plus one compact selector/tab for each production order present in the selected month. Selecting a code filters the already-loaded matrix client-side; it does not change the month axis.
+- The matrix response contains both the overall summary and one summary per production-order block. `Tất cả mã SX` shows the overall summary; selecting `0417` shows the `0417` block summary.
+- If only one production order exists in the month, the toolbar collapses to `08/2026 • Mã SX: 0417`.
 
 ## Month navigation and existing features
 
@@ -31,32 +32,33 @@ Manager/Admin no longer use day/week/custom list periods on the main production 
 
 The existing Excel export action remains and keeps its independent export-range dialog and 366-day export limit. Opening Export from the matrix defaults the export dialog to the currently selected month, but the user may still choose another supported export range.
 
-The existing employee, operation, and search capabilities remain available as compact secondary filters so the redesign does not remove management functionality. Production-order selection is represented by the order block selector rather than a duplicated `Mã SX` table column.
+The existing employee, operation, and search capabilities remain available as compact secondary filters so the redesign does not remove management functionality. Production-order selection is represented by the order-block tabs rather than a duplicated `Mã SX` table column.
 
 ## Monthly matrix query
 
 Add a Manager/Admin-only application query and thin API endpoint dedicated to the matrix instead of trying to page through the existing production-entry list endpoint.
 
-Suggested endpoint:
+Exact endpoint:
 
-`GET /api/production-entries/monthly-matrix?month=2026-08&employeeId=&operationId=&search=&orderId=&excludeSundays=true`
+`GET /api/production-entries/monthly-matrix?month=2026-08&employeeId=&operationId=&search=&excludeSundays=true`
 
 Rules:
 
-- `month` is required and is parsed as a calendar month.
+- `month` is required in `yyyy-MM` form.
 - The backend derives the first and last date of that month.
 - Maximum range is inherently one calendar month.
-- `excludeSundays=true` removes Sunday entries before matrix totals and summary are calculated. FE sends `true` by default; toggling Sunday off/on reloads the matrix so visible columns reconcile with totals.
-- Existing soft-delete, employee, production order, operation, and search semantics are preserved.
+- `excludeSundays=true` removes Sunday entries before matrix totals and summaries are calculated. FE sends `true` by default; toggling Sunday off/on reloads the matrix so visible columns reconcile with totals.
+- Existing soft-delete, employee, operation, and search semantics are preserved.
 - The query returns all rows required for the matrix; it is not paginated.
-- The backend owns grouping data and aggregate values; the frontend owns only presentation grouping/sticky layout.
+- All production orders represented by matching entries in the selected month are returned in one payload; order tabs are client-side filters.
+- The backend owns grouping data and aggregate values; the frontend owns sticky layout and client-side block selection.
 
 The response includes:
 
 - selected month and effective `fromDate`/`untilDate`;
 - `excludeSundays`;
-- summary: employee count, entry count, HC, TC, total;
-- production-order blocks with order id/code/product name;
+- overall summary: employee count, entry count, HC, TC, total;
+- production-order blocks with order id/code/product name and block summary;
 - employee groups within each order;
 - operation rows within each employee;
 - day cells with aggregate HC/TC/total and edit metadata;
@@ -75,7 +77,7 @@ Each cell returns `entryCount` and enough metadata for safe interaction:
 - `entryCount = 0`: empty cell; quick create is allowed.
 - `entryCount = 1` and the entry is `Direct`: quick HC/TC edit is allowed and carries `entryId` + `version` for optimistic concurrency.
 - `entryCount = 1` and the entry uses `ByShift` or `TotalWithOvertime`: the matrix shows the calculated HC/TC aggregate, but clicking it opens the existing full entry edit/detail flow so its original input semantics are preserved.
-- `entryCount > 1`: the matrix shows the aggregate plus a small multiple-record indicator. Direct aggregate overwrite is forbidden. Clicking opens a compact cell-detail chooser listing the underlying records; selecting a record opens the existing detail/edit flow.
+- `entryCount > 1`: the matrix shows the aggregate plus a small multiple-record indicator. Direct aggregate overwrite is forbidden. Clicking opens `ProductionMatrixCellRecordsDialog`, which lists the underlying record ids, entry modes, HC/TC/total and provides `Xem/Sửa` per record through the existing detail/edit flow.
 
 No database uniqueness migration is introduced in this feature.
 
@@ -121,7 +123,7 @@ Example selection `CĐ4`, `CĐ5`, `CĐ6`, `CĐ100` produces four independent Dir
 
 Do not implement batch save as independent frontend POST loops because that can leave a partially saved day.
 
-Add a Manager/Admin-only batch endpoint and application service operation. Suggested endpoint:
+Add an exact Manager/Admin-only endpoint:
 
 `POST /api/production-entries/batch-direct`
 
@@ -142,9 +144,9 @@ Rules:
 - HC/TC validation and authoritative totals stay server-side and reuse ProductionCalculator/service logic; no calculator rewrite.
 - Before staging writes, the service checks the matrix key for every selected operation.
 - Batch input is a safe create operation: if any selected key already has one or more active production entries, the whole batch fails with a conflict identifying the operations that already contain data. The user edits those cells individually instead of accidentally creating duplicates.
-- All validations complete before entities are staged.
-- All new entities are saved by one `SaveChangesAsync`, so a validation/concurrency failure does not create a partially completed batch.
-- The response returns the created entries/count so FE can show a success toast, then reload the matrix.
+- All validations and calculations complete before entities are staged.
+- All new entities are saved by one `SaveChangesAsync`; no item is saved if validation/conflict detection fails for another item.
+- The response returns created entries/count so FE can show a success toast, then reload the matrix.
 
 This keeps the header workflow predictable: it is for entering several new operations for one employee/day/order, while existing production is edited through cells.
 
@@ -156,20 +158,27 @@ This keeps the header workflow predictable: it is for entering several new opera
 - Cell update/delete: Manager/Admin only, preserving current server authorization.
 - Server authorization remains authoritative; hiding actions on FE is UX only.
 
-## Frontend components
+## Frontend composition
 
 Keep the existing feature boundary under `src/frontend/src/features/production-entries`.
 
-Recommended components:
+`ProductionEntryListPage` becomes a thin role dispatcher:
 
-- `ProductionMonthlyMatrixPage` or a Manager/Admin branch inside `ProductionEntryListPage` for composition and data loading.
-- `ProductionMonthNavigator` for previous/current/next month.
-- `ProductionMonthlyMatrix` for sticky headers, order blocks, employee rowspan groups, day cells, and totals.
-- `ProductionMatrixQuickEntryDialog` for one empty/Direct cell.
-- `ProductionMatrixBatchEntryDialog` for day-header multi-operation entry.
-- `ProductionMatrixCellRecordsDialog` only for aggregate cells containing multiple records.
+- Worker -> existing list implementation, behavior preserved.
+- Manager/Admin -> `ProductionMonthlyMatrixPage`.
 
-Prefer focused helpers for month/date-axis generation and matrix query serialization so they can be unit tested without adding a UI testing dependency.
+The existing Worker list logic is moved into a focused internal/component file without changing its API calls or UX. This prevents Manager matrix effects from running together with legacy list effects.
+
+New focused components:
+
+- `ProductionMonthlyMatrixPage` — month state, secondary filters, matrix loading, export integration and dialog coordination.
+- `ProductionMonthNavigator` — previous/current/next month.
+- `ProductionMonthlyMatrix` — sticky headers, order blocks, employee rowspan groups, day cells and totals.
+- `ProductionMatrixQuickEntryDialog` — one empty/Direct cell.
+- `ProductionMatrixBatchEntryDialog` — day-header multi-operation entry.
+- `ProductionMatrixCellRecordsDialog` — chooser for aggregate cells with multiple underlying records.
+
+Use focused helpers for month/date-axis generation and matrix query serialization so they can be unit tested without adding a UI testing dependency.
 
 ## Responsive behavior
 
@@ -184,7 +193,7 @@ Desktop is the primary matrix surface.
 
 ## Error and concurrency handling
 
-- Matrix load failure uses the existing ERP error state/toast conventions.
+- Matrix load failure uses existing ERP error-state/toast conventions.
 - Quick edit sends `version`; `production_entry.version_conflict` uses the existing conflict UX and reloads the matrix after the user acknowledges/reloads.
 - Batch conflict lists CĐ numbers already containing data for the selected employee/date/order and saves nothing.
 - Invalid/inactive order or operation is rejected server-side.
@@ -207,8 +216,9 @@ Desktop is the primary matrix surface.
 Application tests:
 
 - matrix month boundaries including February/leap year;
-- Sunday exclusion affects rows and summary consistently;
-- multi-order grouping and employee/operation aggregation;
+- Sunday exclusion affects rows and all summaries consistently;
+- multi-order grouping and per-order summaries;
+- employee/operation aggregation;
 - cell metadata for zero/one/multiple underlying entries;
 - batch validates all operations before saving;
 - batch rejects duplicate operation ids;
@@ -220,20 +230,23 @@ Application tests:
 API tests:
 
 - monthly matrix and batch endpoints require Manager/Admin;
-- query binding and response contract;
+- `yyyy-MM` query binding and validation;
+- matrix response contract;
 - batch conflict and success HTTP mapping.
 
 Frontend tests:
 
 - month navigation/query serialization;
 - Sunday default and toggle;
-- multiple Mã SX blocks and order filtering;
+- multiple Mã SX blocks and client-side order selection;
+- summary switches between overall and selected-order summary;
 - employee rowspan model;
 - day header opens batch dialog with fixed date;
 - changing Mã SX reloads available operations;
 - selecting multiple operations creates independent HC/TC rows;
 - single-cell zero/one/multiple-entry interaction decisions;
-- successful writes trigger reload.
+- successful writes trigger reload;
+- Worker screen remains on existing list flow.
 
 Regression verification:
 
