@@ -7,7 +7,6 @@ using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
 using German.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -138,13 +137,17 @@ public sealed class ReportExportSundayApiTests
         using var document = SpreadsheetDocument.Open(stream, false);
         var workbookPart = document.WorkbookPart
             ?? throw new AssertFailedException("Workbook part is missing.");
-        var sheet = workbookPart.Workbook.Sheets?.Elements<Sheet>()
+        var workbook = workbookPart.Workbook
+            ?? throw new AssertFailedException("Workbook root is missing.");
+        var sheet = workbook.Sheets?.Elements<Sheet>()
             .SingleOrDefault(item => item.Name?.Value == sheetName)
             ?? throw new AssertFailedException($"Worksheet '{sheetName}' is missing.");
         var relationshipId = sheet.Id?.Value
             ?? throw new AssertFailedException($"Worksheet '{sheetName}' relationship is missing.");
         var worksheetPart = workbookPart.GetPartById(relationshipId) as WorksheetPart
             ?? throw new AssertFailedException($"Worksheet '{sheetName}' part is missing.");
-        return worksheetPart.Worksheet.InnerText;
+        var worksheet = worksheetPart.Worksheet
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' root is missing.");
+        return worksheet.InnerText;
     }
 }
