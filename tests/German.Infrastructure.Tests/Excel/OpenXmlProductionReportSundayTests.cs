@@ -21,8 +21,8 @@ public sealed class OpenXmlProductionReportSundayTests
         CollectionAssert.AreEqual(
             new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08/2026", "T2 17/08/2026", "Tổng HC", "Tổng TC", "Tổng" },
             header);
-        StringAssert.DoesNotContain(sheetData.InnerText, "CN 16/08/2026");
-        StringAssert.DoesNotContain(sheetData.InnerText, "TỔNG THEO CÔNG ĐOẠN");
+        Assert.IsFalse(sheetData.InnerText.Contains("CN 16/08/2026", StringComparison.Ordinal));
+        Assert.IsFalse(sheetData.InnerText.Contains("TỔNG THEO CÔNG ĐOẠN", StringComparison.Ordinal));
 
         var productionRow = rows.Single(row => row.RowIndex!.Value == 6U);
         Assert.AreEqual("30", GetCell(productionRow, "H6").CellValue!.Text);
@@ -104,7 +104,9 @@ public sealed class OpenXmlProductionReportSundayTests
             ?? throw new AssertFailedException($"Worksheet '{sheetName}' relationship is missing.");
         var worksheetPart = workbookPart.GetPartById(relationshipId) as WorksheetPart
             ?? throw new AssertFailedException($"Worksheet '{sheetName}' part is missing.");
-        return worksheetPart.Worksheet.GetFirstChild<SheetData>()
+        var worksheet = worksheetPart.Worksheet
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' root is missing.");
+        return worksheet.GetFirstChild<SheetData>()
             ?? throw new AssertFailedException("SheetData is missing.");
     }
 
