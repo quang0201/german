@@ -41,6 +41,15 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 && (!filter.OperationId.HasValue || entry.ProductionOperationId == filter.OperationId.Value)
             select new { entry, employee, order, operation };
 
+        if (filter.ExcludeSundays)
+        {
+            var sundays = GetSundays(fromDate, untilDate);
+            if (sundays.Length > 0)
+            {
+                query = query.Where(item => !sundays.Contains(item.entry.WorkDate));
+            }
+        }
+
         var search = ProductionEntrySearch.Normalize(filter.Search);
         if (search is not null)
         {
@@ -112,6 +121,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 OperationLabel = await GetOperationLabelAsync(filter.OperationId, cancellationToken),
                 SearchLabel = search?.Text ?? "Tất cả",
                 FinalMetricLabel = filter.OperationId.HasValue ? "Tổng sản lượng" : "Tổng lượt công đoạn",
+                ExcludeSundays = filter.ExcludeSundays,
                 Summary = summary,
                 ByDay = byDay,
                 ByEmployee = byEmployee
@@ -160,4 +170,21 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
         return operation is null ? "Tất cả" : $"CĐ{operation.OperationNumber} — {operation.Name}";
     }
 
+    private static DateOnly[] GetSundays(DateOnly fromDate, DateOnly untilDate)
+    {
+        var daysUntilSunday = ((int)DayOfWeek.Sunday - (int)fromDate.DayOfWeek + 7) % 7;
+        var firstSunday = fromDate.AddDays(daysUntilSunday);
+        if (firstSunday > untilDate)
+        {
+            return [];
+        }
+
+        var result = new List<DateOnly>();
+        for (var date = firstSunday; date <= untilDate; date = date.AddDays(7))
+        {
+            result.Add(date);
+        }
+
+        return result.ToArray();
+    }
 }
