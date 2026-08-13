@@ -1,0 +1,1 @@
+namespace German.Application.Reports;
