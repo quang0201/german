@@ -93,6 +93,7 @@ public sealed class OpenXmlProductionReportExporterTests
         var cells = GetCells(rows[1]);
         AssertDateFormat(document, cells[0]);
         Assert.AreEqual("CĐ11 — May thân", cells[5].InnerText);
+        Assert.AreEqual("HC / TC trực tiếp", cells[11].InnerText);
         foreach (var index in new[] { 7, 8, 9, 10 })
         {
             var dataType = cells[index].DataType?.Value;

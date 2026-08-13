@@ -85,7 +85,9 @@ describe("ERP responsive CSS contract", () => {
     expect(productionListPage).toContain('import { ProductionSummary } from "./ProductionSummary.jsx";');
     expect(productionListPage).toContain('import { ProductionEntryGroupedTable } from "./ProductionEntryGroupedTable.jsx";');
     expect(productionListPage).toContain("localIsoDate()");
-    expect(productionListPage).toContain("buildProductionExportUrl(filters)");
+    expect(productionListPage).toContain("buildProductionExportUrl({ ...filters, ...exportRange })");
+    expect(productionListPage).toContain("<ProductionExportDialog");
+    expect(productionListPage).toContain("exportDialogOpen");
     expect(productionListPage).toContain("multiDay={filters.fromDate !== filters.untilDate}");
     expect(productionListPage).toContain('const [appliedPeriod, setAppliedPeriod]');
     expect(productionListPage).toContain('const [isCustomEditing, setIsCustomEditing]');
