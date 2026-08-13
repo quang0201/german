@@ -1,6 +1,5 @@
 using German.Api.Auth;
 using German.Api.Contracts.ProductionEntries;
-using German.Application.Abstractions;
 using German.Application.Common;
 using German.Application.ProductionEntries;
 
@@ -52,11 +51,11 @@ public static class ProductionEntryEndpoints
         return result.IsSuccess ? Results.Created($"/api/production-entries/{result.Value!.Id}", result.Value) : ApiResultMapper.Error(result.Error!);
     }
 
-    private static async Task<IResult> CreateBatchDirectAsync(CreateProductionEntryBatchDirectRequest request, HttpContext httpContext, IGermanDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateBatchDirectAsync(CreateProductionEntryBatchDirectRequest request, HttpContext httpContext, ProductionEntryBatchDirectService service, CancellationToken cancellationToken)
     {
         var items = request.Items.Select(item => new CreateProductionEntryBatchDirectItem(item.ProductionOperationId, item.DirectHcQuantity, item.DirectTcQuantity, item.Note)).ToArray();
         var command = new CreateProductionEntryBatchDirectCommand(request.WorkDate, request.EmployeeId, request.ProductionOrderId, items);
-        var result = await new ProductionEntryBatchDirectService(db).CreateAsync(httpContext.User.ToCurrentActor(), command, cancellationToken);
+        var result = await service.CreateAsync(httpContext.User.ToCurrentActor(), command, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
     }
 
