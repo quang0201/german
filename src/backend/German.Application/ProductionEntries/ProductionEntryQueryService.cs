@@ -10,14 +10,14 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
 {
     private static readonly IReadOnlySet<int> AllowedPageSizes = new HashSet<int> { 25, 50, 100 };
 
-    public async Task<AppResult<PagedResult<ProductionEntryListItemDto>>> ListAsync(
+    public async Task<AppResult<ProductionEntryListResult>> ListAsync(
         ProductionEntryListQuery request,
         CancellationToken cancellationToken)
     {
         var normalized = Normalize(request);
         if (!normalized.IsSuccess)
         {
-            return AppResult<PagedResult<ProductionEntryListItemDto>>.Failure(
+            return AppResult<ProductionEntryListResult>.Failure(
                 normalized.Error!.Code,
                 normalized.Error.Message);
         }
@@ -39,8 +39,8 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
         if (normalizedQuery.Search is not null)
         {
             var search = normalizedQuery.Search;
-            var entryModes = GetEntryModes(search);
-            var loweredSearch = search.ToLowerInvariant();
+            var loweredSearch = search.LoweredText;
+            var entryModes = search.EntryModes;
             query = query.Where(item =>
                 item.employee.EmployeeCode.ToLower().Contains(loweredSearch)
                 || item.employee.FullName.ToLower().Contains(loweredSearch)
@@ -50,7 +50,28 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
                 || entryModes.Contains(item.entry.EntryMode));
         }
 
-        var totalCount = await query.CountAsync(cancellationToken);
+        var summaryValues = await query
+            .GroupBy(_ => 1)
+            .Select(group => new
+            {
+                EmployeeCount = group.Select(item => item.entry.EmployeeId).Distinct().Count(),
+                EntryCount = group.Count(),
+                HcQuantity = group.Sum(item => (decimal?)item.entry.HcQuantity),
+                TcQuantity = group.Sum(item => (decimal?)item.entry.TcQuantity),
+                TotalQuantity = group.Sum(item => (decimal?)item.entry.TotalQuantity)
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        var summary = summaryValues is null
+            ? new ProductionEntrySummaryDto(0, 0, 0m, 0m, 0m)
+            : new ProductionEntrySummaryDto(
+                summaryValues.EmployeeCount,
+                summaryValues.EntryCount,
+                summaryValues.HcQuantity ?? 0m,
+                summaryValues.TcQuantity ?? 0m,
+                summaryValues.TotalQuantity ?? 0m);
+
+        var totalCount = summary.EntryCount;
         var totalPages = totalCount == 0
             ? 0
             : (int)Math.Ceiling(totalCount / (double)normalizedQuery.PageSize);
@@ -89,16 +110,17 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
                 item.entry.UpdatedAt))
             .ToListAsync(cancellationToken);
 
-        return AppResult<PagedResult<ProductionEntryListItemDto>>.Success(
-            new PagedResult<ProductionEntryListItemDto>(
+        return AppResult<ProductionEntryListResult>.Success(
+            new ProductionEntryListResult(
                 items,
                 normalizedQuery.Page,
                 normalizedQuery.PageSize,
                 totalCount,
-                totalPages));
+                totalPages,
+                summary));
     }
 
-    public Task<AppResult<PagedResult<ProductionEntryListItemDto>>> ListMineAsync(
+    public Task<AppResult<ProductionEntryListResult>> ListMineAsync(
         CurrentActor actor,
         ProductionEntryListQuery request,
         CancellationToken cancellationToken)
@@ -106,7 +128,7 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
         if (actor.EmployeeId is null)
         {
             return Task.FromResult(
-                AppResult<PagedResult<ProductionEntryListItemDto>>.Failure(
+                AppResult<ProductionEntryListResult>.Failure(
                     "production_entry.history_forbidden",
                     "Tài khoản chưa được gắn với nhân viên."));
         }
@@ -235,20 +257,20 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
         }
 
         return NormalizedQueryResult.Success(
-            new NormalizedQuery(fromDate, untilDate, request.Search?.Trim() is { Length: > 0 } search ? search : null, page, pageSize));
+            new NormalizedQuery(
+                fromDate,
+                untilDate,
+                ProductionEntrySearch.Normalize(request.Search),
+                page,
+                pageSize));
     }
 
-    private static IReadOnlySet<ProductionEntryMode> GetEntryModes(string search)
-    {
-        var normalized = search.Trim().ToLowerInvariant();
-        var modes = new HashSet<ProductionEntryMode>();
-        if (normalized is "byshift" or "theo ca") modes.Add(ProductionEntryMode.ByShift);
-        if (normalized is "direct" or "hc / tc trực tiếp" or "hc/tc trực tiếp") modes.Add(ProductionEntryMode.Direct);
-        if (normalized is "totalwithovertime" or "tổng + giờ tc" or "tổng + giờ tăng ca") modes.Add(ProductionEntryMode.TotalWithOvertime);
-        return modes;
-    }
-
-    private sealed record NormalizedQuery(DateOnly FromDate, DateOnly UntilDate, string? Search, int Page, int PageSize);
+    private sealed record NormalizedQuery(
+        DateOnly FromDate,
+        DateOnly UntilDate,
+        ProductionEntrySearchCriteria? Search,
+        int Page,
+        int PageSize);
 
     private sealed record NormalizedQueryResult(bool IsSuccess, NormalizedQuery? Value, AppError? Error)
     {

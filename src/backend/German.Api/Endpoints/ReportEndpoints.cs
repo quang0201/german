@@ -22,12 +22,13 @@ public static class ReportEndpoints
         Guid? employeeId,
         Guid? orderId,
         Guid? operationId,
+        string? search,
         ProductionReportService service,
         IProductionReportExporter exporter,
         CancellationToken cancellationToken)
     {
         var result = await service.BuildAsync(
-            new ProductionReportFilter(fromDate, untilDate, employeeId, orderId, operationId),
+            new ProductionReportFilter(fromDate, untilDate, employeeId, orderId, operationId, search),
             cancellationToken);
 
         if (!result.IsSuccess)

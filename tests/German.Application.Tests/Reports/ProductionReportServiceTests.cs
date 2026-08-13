@@ -21,7 +21,7 @@ public sealed class ProductionReportServiceTests
             new FixedTimeProvider(new DateTimeOffset(2026, 8, 12, 3, 0, 0, TimeSpan.Zero)));
 
         var result = await service.BuildAsync(
-            new ProductionReportFilter(null, null, null, null, null),
+            new ProductionReportFilter(null, null, null, null, null, null),
             CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess);
@@ -40,6 +40,11 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual(20m, row.TcQuantity);
         Assert.AreEqual(120m, row.TotalQuantity);
         Assert.AreEqual(seed.Entry.OvertimeHours, row.OvertimeHours);
+        Assert.AreEqual("Tất cả", result.Value.EmployeeLabel);
+        Assert.AreEqual("Tất cả", result.Value.OrderLabel);
+        Assert.AreEqual("Tất cả", result.Value.OperationLabel);
+        Assert.AreEqual("Tất cả", result.Value.SearchLabel);
+        Assert.AreEqual("Tổng lượt công đoạn", result.Value.FinalMetricLabel);
     }
 
     [TestMethod]
@@ -49,7 +54,7 @@ public sealed class ProductionReportServiceTests
         var service = new ProductionReportService(db, TimeProvider.System);
 
         var result = await service.BuildAsync(
-            new ProductionReportFilter(new DateOnly(2026, 8, 13), new DateOnly(2026, 8, 12), null, null, null),
+            new ProductionReportFilter(new DateOnly(2026, 8, 13), new DateOnly(2026, 8, 12), null, null, null, null),
             CancellationToken.None);
 
         Assert.IsFalse(result.IsSuccess);
@@ -63,11 +68,24 @@ public sealed class ProductionReportServiceTests
         var service = new ProductionReportService(db, TimeProvider.System);
 
         var result = await service.BuildAsync(
-            new ProductionReportFilter(new DateOnly(2025, 1, 1), new DateOnly(2026, 1, 2), null, null, null),
+            new ProductionReportFilter(new DateOnly(2025, 1, 1), new DateOnly(2026, 1, 2), null, null, null, null),
             CancellationToken.None);
 
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual("reports.date_range_too_large", result.Error!.Code);
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_Allows366DayInclusiveRange()
+    {
+        await using var db = CreateDb();
+        var service = new ProductionReportService(db, TimeProvider.System);
+
+        var result = await service.BuildAsync(
+            new ProductionReportFilter(new DateOnly(2025, 1, 1), new DateOnly(2026, 1, 1), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
     }
 
     [TestMethod]
@@ -82,11 +100,14 @@ public sealed class ProductionReportServiceTests
 
         var service = new ProductionReportService(db, TimeProvider.System);
         var result = await service.BuildAsync(
-            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, null, null),
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, null, null, null),
             CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess);
         Assert.AreEqual(0, result.Value!.Rows.Count);
+        Assert.AreEqual(new ProductionReportSummary(0, 0, 0m, 0m, 0m), result.Value.Summary);
+        Assert.AreEqual(0, result.Value.ByDay.Count);
+        Assert.AreEqual(0, result.Value.ByEmployee.Count);
     }
 
     [TestMethod]
@@ -119,7 +140,7 @@ public sealed class ProductionReportServiceTests
 
         var service = new ProductionReportService(db, TimeProvider.System);
         var result = await service.BuildAsync(
-            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), first.Employee.Id, first.Order.Id, first.Operation.Id),
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), first.Employee.Id, first.Order.Id, first.Operation.Id, null),
             CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess);
@@ -127,6 +148,70 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual("E001", result.Value.Rows[0].EmployeeCode);
         Assert.AreEqual("0417", result.Value.Rows[0].ProductionOrderCode);
         Assert.AreEqual(11, result.Value.Rows[0].OperationNumber);
+        Assert.AreEqual("E001 — Nguyễn Văn A", result.Value.EmployeeLabel);
+        Assert.AreEqual("0417 — Túi 0417", result.Value.OrderLabel);
+        Assert.AreEqual("CĐ11 — May thân", result.Value.OperationLabel);
+        Assert.AreEqual("Tổng sản lượng", result.Value.FinalMetricLabel);
+    }
+
+    [DataTestMethod]
+    [DataRow(" e001 ")]
+    [DataRow("NGUYỄN VĂN A")]
+    [DataRow("0417")]
+    [DataRow("túi 0417")]
+    [DataRow("MAY THÂN")]
+    [DataRow("direct")]
+    public async Task BuildAsync_AppliesTrimmedSearchAcrossReportFields(string search)
+    {
+        await using var db = CreateDb();
+        await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var service = new ProductionReportService(db, TimeProvider.System);
+
+        var result = await service.BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, null, null, search),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(1, result.Value!.Rows.Count);
+        Assert.AreEqual(search.Trim(), result.Value.SearchLabel);
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_DerivesSummaryAndAggregatesFromFilteredRows()
+    {
+        await using var db = CreateDb();
+        var first = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        await AddEntryAsync(db, first.Employee, first.Order, first.Operation, new DateOnly(2026, 8, 13), 10m, 5m);
+
+        var employee2 = new Employee { EmployeeCode = "E002", FullName = "Nguyễn Văn B" };
+        var order2 = new ProductionOrder { Code = "0521", ProductName = "Túi 0521", PlannedQuantity = 500m, Status = ProductionOrderStatus.InProduction };
+        var operation2 = new ProductionOperation { ProductionOrderId = order2.Id, OperationNumber = 6, Name = "Đóng gói", Unit = "thùng", SortOrder = 1 };
+        db.AddRange(employee2, order2, operation2);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, employee2, order2, operation2, new DateOnly(2026, 8, 13), 30m, 10m);
+        db.ChangeTracker.Clear();
+
+        var service = new ProductionReportService(db, TimeProvider.System);
+        var result = await service.BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 13), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(new ProductionReportSummary(2, 3, 140m, 35m, 175m), result.Value!.Summary);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new ProductionReportDaySummary(new DateOnly(2026, 8, 12), 100m, 20m, 120m),
+                new ProductionReportDaySummary(new DateOnly(2026, 8, 13), 40m, 15m, 55m)
+            },
+            result.Value.ByDay.ToArray());
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new ProductionReportEmployeeSummary("E001", "Nguyễn Văn A", 110m, 25m, 135m),
+                new ProductionReportEmployeeSummary("E002", "Nguyễn Văn B", 30m, 10m, 40m)
+            },
+            result.Value.ByEmployee.ToArray());
     }
 
     private static GermanDbContext CreateDb()
@@ -163,6 +248,32 @@ public sealed class ProductionReportServiceTests
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
         return new SeedData(employee, order, operation, entry);
+    }
+
+    private static async Task AddEntryAsync(
+        GermanDbContext db,
+        Employee employee,
+        ProductionOrder order,
+        ProductionOperation operation,
+        DateOnly date,
+        decimal hcQuantity,
+        decimal tcQuantity)
+    {
+        db.ProductionEntries.Add(new ProductionEntry
+        {
+            WorkDate = date,
+            EmployeeId = employee.Id,
+            ProductionOrderId = order.Id,
+            ProductionOperationId = operation.Id,
+            EntryMode = ProductionEntryMode.Direct,
+            DirectHcQuantity = hcQuantity,
+            DirectTcQuantity = tcQuantity,
+            HcQuantity = hcQuantity,
+            TcQuantity = tcQuantity,
+            TotalQuantity = hcQuantity + tcQuantity,
+            SubmittedByUserId = Guid.NewGuid()
+        });
+        await db.SaveChangesAsync();
     }
 
     private sealed record SeedData(Employee Employee, ProductionOrder Order, ProductionOperation Operation, ProductionEntry Entry);
