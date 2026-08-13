@@ -1,9 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using German.Application.Auth;
 using German.Domain.Auth;
 using German.Domain.Employees;
+using German.Domain.Production;
 using German.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -87,6 +91,49 @@ public sealed class ReportExportApiTests
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [TestMethod]
+    public async Task Export_Manager_ForwardsSearchFilter()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedAccountAsync(factory, "manager3", "M003", UserRole.Manager, "secret");
+        await SeedProductionEntryAsync(factory, "M003");
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager3", "secret");
+
+        var response = await client.GetAsync($"{ExportUrl}&search=not-a-match");
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var detail = GetWorksheetText(await response.Content.ReadAsByteArrayAsync(), "Chi tiết");
+        Assert.IsFalse(detail.Contains("M003", StringComparison.Ordinal));
+
+        var matchingResponse = await client.GetAsync($"{ExportUrl}&search=M003");
+
+        Assert.AreEqual(HttpStatusCode.OK, matchingResponse.StatusCode);
+        var matchingDetail = GetWorksheetText(await matchingResponse.Content.ReadAsByteArrayAsync(), "Chi tiết");
+        Assert.IsTrue(matchingDetail.Contains("M003", StringComparison.Ordinal));
+        Assert.IsTrue(matchingDetail.Contains("detail-only-marker", StringComparison.Ordinal));
+    }
+
+    private static string GetWorksheetText(byte[] workbookBytes, string sheetName)
+    {
+        using var stream = new MemoryStream(workbookBytes);
+        using var document = SpreadsheetDocument.Open(stream, false);
+        var workbookPart = document.WorkbookPart
+            ?? throw new AssertFailedException("Workbook part is missing.");
+        var workbook = workbookPart.Workbook
+            ?? throw new AssertFailedException("Workbook root is missing.");
+        var sheet = workbook.Sheets?.Elements<Sheet>()
+            .SingleOrDefault(item => item.Name?.Value == sheetName)
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' is missing.");
+        var relationshipId = sheet.Id?.Value
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' relationship is missing.");
+        var worksheetPart = workbookPart.GetPartById(relationshipId) as WorksheetPart
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' part is missing.");
+        var worksheet = worksheetPart.Worksheet
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' root is missing.");
+        return worksheet.InnerText;
+    }
+
     private static async Task SeedAccountAsync(
         GermanApiFactory factory,
         string username,
@@ -119,4 +166,42 @@ public sealed class ReportExportApiTests
             new { identifier, password });
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
     }
+
+    private static Task SeedProductionEntryAsync(GermanApiFactory factory, string employeeCode) =>
+        factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var employee = await db.Employees.SingleAsync(item => item.EmployeeCode == employeeCode);
+            var account = await db.UserAccounts.SingleAsync(item => item.EmployeeId == employee.Id);
+            var order = new ProductionOrder
+            {
+                Code = "0417",
+                ProductName = "Túi 0417",
+                PlannedQuantity = 1000m,
+                Status = ProductionOrderStatus.InProduction
+            };
+            var operation = new ProductionOperation
+            {
+                ProductionOrderId = order.Id,
+                OperationNumber = 11,
+                Name = "May thân",
+                Unit = "cái",
+                SortOrder = 1
+            };
+            var entry = new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 8, 12),
+                EmployeeId = employee.Id,
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EntryMode = ProductionEntryMode.Direct,
+                DirectHcQuantity = 100m,
+                HcQuantity = 100m,
+                TotalQuantity = 100m,
+                SubmittedByUserId = account.Id,
+                Note = "detail-only-marker"
+            };
+            db.AddRange(order, operation, entry);
+            await db.SaveChangesAsync();
+        });
 }

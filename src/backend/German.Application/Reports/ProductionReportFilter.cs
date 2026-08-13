@@ -5,4 +5,5 @@ public sealed record ProductionReportFilter(
     DateOnly? UntilDate,
     Guid? EmployeeId,
     Guid? OrderId,
-    Guid? OperationId);
+    Guid? OperationId,
+    string? Search);
