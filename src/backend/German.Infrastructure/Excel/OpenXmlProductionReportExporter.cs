@@ -62,7 +62,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
 
     private static Worksheet CreateManagementWorksheet(ProductionReportData report)
     {
-        var days = Dates(report.FromDate, report.UntilDate).ToArray();
+        var days = Dates(report.FromDate, report.UntilDate)
+            .Where(date => !report.ExcludeSundays || date.DayOfWeek != DayOfWeek.Sunday)
+            .ToArray();
         var totalStart = 4 + days.Length * 2;
         var data = new SheetData();
         var merges = new MergeCells();
@@ -99,7 +101,6 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                     AddManagementRow(data, row++, group, days, totalStart, previousEmployee == group.Key.EmployeeCode);
                     previousEmployee = group.Key.EmployeeCode;
                 }
-                AddOperationTotals(data, ref row, block, totalStart);
                 row += 3;
             }
         }
@@ -121,7 +122,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         for (var i = 0; i < days.Count; i++)
         {
             var hc = 4 + i * 2;
-            AddCells(data, row, At($"{Col(hc)}{row}", Text(days[i].ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), HeaderStyle)));
+            AddCells(data, row, At($"{Col(hc)}{row}", Text(ManagementDateLabel(days[i]), HeaderStyle)));
             merges.Append(new MergeCell { Reference = $"{Col(hc)}{row}:{Col(hc + 1)}{row}" });
             AddCells(data, row + 1, At($"{Col(hc)}{row + 1}", Text("HC", CenterStyle)), At($"{Col(hc + 1)}{row + 1}", Text("TC", CenterStyle)));
         }
@@ -157,29 +158,6 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         cells.Add(At($"{Col(totalStart + 1)}{row}", Num(tc)));
         cells.Add(At($"{Col(totalStart + 2)}{row}", Num(hc + tc)));
         AddCells(data, row, cells.ToArray());
-    }
-
-    private static void AddOperationTotals(SheetData data, ref uint row, IEnumerable<ProductionReportRow> block, int totalStart)
-    {
-        AddRow(data, row++, Text("TỔNG THEO CÔNG ĐOẠN", SectionStyle));
-        AddCells(data, row,
-            At($"A{row}", Text("CĐ", HeaderStyle)), At($"B{row}", Text("ĐVT", HeaderStyle)),
-            At($"{Col(totalStart)}{row}", Text("Tổng HC", HeaderStyle)),
-            At($"{Col(totalStart + 1)}{row}", Text("Tổng TC", HeaderStyle)),
-            At($"{Col(totalStart + 2)}{row}", Text("Tổng", HeaderStyle)));
-        row++;
-        foreach (var group in block.GroupBy(x => new { x.OperationNumber, x.Unit }).OrderBy(x => x.Key.OperationNumber).ThenBy(x => x.Key.Unit, StringComparer.Ordinal))
-        {
-            var hc = group.Sum(x => x.HcQuantity);
-            var tc = group.Sum(x => x.TcQuantity);
-            AddCells(data, row,
-                At($"A{row}", Text($"CĐ{group.Key.OperationNumber}")),
-                At($"B{row}", Text(group.Key.Unit, CenterStyle)),
-                At($"{Col(totalStart)}{row}", Num(hc)),
-                At($"{Col(totalStart + 1)}{row}", Num(tc)),
-                At($"{Col(totalStart + 2)}{row}", Num(hc + tc)));
-            row++;
-        }
     }
 
     private static Worksheet CreateOverviewWorksheet(ProductionReportData report)
@@ -226,6 +204,24 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private static Columns DetailColumns() => new(Column(1, 12), Column(2, 12), Column(3, 24), Column(4, 14), Column(5, 24), Column(6, 28), Column(7, 12), Column(8, 12), Column(9, 12), Column(10, 12), Column(11, 12), Column(12, 18), Column(13, 30));
     private static Column Column(uint index, double width) => new() { Min = index, Max = index, Width = width, CustomWidth = true };
     private static IEnumerable<DateOnly> Dates(DateOnly from, DateOnly until) { for (var date = from; date <= until; date = date.AddDays(1)) yield return date; }
+
+    private static string ManagementDateLabel(DateOnly date)
+    {
+        var weekday = date.DayOfWeek switch
+        {
+            DayOfWeek.Monday => "T2",
+            DayOfWeek.Tuesday => "T3",
+            DayOfWeek.Wednesday => "T4",
+            DayOfWeek.Thursday => "T5",
+            DayOfWeek.Friday => "T6",
+            DayOfWeek.Saturday => "T7",
+            DayOfWeek.Sunday => "CN",
+            _ => throw new ArgumentOutOfRangeException(nameof(date))
+        };
+
+        return $"{weekday} {date:dd/MM/yyyy}";
+    }
+
     private static string Col(int value) { var result = string.Empty; while (value > 0) { value--; result = (char)('A' + value % 26) + result; value /= 26; } return result; }
     private static int ColumnNumber(string? reference) { if (string.IsNullOrEmpty(reference)) return int.MaxValue; var result = 0; foreach (var c in reference) { if (!char.IsLetter(c)) break; result = result * 26 + char.ToUpperInvariant(c) - 'A' + 1; } return result; }
 
