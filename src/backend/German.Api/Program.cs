@@ -24,6 +24,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<ProductionEntryService>();
+builder.Services.AddScoped<ProductionEntryBatchDirectService>();
 builder.Services.AddScoped<ProductionEntryQueryService>();
 builder.Services.AddScoped<ProductionMonthlyMatrixService>();
 builder.Services.AddScoped<EmployeeService>();
