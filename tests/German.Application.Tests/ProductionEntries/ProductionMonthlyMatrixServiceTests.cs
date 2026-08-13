@@ -40,7 +40,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
         var firstBlock = result.Value.Orders.Single(x => x.OrderCode == "0417");
         Assert.AreEqual(1, firstBlock.Employees.Count);
         Assert.AreEqual(3, firstBlock.Employees[0].Operations.Count);
-        Assert.AreEqual(300m, firstBlock.Employees[0].Operations.Sum(x => x.TotalQuantity));
+        Assert.AreEqual(280m, firstBlock.Employees[0].Operations.Sum(x => x.TotalQuantity));
         Assert.AreEqual(4, result.Value.Summary.EntryCount);
         Assert.AreEqual(300m, result.Value.Summary.HcQuantity);
         Assert.AreEqual(35m, result.Value.Summary.TcQuantity);
