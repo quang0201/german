@@ -6,4 +6,5 @@ public sealed record ProductionReportFilter(
     Guid? EmployeeId,
     Guid? OrderId,
     Guid? OperationId,
-    string? Search);
+    string? Search,
+    bool ExcludeSundays = false);

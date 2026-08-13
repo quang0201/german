@@ -36,3 +36,35 @@ export function deriveExportRange({ periodMode, anchorDate, customFromDate, cust
     anchorDate,
   });
 }
+
+export function createProductionExportDraft({
+  initialMode,
+  initialAnchorDate,
+  initialFromDate,
+  initialUntilDate,
+}) {
+  const periodMode = initialMode || "day";
+  const range = periodMode === "custom"
+    ? { fromDate: initialFromDate, untilDate: initialUntilDate }
+    : deriveExportRange({
+        periodMode,
+        anchorDate: initialAnchorDate,
+        customFromDate: initialFromDate,
+        customUntilDate: initialUntilDate,
+      });
+
+  return {
+    periodMode,
+    anchorDate: initialAnchorDate,
+    ...range,
+    excludeSundays: true,
+  };
+}
+
+export function createProductionExportPayload(draft) {
+  return {
+    fromDate: draft.fromDate,
+    untilDate: draft.untilDate,
+    excludeSundays: Boolean(draft.excludeSundays),
+  };
+}

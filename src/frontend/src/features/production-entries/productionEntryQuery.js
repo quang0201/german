@@ -9,6 +9,9 @@ export function buildProductionEntryListQuery(filters = {}) {
 export function buildProductionExportUrl(filters = {}) {
   const params = new URLSearchParams();
   addProductionEntryFilters(params, filters);
+  if (typeof filters.excludeSundays === "boolean") {
+    params.set("excludeSundays", String(filters.excludeSundays));
+  }
   return `${filters.basePath || "/api/reports/production/export.xlsx"}?${params.toString()}`;
 }
 

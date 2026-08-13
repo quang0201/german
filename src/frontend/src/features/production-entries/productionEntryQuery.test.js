@@ -40,8 +40,23 @@ describe("production entry list query", () => {
       orderId: "order-1",
       operationId: "operation-1",
       search: "  E001 & CĐ2  ",
+      excludeSundays: true,
       page: 2,
       pageSize: 100,
-    })).toBe("/api/reports/production/export.xlsx?fromDate=2026-08-01&untilDate=2026-08-12&employeeId=employee-1&orderId=order-1&operationId=operation-1&search=E001+%26+C%C4%902");
+    })).toBe("/api/reports/production/export.xlsx?fromDate=2026-08-01&untilDate=2026-08-12&employeeId=employee-1&orderId=order-1&operationId=operation-1&search=E001+%26+C%C4%902&excludeSundays=true");
+  });
+
+  test("serializes false Sunday exclusion only for exports", () => {
+    expect(buildProductionExportUrl({
+      fromDate: "2026-08-01",
+      untilDate: "2026-08-12",
+      excludeSundays: false,
+    })).toContain("excludeSundays=false");
+
+    expect(buildProductionEntryListQuery({
+      fromDate: "2026-08-01",
+      untilDate: "2026-08-12",
+      excludeSundays: true,
+    })).not.toContain("excludeSundays");
   });
 });

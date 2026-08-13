@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { deriveExportRange, exportRangeError } from "./productionExport.js";
+import {
+  createProductionExportDraft,
+  createProductionExportPayload,
+  deriveExportRange,
+  exportRangeError,
+} from "./productionExport.js";
 import { formatDisplayDate } from "./productionPeriod.js";
 
 const presets = [
@@ -8,14 +13,6 @@ const presets = [
   { key: "month", label: "Tháng" },
   { key: "custom", label: "Tùy chọn" },
 ];
-
-function initialDraft({ initialMode, initialAnchorDate, initialFromDate, initialUntilDate }) {
-  const mode = initialMode || "day";
-  const range = mode === "custom"
-    ? { fromDate: initialFromDate, untilDate: initialUntilDate }
-    : deriveExportRange({ periodMode: mode, anchorDate: initialAnchorDate, customFromDate: initialFromDate, customUntilDate: initialUntilDate });
-  return { periodMode: mode, anchorDate: initialAnchorDate, ...range };
-}
 
 function displayDate(isoDate) {
   return isoDate ? formatDisplayDate(isoDate) : "—";
@@ -30,11 +27,21 @@ export function ProductionExportDialog({
   onClose,
   onExport,
 }) {
-  const [draft, setDraft] = useState(() => initialDraft({ initialMode, initialAnchorDate, initialFromDate, initialUntilDate }));
+  const [draft, setDraft] = useState(() => createProductionExportDraft({
+    initialMode,
+    initialAnchorDate,
+    initialFromDate,
+    initialUntilDate,
+  }));
 
   useEffect(() => {
     if (open) {
-      setDraft(initialDraft({ initialMode, initialAnchorDate, initialFromDate, initialUntilDate }));
+      setDraft(createProductionExportDraft({
+        initialMode,
+        initialAnchorDate,
+        initialFromDate,
+        initialUntilDate,
+      }));
     }
   }, [open, initialMode, initialAnchorDate, initialFromDate, initialUntilDate]);
 
@@ -60,7 +67,7 @@ export function ProductionExportDialog({
   }
 
   function submit() {
-    if (!rangeError) onExport?.({ fromDate: draft.fromDate, untilDate: draft.untilDate });
+    if (!rangeError) onExport?.(createProductionExportPayload(draft));
   }
 
   return (
@@ -96,6 +103,14 @@ export function ProductionExportDialog({
             </div>
           )}
           <p className="erp-export-range">Khoảng chọn: <strong>{displayDate(draft.fromDate)} → {displayDate(draft.untilDate)}</strong></p>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={draft.excludeSundays}
+              onChange={(event) => setDraft((current) => ({ ...current, excludeSundays: event.target.checked }))}
+            />
+            <span>Bỏ Chủ nhật</span>
+          </label>
           {rangeError && <p className="erp-inline-message erp-inline-error" role="alert">{rangeError}</p>}
         </div>
         <div className="erp-dialog-actions">

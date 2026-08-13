@@ -42,3 +42,42 @@ Passed: 6, Failed: 0, Total: 6
 - `docker build --tag german:production-excel-management .`: passed.
 
 No dependencies, authorization, filter semantics, ProductionCalculator, or frontend export API contract were changed.
+
+## Sunday exclusion / management layout follow-up — 2026-08-13
+
+### RED evidence
+
+The follow-up was exercised as separate test-first failures before each production change:
+
+- Frontend RED: GitHub Actions run `31705977019` on head `2252ea4f...` failed the frontend job because the export URL did not serialize `excludeSundays` and the `Bỏ Chủ nhật` checkbox did not exist. Backend and Docker jobs remained green.
+- Application RED: GitHub Actions run `31707182621` failed backend compilation because the test required the seventh `ProductionReportFilter` argument (`ExcludeSundays`) before that contract existed.
+- API RED: GitHub Actions run `31708249238` on head `30e5545...` passed build, Domain, Application, and Infrastructure, then failed `Test API` because the endpoint did not yet forward `excludeSundays`.
+- Infrastructure RED: GitHub Actions run `31708887897` on head `230644...` passed build, Domain, and Application, then failed `Test infrastructure` because the management sheet still used plain date headers, included Sunday on the axis, and rendered `TỔNG THEO CÔNG ĐOẠN`.
+
+### GREEN verification before this evidence commit
+
+GitHub Actions run `31710621376` verified implementation head `91d6df0141a4c54033beb0ddd58261875dc5da97`:
+
+- Frontend: 89 passed, 0 failed across 25 files; production build passed.
+- Release backend build: 0 warnings, 0 errors.
+- Domain: 9 passed, 0 failed.
+- Application: 39 passed, 0 failed.
+- Infrastructure: 8 passed, 0 failed.
+- API: 30 passed, 0 failed.
+- Backend total: 86 passed, 0 failed.
+- Docker job: deployment helper, Compose validation, and production image build passed.
+
+### Follow-up guarantees
+
+| Guarantee | Evidence | Result |
+|---|---|---|
+| `Bỏ Chủ nhật` is checked by default for every newly opened export dialog | `ProductionExportSundayOption.test.js`, `productionExport.test.js` | PASS |
+| Export-only URL carries `excludeSundays=true|false`; list API does not | `productionEntryQuery.test.js` | PASS |
+| `excludeSundays=true` removes Sunday before rows and report aggregates are derived | `ProductionReportSundayTests.BuildAsync_ExcludeSundays_RemovesSundayFromRowsAndAggregates` | PASS |
+| HTTP omission remains backward compatible and includes Sunday | `ReportExportSundayApiTests.Export_ExcludeSundaysTrue_RemovesSundayWhileOmittedParameterKeepsIt` | PASS |
+| Management date headers use exact `T2`–`T7` / `CN` prefixes | `OpenXmlProductionReportSundayTests`, `OpenXmlProductionReportExporterTests` | PASS |
+| Sunday columns are absent when excluded and present as `CN` when included | `OpenXmlProductionReportSundayTests` | PASS |
+| `TỔNG THEO CÔNG ĐOẠN` is absent from the management sheet | `OpenXmlProductionReportSundayTests`, `OpenXmlProductionReportExporterTests` | PASS |
+| Workbook remains `Báo cáo quản lý`, `Tổng quan`, `Chi tiết`, with management active | `OpenXmlProductionReportExporterTests` | PASS |
+
+`ProductionCalculator`, authorization policy, database schema, dependencies, and the 366-day export limit were not changed by this follow-up.
