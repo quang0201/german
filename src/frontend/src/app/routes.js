@@ -1,6 +1,6 @@
 import { ProductionEntryFormPage } from "../features/production-entries/ProductionEntryFormPage.jsx";
 import { ProductionEntryDetailPage } from "../features/production-entries/ProductionEntryDetailPage.jsx";
-import { ProductionEntryListPage } from "../features/production-entries/ProductionEntryListPage.jsx";
+import { ProductionEntryRoutePage } from "../features/production-entries/ProductionEntryRoutePage.jsx";
 import { EmployeeListPage } from "../features/employees/EmployeeListPage.jsx";
 import { ProductionOrderListPage } from "../features/production-orders/ProductionOrderListPage.jsx";
 import { ShiftListPage } from "../features/shifts/ShiftListPage.jsx";
@@ -11,7 +11,7 @@ import { AuditLogListPage } from "../features/admin/AuditLogListPage.jsx";
 
 export const routes = [
   { path: "/production/new", roles: ["Worker", "Manager", "Admin"], navLabel: "Nhập sản lượng", breadcrumb: () => [{ label: "Nhập sản lượng" }], component: ProductionEntryFormPage },
-  { path: "/production", roles: ["Worker", "Manager", "Admin"], navLabel: (role) => role === "Worker" ? "Lịch sử của tôi" : "Sản lượng", breadcrumb: () => [{ label: "Sản lượng", href: "/production" }], component: ProductionEntryListPage },
+  { path: "/production", roles: ["Worker", "Manager", "Admin"], navLabel: (role) => role === "Worker" ? "Lịch sử của tôi" : "Sản lượng", breadcrumb: () => [{ label: "Sản lượng", href: "/production" }], component: ProductionEntryRoutePage },
   { path: "/production/:id", roles: ["Worker", "Manager", "Admin"], navLabel: "Sản lượng", breadcrumb: ({ id }) => [{ label: "Sản lượng", href: "/production" }, { label: id }], component: ProductionEntryDetailPage },
   { path: "/overview", roles: ["Manager", "Admin"], navLabel: "Tổng quan", breadcrumb: () => [{ label: "Tổng quan" }], component: OverviewPage },
   { path: "/employees", roles: ["Manager", "Admin"], navLabel: "Nhân viên", breadcrumb: () => [{ label: "Nhân viên" }], component: EmployeeListPage },
