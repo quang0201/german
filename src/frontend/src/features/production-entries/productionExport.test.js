@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { exportRangeError, listRangeError } from "./productionExport.js";
+import {
+  createProductionExportDraft,
+  createProductionExportPayload,
+  exportRangeError,
+  listRangeError,
+} from "./productionExport.js";
 
 describe("production export date range", () => {
   test("allows a 32-day export while the list remains independently limited", () => {
@@ -22,5 +27,32 @@ describe("production export date range", () => {
   test("keeps the list limited to 31 inclusive days", () => {
     expect(listRangeError("2026-01-01", "2026-01-31")).toBe("");
     expect(listRangeError("2026-01-01", "2026-02-01")).toBe("Khoảng ngày danh sách tối đa 31 ngày.");
+  });
+
+  test("creates every export draft with Sunday exclusion enabled", () => {
+    expect(createProductionExportDraft({
+      initialMode: "custom",
+      initialAnchorDate: "2026-08-17",
+      initialFromDate: "2026-08-10",
+      initialUntilDate: "2026-08-17",
+    })).toEqual({
+      periodMode: "custom",
+      anchorDate: "2026-08-17",
+      fromDate: "2026-08-10",
+      untilDate: "2026-08-17",
+      excludeSundays: true,
+    });
+  });
+
+  test("builds an export payload with the current Sunday choice", () => {
+    expect(createProductionExportPayload({
+      fromDate: "2026-08-10",
+      untilDate: "2026-08-17",
+      excludeSundays: false,
+    })).toEqual({
+      fromDate: "2026-08-10",
+      untilDate: "2026-08-17",
+      excludeSundays: false,
+    });
   });
 });
