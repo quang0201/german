@@ -20,6 +20,7 @@ describe("ProductionExportDialog", () => {
     expect(html).toContain('aria-label="Khoảng ngày export"');
     expect(html).toContain('value="2026-01-01"');
     expect(html).toContain('value="2026-02-01"');
+    expect(html).toContain("Khoảng chọn: <strong>01/01/2026 → 01/02/2026</strong>");
     expect(html).toContain("Tối đa 366 ngày");
   });
 
