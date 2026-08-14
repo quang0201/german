@@ -9,6 +9,7 @@ import {
   buildQuickEntryPayload,
   isQuickEntryDetailCompatible,
   quickEntryExpectedVersion,
+  quickEntryFeedbackMessage,
   shouldShowQuickEntryReload,
 } from "./productionMatrixQuickEntry.js";
 
@@ -52,6 +53,12 @@ describe("production matrix quick entry guards", () => {
   });
 
   test("shows reload and blocks Save after a create conflict", () => {
+    expect(shouldShowQuickEntryReload({ editing: false, loadingEntry: false, detailLoaded: true, conflict: true })).toBe(true);
+    expect(canWriteQuickEntry({ editing: false, detailLoaded: true, saving: false, conflict: true })).toBe(false);
+  });
+
+  test("keeps the conflict reload feedback after the draft error is cleared", () => {
+    expect(quickEntryFeedbackMessage({ error: "", conflictError: "Ô đã có dữ liệu." })).toBe("Ô đã có dữ liệu.");
     expect(shouldShowQuickEntryReload({ editing: false, loadingEntry: false, detailLoaded: true, conflict: true })).toBe(true);
     expect(canWriteQuickEntry({ editing: false, detailLoaded: true, saving: false, conflict: true })).toBe(false);
   });

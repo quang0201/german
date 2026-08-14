@@ -32,6 +32,11 @@ describe("production matrix hour split", () => {
     expect(calculateHourSplitPreview({ hcHours: "0", tcHours: "2", totalExpression: "100" })).toMatchObject({ hc: 0, tc: 100 });
   });
 
+  test("keeps decimal production non-negative when one hour bucket is zero", () => {
+    expect(calculateHourSplitPreview({ hcHours: "8", tcHours: "0", totalExpression: "0.4" })).toMatchObject({ hc: 0.4, tc: 0 });
+    expect(calculateHourSplitPreview({ hcHours: "8", tcHours: "0", totalExpression: "0.6" })).toMatchObject({ hc: 0.6, tc: 0 });
+  });
+
   test("rejects zero total hours and invalid hour values", () => {
     expect(() => calculateHourSplitPreview({ hcHours: "0", tcHours: "0", totalExpression: "100" })).toThrow();
     expect(() => calculateHourSplitPreview({ hcHours: "", tcHours: "2", totalExpression: "100" })).toThrow();
