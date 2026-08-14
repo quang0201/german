@@ -8,26 +8,13 @@ import { navigate } from "../../app/navigation.js";
 import { api } from "../../lib/api.js";
 import { orderStatusLabel } from "../../lib/i18n.js";
 import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft } from "./productionOrderForm.js";
+import { emptyProductionOperation, productionOperationForm, productionOperationPayload } from "./productionOperationDialog.js";
+import { ProductionOperationDialog } from "./ProductionOperationDialog.jsx";
 
 const STATUSES = ["Draft", "InProduction", "Completed", "Cancelled"];
 
-function emptyOperation() {
-  return { operationNumber: "", name: "", unit: "cái", fixedPrice: "", sortOrder: "", isActive: true };
-}
-
 function emptyOrder() {
   return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", operations: [] };
-}
-
-function operationPayload(operation) {
-  return {
-    operationNumber: Number(operation.operationNumber),
-    name: operation.name.trim(),
-    unit: operation.unit.trim(),
-    fixedPrice: operation.fixedPrice === "" || operation.fixedPrice === null || operation.fixedPrice === undefined ? null : Number(operation.fixedPrice),
-    sortOrder: Number(operation.sortOrder || operation.operationNumber),
-    isActive: operation.isActive !== false,
-  };
 }
 
 export function ProductionOrderListPage({ params }) {
@@ -36,9 +23,7 @@ export function ProductionOrderListPage({ params }) {
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyOrder);
   const [detail, setDetail] = useState(emptyOrder);
-  const [operation, setOperation] = useState(emptyOperation);
-  const [editingId, setEditingId] = useState("");
-  const [editingOperation, setEditingOperation] = useState(emptyOperation);
+  const [operationDialog, setOperationDialog] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,19 +53,57 @@ export function ProductionOrderListPage({ params }) {
     setError("");
   }
 
-  function updateOperation(index, key, value) {
-    setForm((current) => ({
-      ...current,
-      operations: current.operations.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item),
-    }));
-  }
-
-  function addCreateOperation() {
-    setForm((current) => ({ ...current, operations: [...current.operations, emptyOperation()] }));
-  }
-
   function removeCreateOperation(index) {
     setForm((current) => ({ ...current, operations: current.operations.filter((_, itemIndex) => itemIndex !== index) }));
+  }
+
+  function openCreateOperationDialog() {
+    setOperationDialog({ scope: "create", mode: "create", index: null, operation: emptyProductionOperation() });
+  }
+
+  function openCreateOperationEdit(index, item) {
+    setOperationDialog({ scope: "create", mode: "edit", index, operation: productionOperationForm(item) });
+  }
+
+  function openDetailOperationDialog(mode, item = null) {
+    setOperationDialog({ scope: "detail", mode, operation: item ? productionOperationForm(item) : emptyProductionOperation(), item });
+  }
+
+  function closeOperationDialog() {
+    if (!saving) setOperationDialog(null);
+  }
+
+  async function submitOperationDialog(operationDraft) {
+    if (!operationDialog) return;
+    if (operationDialog.scope === "create") {
+      setForm((current) => {
+        const operations = [...current.operations];
+        const item = { ...operationDraft };
+        if (operationDialog.mode === "edit") operations[operationDialog.index] = item;
+        else operations.push(item);
+        return { ...current, operations };
+      });
+      setOperationDialog(null);
+      return;
+    }
+
+    if (!selected) return;
+    setSaving(true);
+    setError("");
+    try {
+      const payload = productionOperationPayload(operationDraft);
+      if (operationDialog.mode === "edit") {
+        await api.put(`/api/production-orders/${selected.id}/operations/${operationDialog.item.id}`, payload);
+      } else {
+        await api.post(`/api/production-orders/${selected.id}/operations`, payload);
+      }
+      setOperationDialog(null);
+      await load({ preserveDetail: true });
+    } catch (requestError) {
+      setError(requestError.message || "Không thể lưu công đoạn.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function createOrder(event) {
@@ -118,49 +141,12 @@ export function ProductionOrderListPage({ params }) {
     }
   }
 
-  async function addOperation(event) {
-    event.preventDefault();
-    if (!selected) return;
-    setSaving(true);
-    setError("");
-    try {
-      await api.post(`/api/production-orders/${selected.id}/operations`, operationPayload(operation));
-      setOperation(emptyOperation());
-      await load({ preserveDetail: true });
-    } catch (requestError) {
-      setError(requestError.message || "Không thể thêm công đoạn.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function beginEdit(item) {
-    setEditingId(item.id);
-    setEditingOperation({ ...item, fixedPrice: item.fixedPrice ?? "" });
-  }
-
-  async function saveOperation(event) {
-    event.preventDefault();
-    if (!selected || !editingId) return;
-    setSaving(true);
-    setError("");
-    try {
-      await api.put(`/api/production-orders/${selected.id}/operations/${editingId}`, operationPayload(editingOperation));
-      setEditingId("");
-      await load({ preserveDetail: true });
-    } catch (requestError) {
-      setError(requestError.message || "Không thể cập nhật công đoạn.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function setOperationActive(item, isActive) {
     if (!selected) return;
     setSaving(true);
     setError("");
     try {
-      await api.put(`/api/production-orders/${selected.id}/operations/${item.id}`, operationPayload({ ...item, isActive }));
+      await api.put(`/api/production-orders/${selected.id}/operations/${item.id}`, productionOperationPayload({ ...item, isActive }));
       await load({ preserveDetail: true });
     } catch (requestError) {
       setError(requestError.message || "Không thể cập nhật trạng thái công đoạn.");
@@ -183,27 +169,30 @@ export function ProductionOrderListPage({ params }) {
       <PageHeader title={detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={detailId ? <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}>Quay lại danh sách</button> : undefined} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
 
-      {!detailId && <FormSection title="Tạo mã sản xuất" description="Có thể khai báo công đoạn ngay khi tạo Mã SX.">
-        <form id="order-create" onSubmit={createOrder}>
-        <Field label="Mã SX" required><input form="order-create" className="erp-control" required value={form.code} onChange={(event) => updateForm("code", event.target.value)} /></Field>
-        <Field label="Sản phẩm" required><input form="order-create" className="erp-control" required value={form.productName} onChange={(event) => updateForm("productName", event.target.value)} /></Field>
-        <Field label="Số lượng kế hoạch" required><input form="order-create" className="erp-control" required min="0" step="0.01" type="number" value={form.plannedQuantity} onChange={(event) => updateForm("plannedQuantity", event.target.value)} /></Field>
-        <Field label="Trạng thái"><select form="order-create" className="erp-control" value={form.status} onChange={(event) => updateForm("status", event.target.value)}>{STATUSES.map((status) => <option key={status} value={status}>{orderStatusLabel(status)}</option>)}</select></Field>
-        <Field label="Ngày bắt đầu"><input className="erp-control" type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} /></Field>
-        <Field label="Ngày kết thúc"><input className="erp-control" type="date" value={form.endDate} onChange={(event) => updateForm("endDate", event.target.value)} /></Field>
-        <div className="erp-field-wide">
-          <div className="erp-field-label">Công đoạn</div>
-          <div className="erp-table-wrap">
-            <table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên công đoạn</th><th>ĐVT</th><th>Giá cố định</th><th>Hoạt động</th><th /></tr></thead><tbody>
-              {form.operations.map((item, index) => <tr key={index}><td><input className="erp-control" required min="1" type="number" value={item.operationNumber} onChange={(event) => updateOperation(index, "operationNumber", event.target.value)} /></td><td><input className="erp-control" required value={item.name} onChange={(event) => updateOperation(index, "name", event.target.value)} /></td><td><input className="erp-control" required value={item.unit} onChange={(event) => updateOperation(index, "unit", event.target.value)} /></td><td><input className="erp-control" required min="0" step="0.01" type="number" value={item.fixedPrice} onChange={(event) => updateOperation(index, "fixedPrice", event.target.value)} /></td><td><input type="checkbox" checked={item.isActive} onChange={(event) => updateOperation(index, "isActive", event.target.checked)} /></td><td><button type="button" className="erp-button erp-button-link" onClick={() => removeCreateOperation(index)}>Xóa</button></td></tr>)}
+      {!detailId && <>
+        <FormSection title="Thông tin Mã SX" description="Khai báo thông tin chung trước khi thêm công đoạn.">
+          <form id="order-create" onSubmit={createOrder}>
+            <Field label="Mã SX" required><input form="order-create" className="erp-control" required value={form.code} onChange={(event) => updateForm("code", event.target.value)} /></Field>
+            <Field label="Sản phẩm" required><input form="order-create" className="erp-control" required value={form.productName} onChange={(event) => updateForm("productName", event.target.value)} /></Field>
+            <Field label="Số lượng kế hoạch" required><input form="order-create" className="erp-control" required min="0" step="0.01" type="number" value={form.plannedQuantity} onChange={(event) => updateForm("plannedQuantity", event.target.value)} /></Field>
+            <Field label="Trạng thái"><select form="order-create" className="erp-control" value={form.status} onChange={(event) => updateForm("status", event.target.value)}>{STATUSES.map((status) => <option key={status} value={status}>{orderStatusLabel(status)}</option>)}</select></Field>
+            <Field label="Ngày bắt đầu"><input className="erp-control" type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} /></Field>
+            <Field label="Ngày kết thúc"><input className="erp-control" type="date" value={form.endDate} onChange={(event) => updateForm("endDate", event.target.value)} /></Field>
+          </form>
+        </FormSection>
+        <FormSection title="Công đoạn" description="Thêm công đoạn bằng popup; danh sách chỉ hiển thị thông tin đã khai báo.">
+          <div className="erp-field-wide erp-table-wrap">
+            <table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên công đoạn</th><th>ĐVT</th><th>Giá cố định</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
+              {form.operations.map((item, index) => <tr key={index}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openCreateOperationEdit(index, item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => removeCreateOperation(index)}>Xóa</button></td></tr>)}
               {!form.operations.length && <tr><td colSpan="6">Chưa có công đoạn.</td></tr>}
             </tbody></table>
           </div>
-          <button type="button" className="erp-button erp-button-secondary" onClick={addCreateOperation}>+ Thêm công đoạn</button>
-        </div>
-        <div className="erp-field-wide erp-form-actions"><button type="submit" className="erp-button erp-button-primary" form="order-create" disabled={saving}>{saving ? "Đang tạo..." : "Tạo mã sản xuất"}</button></div>
-        </form>
-      </FormSection>}
+          <div className="erp-field-wide erp-form-actions">
+            <button type="button" className="erp-button erp-button-secondary" onClick={openCreateOperationDialog}>+ Thêm công đoạn</button>
+            <button type="submit" className="erp-button erp-button-primary" form="order-create" disabled={saving}>{saving ? "Đang tạo..." : "Tạo mã sản xuất"}</button>
+          </div>
+        </FormSection>
+      </>}
 
       {!detailId && <DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
 
@@ -223,13 +212,21 @@ export function ProductionOrderListPage({ params }) {
           </FormSection>
           <FormSection title="Công đoạn" description="Không xóa cứng công đoạn đã có dữ liệu; dùng Tắt để giữ lịch sử.">
             <div className="erp-field-wide erp-table-wrap"><table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên</th><th>ĐVT</th><th>Giá cố định</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-              {selected.operations.map((item) => editingId === item.id ? <tr key={item.id}><td><input className="erp-control" min="1" type="number" value={editingOperation.operationNumber} onChange={(event) => setEditingOperation((current) => ({ ...current, operationNumber: event.target.value }))} /></td><td><input className="erp-control" value={editingOperation.name} onChange={(event) => setEditingOperation((current) => ({ ...current, name: event.target.value }))} /></td><td><input className="erp-control" value={editingOperation.unit} onChange={(event) => setEditingOperation((current) => ({ ...current, unit: event.target.value }))} /></td><td><input className="erp-control" min="0" step="0.01" type="number" value={editingOperation.fixedPrice} onChange={(event) => setEditingOperation((current) => ({ ...current, fixedPrice: event.target.value }))} /></td><td><input type="checkbox" checked={editingOperation.isActive} onChange={(event) => setEditingOperation((current) => ({ ...current, isActive: event.target.checked }))} /></td><td><button type="button" className="erp-button erp-button-primary" onClick={saveOperation} disabled={saving}>Lưu</button> <button type="button" className="erp-button erp-button-link" onClick={() => setEditingId("")}>Hủy</button></td></tr> : <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => beginEdit(item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button></td></tr>)}
+              {selected.operations.map((item) => <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button></td></tr>)}
               {!selected.operations.length && <tr><td colSpan="6">Chưa có công đoạn.</td></tr>}
             </tbody></table></div>
-            <form onSubmit={addOperation} className="erp-field-wide erp-form-grid"><Field label="Số CĐ" required><input className="erp-control" required min="1" type="number" value={operation.operationNumber} onChange={(event) => setOperation((current) => ({ ...current, operationNumber: event.target.value }))} /></Field><Field label="Tên công đoạn" required><input className="erp-control" required value={operation.name} onChange={(event) => setOperation((current) => ({ ...current, name: event.target.value }))} /></Field><Field label="ĐVT" required><input className="erp-control" required value={operation.unit} onChange={(event) => setOperation((current) => ({ ...current, unit: event.target.value }))} /></Field><Field label="Giá cố định" required hint=">= 0"><input className="erp-control" required min="0" step="0.01" type="number" value={operation.fixedPrice} onChange={(event) => setOperation((current) => ({ ...current, fixedPrice: event.target.value }))} /></Field><div className="erp-form-actions"><button type="submit" className="erp-button erp-button-secondary" disabled={saving}>+ Thêm công đoạn</button></div></form>
+            <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => openDetailOperationDialog("create")}>+ Thêm công đoạn</button></div>
           </FormSection>
         </>}
       </>}
+      <ProductionOperationDialog
+        open={Boolean(operationDialog)}
+        mode={operationDialog?.mode}
+        operation={operationDialog?.operation}
+        loading={saving}
+        onClose={closeOperationDialog}
+        onSubmit={submitOperationDialog}
+      />
     </div>
   );
 }
