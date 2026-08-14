@@ -97,6 +97,10 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     navigate(`/production/${id}`, { presentation: "panel", backgroundRoute: "/production" });
   }
 
+  function handleDayHeaderClick(day) {
+    setBatchDay({ ...day, preferredOrderId: selectedOrderId });
+  }
+
   function handleCell(context) {
     const action = matrixCellAction(context.cell);
     if (action === "create" || action === "edit-direct") setQuickContext(context);
@@ -121,7 +125,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
         <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
       </FilterBar>
-      <ProductionMonthlyMatrix data={data} monthKey={monthKey} selectedOrderId={selectedOrderId} excludeSundays={excludeSundays} loading={loading} error={error} onSelectOrder={selectOrder} onToggleSundays={setExcludeSundays} onCellClick={handleCell} onDayHeaderClick={setBatchDay} />
+      <ProductionMonthlyMatrix data={data} monthKey={monthKey} selectedOrderId={selectedOrderId} excludeSundays={excludeSundays} loading={loading} error={error} onSelectOrder={selectOrder} onToggleSundays={setExcludeSundays} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} />
       <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} onReload={reload} />
       <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />

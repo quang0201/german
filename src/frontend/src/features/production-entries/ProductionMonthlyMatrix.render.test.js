@@ -44,6 +44,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("Tổng TC");
     expect(html).not.toContain(">ĐVT<");
     expect(html).not.toContain(">CN<");
+    expect(html).toContain('aria-label="Nhập nhanh ngày T7 01/08: chọn Mã SX và công đoạn"');
   });
 
   test("keeps a sole production order selectable so operation filtering can be enabled", () => {
