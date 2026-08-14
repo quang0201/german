@@ -1,5 +1,7 @@
+import React from "react";
 import { describe, expect, test } from "bun:test";
-import { firstActiveEmployeeId } from "./ProductionMatrixBatchEntryDialog.jsx";
+import { renderToStaticMarkup } from "react-dom/server";
+import { firstActiveEmployeeId, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
 import { isCurrentBatchOperationsRequest } from "./productionMatrixBatch.js";
 
 describe("ProductionMatrixBatchEntryDialog helpers", () => {
@@ -17,5 +19,18 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(isCurrentBatchOperationsRequest(false, "order-a", "order-b")).toBe(false);
     expect(isCurrentBatchOperationsRequest(true, "order-a", "order-b")).toBe(false);
     expect(isCurrentBatchOperationsRequest(true, "order-b", "order-b")).toBe(true);
+  });
+
+  test("prefers the selected matrix order when it is available for batch entry", () => {
+    expect(initialBatchOrderId([{ id: "order-1" }, { id: "order-2" }], "order-2")).toBe("order-2");
+    expect(initialBatchOrderId([{ id: "order-1" }], "missing-order")).toBe("");
+  });
+
+  test("explains the required order then operation selection flow", () => {
+    const html = renderToStaticMarkup(<ProductionMatrixBatchEntryDialog day={{ isoDate: "2026-08-01", weekdayLabel: "T7", displayDate: "01/08" }} employees={[]} />);
+
+    expect(html).toContain("Bước 1: Chọn Mã SX");
+    expect(html).toContain("Bước 2: Chọn công đoạn");
+    expect(html).toContain("Chọn Mã SX ở bước 1 để tải công đoạn.");
   });
 });
