@@ -6,7 +6,7 @@ Source: `pasted-text-1.txt` supplied for the production export redesign.
 
 - As a manager, I want the workbook to open on a horizontal management report so that daily production can be compared across a period.
 - As a manager, I want multiple production orders in separate blocks on one sheet so that I can review the export without navigating many sheets.
-- As an auditor, I want the existing overview and detail sheets preserved so that I can reconcile the management report with source entries.
+- As an auditor, I want the workbook to stay compact with management and overview sheets so that it opens reliably without the fragile detail worksheet.
 
 ## RED / GREEN evidence
 
@@ -28,11 +28,11 @@ Passed: 6, Failed: 0, Total: 6
 
 | Guarantee | Evidence | Result |
 |---|---|---|
-| Sheet order and active sheet | `OpenXmlProductionReportExporterTests.Export_CreatesManagementOverviewAndDetailSheetsInOrderAndActivatesManagementSheet` | PASS |
+| Sheet order and active sheet | `OpenXmlProductionReportExporterTests.Export_CreatesManagementAndOverviewSheetsInOrderAndActivatesManagementSheet` | PASS |
 | Horizontal date pivot, multiple blocks, row totals, operation/unit separation | `OpenXmlProductionReportExporterTests.Export_WritesManagementBlocksWithHorizontalDatePivotAndTotals` | PASS |
 | Freeze three columns and two header rows | `OpenXmlProductionReportExporterTests.Export_ManagementSheetFreezesThreeColumnsAndHeaderRows` | PASS |
-| Existing overview and detail behavior | `OpenXmlProductionReportExporterTests.Export_WritesOverviewMetadataMetricsAndAggregateTotals`, `Export_WritesDetailHeadersAndExcelUsabilityFeatures` | PASS |
-| Empty export remains a valid three-sheet workbook | `OpenXmlProductionReportExporterTests.Export_EmptyRowsStillCreatesValidThreeSheetWorkbook` | PASS |
+| Overview behavior and Open XML validation | `OpenXmlProductionReportExporterTests.Export_WritesOverviewMetadataMetricsAndAggregateTotals`, `OpenXmlProductionReportSundayTests.Export_ProducesOpenXmlWorkbookWithoutValidationErrors` | PASS |
+| Empty export remains a valid two-sheet workbook | `OpenXmlProductionReportExporterTests.Export_EmptyRowsStillCreatesValidTwoSheetWorkbook` | PASS |
 
 ## Regression verification
 
@@ -78,6 +78,6 @@ GitHub Actions run `31710621376` verified implementation head `91d6df0141a4c5403
 | Management date headers use exact `T2`–`T7` / `CN` prefixes | `OpenXmlProductionReportSundayTests`, `OpenXmlProductionReportExporterTests` | PASS |
 | Sunday columns are absent when excluded and present as `CN` when included | `OpenXmlProductionReportSundayTests` | PASS |
 | `TỔNG THEO CÔNG ĐOẠN` is absent from the management sheet | `OpenXmlProductionReportSundayTests`, `OpenXmlProductionReportExporterTests` | PASS |
-| Workbook remains `Báo cáo quản lý`, `Tổng quan`, `Chi tiết`, with management active | `OpenXmlProductionReportExporterTests` | PASS |
+| Workbook contains only `Báo cáo quản lý` and `Tổng quan`, with management active | `OpenXmlProductionReportExporterTests` | PASS |
 
 `ProductionCalculator`, authorization policy, database schema, dependencies, and the 366-day export limit were not changed by this follow-up.

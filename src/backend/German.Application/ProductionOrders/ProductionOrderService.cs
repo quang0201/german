@@ -7,6 +7,21 @@ namespace German.Application.ProductionOrders;
 
 public sealed class ProductionOrderService(IGermanDbContext db)
 {
+    public async Task<AppResult<ProductionOrderDto>> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var order = await db.ProductionOrders.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (order is null)
+        {
+            return AppResult<ProductionOrderDto>.Failure("production_order.not_found", "Không tìm thấy mã sản xuất.");
+        }
+
+        var operations = await db.ProductionOperations.AsNoTracking()
+            .Where(x => x.ProductionOrderId == id)
+            .OrderBy(x => x.SortOrder)
+            .ToListAsync(cancellationToken);
+        return AppResult<ProductionOrderDto>.Success(ToDto(order, operations));
+    }
+
     public async Task<IReadOnlyList<ProductionOrderDto>> ListAsync(CancellationToken cancellationToken)
     {
         var orders = await db.ProductionOrders.AsNoTracking().OrderByDescending(x => x.CreatedAt).ToListAsync(cancellationToken);
@@ -52,7 +67,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         }
 
         var operationInputs = command.CloneFromOrderId.HasValue
-            ? sourceOperations.Select(x => new ProductionOperationInput(x.OperationNumber, x.Name, x.Unit, x.SortOrder, x.IsActive)).ToList()
+            ? sourceOperations.Select(x => new ProductionOperationInput(x.OperationNumber, x.Name, x.Unit, x.SortOrder, x.IsActive, x.FixedPrice)).ToList()
             : command.Operations?.ToList() ?? [];
 
         var operationValidation = ValidateOperations(operationInputs);
@@ -78,6 +93,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
                 OperationNumber = input.OperationNumber,
                 Name = input.Name.Trim(),
                 Unit = input.Unit.Trim(),
+                FixedPrice = input.FixedPrice,
                 SortOrder = input.SortOrder,
                 IsActive = input.IsActive
             });
@@ -145,6 +161,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             OperationNumber = input.OperationNumber,
             Name = input.Name.Trim(),
             Unit = input.Unit.Trim(),
+            FixedPrice = input.FixedPrice,
             SortOrder = input.SortOrder,
             IsActive = input.IsActive
         };
@@ -175,6 +192,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         operation.OperationNumber = input.OperationNumber;
         operation.Name = input.Name.Trim();
         operation.Unit = input.Unit.Trim();
+        operation.FixedPrice = input.FixedPrice;
         operation.SortOrder = input.SortOrder;
         operation.IsActive = input.IsActive;
         operation.UpdatedAt = DateTimeOffset.UtcNow;
@@ -201,9 +219,11 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         {
             return AppResult.Failure("production_operation.duplicate_number", "Danh sách có số công đoạn bị trùng.");
         }
-        if (operations.Any(x => x.OperationNumber <= 0 || string.IsNullOrWhiteSpace(x.Name) || string.IsNullOrWhiteSpace(x.Unit)))
+        if (operations.Any(x => x.OperationNumber <= 0 || string.IsNullOrWhiteSpace(x.Name) || string.IsNullOrWhiteSpace(x.Unit) || x.FixedPrice < 0m))
         {
-            return AppResult.Failure("production_operation.invalid_input", "Số công đoạn, tên và đơn vị tính phải hợp lệ.");
+            return AppResult.Failure(
+                operations.Any(x => x.FixedPrice < 0m) ? "production_operation.invalid_price" : "production_operation.invalid_input",
+                operations.Any(x => x.FixedPrice < 0m) ? "Giá cố định không được âm." : "Số công đoạn, tên và đơn vị tính phải hợp lệ.");
         }
         return AppResult.Success();
     }
@@ -213,5 +233,5 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             source.OrderBy(x => x.SortOrder).Select(ToDto).ToList());
 
     private static ProductionOperationDto ToDto(ProductionOperation operation) =>
-        new(operation.Id, operation.OperationNumber, operation.Name, operation.Unit, operation.SortOrder, operation.IsActive);
+        new(operation.Id, operation.OperationNumber, operation.Name, operation.Unit, operation.FixedPrice, operation.SortOrder, operation.IsActive);
 }

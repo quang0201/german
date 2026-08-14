@@ -27,21 +27,21 @@ public sealed class ReportExportSundayApiTests
             "/api/reports/production/export.xlsx?fromDate=2026-08-16&untilDate=2026-08-17&excludeSundays=true");
 
         Assert.AreEqual(HttpStatusCode.OK, excludedResponse.StatusCode);
-        var excludedDetail = GetWorksheetText(
+        var excludedManagement = GetWorksheetText(
             await excludedResponse.Content.ReadAsByteArrayAsync(),
-            "Chi tiết");
-        Assert.IsFalse(excludedDetail.Contains("sunday-marker", StringComparison.Ordinal));
-        Assert.IsTrue(excludedDetail.Contains("monday-marker", StringComparison.Ordinal));
+            "Báo cáo quản lý");
+        Assert.IsFalse(excludedManagement.Contains("CN 16/08/2026", StringComparison.Ordinal));
+        Assert.IsTrue(excludedManagement.Contains("T2 17/08/2026", StringComparison.Ordinal));
 
         var compatibleResponse = await client.GetAsync(
             "/api/reports/production/export.xlsx?fromDate=2026-08-16&untilDate=2026-08-17");
 
         Assert.AreEqual(HttpStatusCode.OK, compatibleResponse.StatusCode);
-        var compatibleDetail = GetWorksheetText(
+        var compatibleManagement = GetWorksheetText(
             await compatibleResponse.Content.ReadAsByteArrayAsync(),
-            "Chi tiết");
-        Assert.IsTrue(compatibleDetail.Contains("sunday-marker", StringComparison.Ordinal));
-        Assert.IsTrue(compatibleDetail.Contains("monday-marker", StringComparison.Ordinal));
+            "Báo cáo quản lý");
+        Assert.IsTrue(compatibleManagement.Contains("CN 16/08/2026", StringComparison.Ordinal));
+        Assert.IsTrue(compatibleManagement.Contains("T2 17/08/2026", StringComparison.Ordinal));
     }
 
     private static async Task SeedManagerAndEntriesAsync(GermanApiFactory factory)

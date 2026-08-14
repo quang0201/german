@@ -1,5 +1,6 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Validation;
 using German.Application.Reports;
 using German.Domain.Production;
 using German.Infrastructure.Excel;
@@ -10,6 +11,15 @@ namespace German.Infrastructure.Tests.Excel;
 [TestClass]
 public sealed class OpenXmlProductionReportSundayTests
 {
+    [TestMethod]
+    public void Export_ProducesOpenXmlWorkbookWithoutValidationErrors()
+    {
+        using var document = OpenWorkbook(CreateReport(excludeSundays: false));
+        var errors = new OpenXmlValidator().Validate(document).ToArray();
+
+        Assert.AreEqual(0, errors.Length, string.Join(Environment.NewLine, errors.Select(error => error.Description)));
+    }
+
     [TestMethod]
     public void Export_ExcludeSundays_RemovesSundayAxisUsesWeekdayLabelsAndHasNoOperationSubtotal()
     {

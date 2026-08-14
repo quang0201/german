@@ -103,15 +103,14 @@ public sealed class ReportExportApiTests
         var response = await client.GetAsync($"{ExportUrl}&search=not-a-match");
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        var detail = GetWorksheetText(await response.Content.ReadAsByteArrayAsync(), "Chi tiết");
-        Assert.IsFalse(detail.Contains("M003", StringComparison.Ordinal));
+        var management = GetWorksheetText(await response.Content.ReadAsByteArrayAsync(), "Báo cáo quản lý");
+        Assert.IsFalse(management.Contains("manager3", StringComparison.Ordinal));
 
-        var matchingResponse = await client.GetAsync($"{ExportUrl}&search=M003");
+        var matchingResponse = await client.GetAsync($"{ExportUrl}&search=manager3");
 
         Assert.AreEqual(HttpStatusCode.OK, matchingResponse.StatusCode);
-        var matchingDetail = GetWorksheetText(await matchingResponse.Content.ReadAsByteArrayAsync(), "Chi tiết");
-        Assert.IsTrue(matchingDetail.Contains("M003", StringComparison.Ordinal));
-        Assert.IsTrue(matchingDetail.Contains("detail-only-marker", StringComparison.Ordinal));
+        var matchingManagement = GetWorksheetText(await matchingResponse.Content.ReadAsByteArrayAsync(), "Báo cáo quản lý");
+        Assert.IsTrue(matchingManagement.Contains("manager3", StringComparison.Ordinal));
     }
 
     private static string GetWorksheetText(byte[] workbookBytes, string sheetName)
