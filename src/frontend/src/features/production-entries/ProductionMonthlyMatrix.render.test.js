@@ -39,7 +39,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("T5");
     expect(html).toContain("27/08");
     expect(html).toContain("Mã SX: 0417");
-    expect(html).toContain('rowspan="3"');
+    expect(html).toContain('rowSpan="3"');
     expect(html).toContain("Tổng HC");
     expect(html).toContain("Tổng TC");
     expect(html).not.toContain(">ĐVT<");
