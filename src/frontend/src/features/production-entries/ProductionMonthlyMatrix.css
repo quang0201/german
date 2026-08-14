@@ -35,7 +35,7 @@
 .erp-month-total-all { right:0; }
 .erp-month-total-tc { right:90px; }
 .erp-month-total-hc { right:180px; box-shadow:none; border-left:2px solid var(--color-border) !important; }
-thead .erp-month-total { z-index:12; background:var(--color-primary-soft) !important; color:var(--color-primary-strong); }
+.erp-month-matrix-table thead .erp-month-total { z-index:12; background:var(--color-primary-soft) !important; color:var(--color-primary-strong); }
 .erp-month-order-row th { height:38px; background:var(--color-primary-soft); color:var(--color-primary-strong); text-align:left; font-size:13px; letter-spacing:normal; text-transform:none; }
 .erp-month-order-row span { margin-left:10px; color:var(--color-text-subtle); font-size:12px; font-weight:500; }
 .erp-production-month-nav { display:flex; align-items:center; gap:8px; }

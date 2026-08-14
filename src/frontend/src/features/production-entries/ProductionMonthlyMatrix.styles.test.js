@@ -20,6 +20,10 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-sticky-employee,[\s\n]*\.erp-month-matrix-table thead \.erp-month-sticky-operation[\s\S]*z-index:\s*12/);
   });
 
+  test("keeps sticky total headers above scrolling day subheaders", () => {
+    expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-total[\s\S]*z-index:\s*12/);
+  });
+
   test("aligns row-spanned employee names with the first operation row", () => {
     expect(matrixCss).toMatch(/\.erp-month-employee[\s\S]*vertical-align:\s*top[\s\S]*padding-top:\s*10px\s*!important/);
   });
