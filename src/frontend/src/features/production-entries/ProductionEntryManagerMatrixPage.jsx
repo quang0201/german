@@ -116,10 +116,12 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }
 
   return (
-    <div className="space-y-5">
+    <div className="erp-feature-page erp-production-manager-page">
       <PageHeader title="Sản lượng" description="Theo dõi và nhập sản lượng theo ma trận tháng" actions={<><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>} />
-      <div className="erp-production-month-header"><ProductionMonthNavigator monthKey={monthKey} onPrevious={() => setMonthKey((value) => shiftMonth(value, -1))} onNext={() => setMonthKey((value) => shiftMonth(value, 1))} /><span>{bounds.fromDate.split("-").reverse().join("/")} → {bounds.untilDate.split("-").reverse().join("/")}</span></div>
-      <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
+      <div className="erp-production-manager-overview">
+        <div className="erp-production-month-header"><ProductionMonthNavigator monthKey={monthKey} onPrevious={() => setMonthKey((value) => shiftMonth(value, -1))} onNext={() => setMonthKey((value) => shiftMonth(value, 1))} /><span>{bounds.fromDate.split("-").reverse().join("/")} → {bounds.untilDate.split("-").reverse().join("/")}</span></div>
+        <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
+      </div>
       <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
         <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
         <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>

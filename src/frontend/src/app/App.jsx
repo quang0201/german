@@ -7,6 +7,7 @@ import { navigate, subscribeToNavigation, resolvePresentation } from "./navigati
 import { ToastProvider } from "../components/erp/ToastProvider.jsx";
 import { AccessDeniedPage } from "./AccessDeniedPage.jsx";
 import { NotFoundPage } from "./NotFoundPage.jsx";
+import { ProductionEntryRoutePage } from "../features/production-entries/ProductionEntryRoutePage.jsx";
 
 export function App() {
   const [session, setSession] = useState(null);
@@ -45,9 +46,11 @@ export function App() {
   const pageProps = backgroundMatch
     ? { session, params: backgroundMatch.params, pathname: location.state.backgroundRoute, panelEntryId: matched.params.id, onPanelClose: () => navigate(location.state.backgroundRoute), presentation }
     : { session, params: matched.params, pathname: location.pathname, presentation };
+  const isManagerMatrix = session.role !== "Worker"
+    && (location.pathname === "/production" || backgroundMatch?.route.component === ProductionEntryRoutePage);
   return (
     <ToastProvider>
-      <AppShell session={session} pathname={location.pathname} breadcrumbs={breadcrumbs} onLogout={logout}>
+      <AppShell session={session} pathname={location.pathname} breadcrumbs={breadcrumbs} onLogout={logout} contentClassName={isManagerMatrix ? "erp-production-manager-content" : ""}>
         <Page {...pageProps} />
       </AppShell>
     </ToastProvider>

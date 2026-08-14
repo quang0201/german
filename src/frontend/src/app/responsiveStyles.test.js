@@ -7,6 +7,7 @@ import { AppShell } from "./AppShell.jsx";
 
 const styles = readFileSync(resolve(import.meta.dir, "../styles.css"), "utf8");
 const productionListPage = readFileSync(resolve(import.meta.dir, "../features/production-entries/ProductionEntryListPage.jsx"), "utf8");
+const productionManagerMatrixPage = readFileSync(resolve(import.meta.dir, "../features/production-entries/ProductionEntryManagerMatrixPage.jsx"), "utf8");
 
 describe("ERP responsive CSS contract", () => {
   test("defines compact sidebar and drawer breakpoints", () => {
@@ -78,6 +79,23 @@ describe("ERP responsive CSS contract", () => {
     expect(mobileStyles).toContain(".erp-production-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }");
     expect(mobileStyles).toContain(".erp-period-presets { flex-wrap: nowrap; overflow-x: auto;");
     expect(styles).toContain(".erp-period-presets { display: flex; flex-wrap: wrap;");
+  });
+
+  test("gives the manager monthly matrix the remaining viewport and internal scroll", () => {
+    expect(styles).toContain(".erp-production-manager-content {");
+    expect(styles).toContain("height: calc(100dvh - var(--app-header-height));");
+    expect(styles).toContain(".erp-production-manager-page .erp-month-matrix-section {");
+    expect(styles).toContain(".erp-production-manager-page .erp-month-matrix-scroll {");
+    expect(styles).toContain("max-height: none;");
+    expect(productionManagerMatrixPage).toContain("erp-production-manager-page");
+    expect(productionManagerMatrixPage).toContain("erp-production-manager-overview");
+  });
+
+  test("lets the manager page scroll on mobile so the matrix cannot be clipped", () => {
+    const mobileStyles = styles.slice(styles.lastIndexOf("@media (max-width: 767px)"));
+    expect(mobileStyles).toMatch(/\.erp-production-manager-content\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*calc\(100dvh - var\(--app-header-height\)\);[^}]*overflow:\s*visible;/s);
+    expect(mobileStyles).toMatch(/\.erp-production-manager-page\s*\{[^}]*height:\s*auto;/s);
+    expect(mobileStyles).toMatch(/\.erp-production-manager-page \.erp-month-matrix-scroll\s*\{[^}]*max-height:\s*70vh;/s);
   });
 
   test("integrates the production page period, summary, export, and grouped table contracts", () => {
