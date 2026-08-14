@@ -26,3 +26,9 @@ Branch: `feat/quick-entry-hour-split`
 - `bun run build`: passed.
 - `git diff --check`: passed.
 - No backend, database, report, or batch-entry changes were made.
+
+## Review regressions
+
+- RED: commit `16d828d` added decimal zero-hour and conflict-feedback regressions; the focused suite failed on the rounded decimal result and missing feedback helper.
+- GREEN: commit `e069c35` handles zero-hour buckets, clamps rounded HC to `[0, total]`, and keeps conflict feedback separate from draft validation errors.
+- Focused verification: `bun test src/features/production-entries/productionMatrixHourSplit.test.js src/features/production-entries/productionMatrixQuickEntry.test.js` — 17 passed, 0 failed.
