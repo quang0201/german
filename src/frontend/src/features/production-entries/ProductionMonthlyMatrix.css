@@ -9,8 +9,9 @@
 .erp-month-matrix-table { width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
 .erp-month-matrix-table th, .erp-month-matrix-table td { height:var(--table-row-height); border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border); padding:0 8px; background:var(--color-surface); white-space:nowrap; }
 .erp-month-matrix-table thead th { position:sticky; z-index:7; background:var(--color-surface-soft); color:var(--color-text-muted); text-align:center; font-weight:800; }
-.erp-month-matrix-table thead tr:first-child th { top:0; height:46px; }
+.erp-month-matrix-table thead tr:first-child th:not([rowspan="2"]) { top:0; height:46px; }
 .erp-month-matrix-table thead tr:nth-child(2) th { top:46px; height:31px; font-size:12px; }
+.erp-month-matrix-table thead th[rowspan="2"] { top:0; height:77px !important; vertical-align:middle; }
 .erp-month-day-head { min-width:112px; padding:0 !important; }
 .erp-month-day-head button { width:100%; height:100%; border:0; background:transparent; color:inherit; }
 .erp-month-day-head button:hover { background:var(--color-primary-soft); color:var(--color-primary-hover); }

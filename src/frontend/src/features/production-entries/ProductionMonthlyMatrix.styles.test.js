@@ -23,4 +23,9 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
   test("aligns row-spanned employee names with the first operation row", () => {
     expect(matrixCss).toMatch(/\.erp-month-employee[\s\S]*vertical-align:\s*top[\s\S]*padding-top:\s*10px\s*!important/);
   });
+
+  test("gives two-row sticky headers the full combined height", () => {
+    expect(matrixCss).toMatch(/thead tr:first-child th:not\(\[rowspan="2"\]\)[\s\S]*height:\s*46px/);
+    expect(matrixCss).toMatch(/thead th\[rowspan="2"\][\s\S]*top:\s*0[\s\S]*height:\s*77px\s*!important[\s\S]*vertical-align:\s*middle/);
+  });
 });
