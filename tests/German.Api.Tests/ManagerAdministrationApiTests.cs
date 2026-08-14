@@ -6,6 +6,7 @@ using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
 using German.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -87,6 +88,48 @@ public sealed class ManagerAdministrationApiTests
         Assert.AreEqual(HttpStatusCode.OK, detailResponse.StatusCode);
         var detail = await detailResponse.Content.ReadFromJsonAsync<JsonElement>();
         Assert.AreEqual(25000.50m, detail.GetProperty("operations")[0].GetProperty("fixedPrice").GetDecimal());
+    }
+
+    [TestMethod]
+    public async Task Manager_CanDeleteOperationAndItsProductionEntries()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid orderId = Guid.Empty;
+        Guid operationId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-delete-operation", "M005", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+            var account = await db.UserAccounts.SingleAsync(x => x.Username == "manager-delete-operation");
+            var order = new ProductionOrder { Code = "0417-DELETE", ProductName = "Áo xóa", PlannedQuantity = 100m };
+            var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 567, Name = "CĐ567", Unit = "cái", SortOrder = 567 };
+            db.AddRange(order, operation, new ProductionEntry
+            {
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EmployeeId = account.EmployeeId!.Value,
+                SubmittedByUserId = account.Id,
+                WorkDate = new DateOnly(2026, 8, 15),
+            });
+            await db.SaveChangesAsync();
+            orderId = order.Id;
+            operationId = operation.Id;
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-delete-operation", "secret");
+
+        var response = await client.DeleteAsync($"/api/production-orders/{orderId}/operations/{operationId}");
+
+        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            Assert.IsNotNull(await db.ProductionOrders.FindAsync(orderId));
+            Assert.IsNull(await db.ProductionOperations.FindAsync(operationId));
+            Assert.AreEqual(0, await db.ProductionEntries.IgnoreQueryFilters().CountAsync(x => x.ProductionOperationId == operationId));
+        });
     }
 
     [TestMethod]
