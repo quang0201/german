@@ -24,6 +24,7 @@ export function ProductionOrderListPage({ params }) {
   const [form, setForm] = useState(emptyOrder);
   const [detail, setDetail] = useState(emptyOrder);
   const [operationDialog, setOperationDialog] = useState(null);
+  const [operationError, setOperationError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,19 +59,25 @@ export function ProductionOrderListPage({ params }) {
   }
 
   function openCreateOperationDialog() {
+    setOperationError("");
     setOperationDialog({ scope: "create", mode: "create", index: null, operation: emptyProductionOperation() });
   }
 
   function openCreateOperationEdit(index, item) {
+    setOperationError("");
     setOperationDialog({ scope: "create", mode: "edit", index, operation: productionOperationForm(item) });
   }
 
   function openDetailOperationDialog(mode, item = null) {
+    setOperationError("");
     setOperationDialog({ scope: "detail", mode, operation: item ? productionOperationForm(item) : emptyProductionOperation(), item });
   }
 
   function closeOperationDialog() {
-    if (!saving) setOperationDialog(null);
+    if (!saving) {
+      setOperationError("");
+      setOperationDialog(null);
+    }
   }
 
   async function submitOperationDialog(operationDraft) {
@@ -89,7 +96,7 @@ export function ProductionOrderListPage({ params }) {
 
     if (!selected) return;
     setSaving(true);
-    setError("");
+    setOperationError("");
     try {
       const payload = productionOperationPayload(operationDraft);
       if (operationDialog.mode === "edit") {
@@ -98,9 +105,10 @@ export function ProductionOrderListPage({ params }) {
         await api.post(`/api/production-orders/${selected.id}/operations`, payload);
       }
       setOperationDialog(null);
+      setOperationError("");
       await load({ preserveDetail: true });
     } catch (requestError) {
-      setError(requestError.message || "Không thể lưu công đoạn.");
+      setOperationError(requestError.message || "Không thể lưu công đoạn.");
     } finally {
       setSaving(false);
     }
@@ -224,7 +232,9 @@ export function ProductionOrderListPage({ params }) {
         mode={operationDialog?.mode}
         operation={operationDialog?.operation}
         loading={saving}
+        error={operationError}
         onClose={closeOperationDialog}
+        onChange={() => setOperationError("")}
         onSubmit={submitOperationDialog}
       />
     </div>

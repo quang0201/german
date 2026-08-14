@@ -25,4 +25,12 @@ describe("ProductionOperationDialog", () => {
     expect(html).toContain('value="40000"');
     expect(html).toContain("Lưu thay đổi");
   });
+
+  test("shows API errors inside the open dialog without dropping the draft", () => {
+    const html = renderToStaticMarkup(<ProductionOperationDialog open mode="edit" operation={{ operationNumber: 20, name: "May", unit: "cái", fixedPrice: 40000 }} error="Số công đoạn đã tồn tại." onClose={() => {}} onSubmit={() => {}} />);
+
+    expect(html).toContain("Số công đoạn đã tồn tại.");
+    expect(html).toContain('value="May"');
+    expect(html).toContain('role="alert"');
+  });
 });

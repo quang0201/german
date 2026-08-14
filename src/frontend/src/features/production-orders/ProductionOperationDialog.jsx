@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { emptyProductionOperation, productionOperationForm } from "./productionOperationDialog.js";
 import "./ProductionOperationDialog.css";
 
-export function ProductionOperationDialog({ open = false, mode = "create", operation = null, loading = false, onClose, onSubmit }) {
+export function ProductionOperationDialog({ open = false, mode = "create", operation = null, loading = false, error = "", onClose, onSubmit, onChange }) {
   const [draft, setDraft] = useState(() => productionOperationForm(operation ?? emptyProductionOperation()));
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export function ProductionOperationDialog({ open = false, mode = "create", opera
 
   function update(key, value) {
     setDraft((current) => ({ ...current, [key]: value }));
+    onChange?.();
   }
 
   function submit(event) {
@@ -39,6 +41,7 @@ export function ProductionOperationDialog({ open = false, mode = "create", opera
           <h2 id="production-operation-dialog-title">{editing ? "Sửa công đoạn" : "Thêm công đoạn"}</h2>
           <button type="button" className="erp-icon-button" aria-label="Đóng" onClick={onClose} disabled={loading}>×</button>
         </div>
+        {error && <Alert variant="error" title="Không thể lưu công đoạn.">{error}</Alert>}
         <form onSubmit={submit}>
           <div className="erp-production-operation-dialog-fields">
             <Field label="Số công đoạn" required>
