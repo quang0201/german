@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
-import { mapProductionEntryError } from "./productionEntryErrors.js";
+import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
 import "./ProductionMatrixDialogs.css";
 
 function asNumber(value) {
   return value === "" ? null : Number(value);
 }
 
-export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) {
+export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, onReload }) {
   const record = context?.cell?.entryCount === 1 ? context.cell.records?.[0] : null;
   const editing = record?.entryMode === "Direct";
   const [hc, setHc] = useState("");
@@ -15,6 +15,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
   const [note, setNote] = useState("");
   const [editEntry, setEditEntry] = useState(null);
   const [error, setError] = useState("");
+  const [conflict, setConflict] = useState(false);
   const [loadingEntry, setLoadingEntry] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -27,6 +28,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
     setNote(editing ? (record?.note ?? "") : "");
     setEditEntry(null);
     setError("");
+    setConflict(false);
     setConfirmDelete(false);
     if (!editing) return () => { active = false; };
 
@@ -69,23 +71,25 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
       setError("Hãy nhập HC và TC.");
       return;
     }
-    setSaving(true); setError("");
+    setSaving(true); setError(""); setConflict(false);
     try {
       if (editing) await api.put(`/api/production-entries/${record.id}`, { ...payload, version: editEntry?.version ?? record.version });
       else await api.post("/api/production-entries", payload);
       onSaved?.();
     } catch (requestError) {
+      setConflict(isVersionConflict(requestError));
       setError(mapProductionEntryError(requestError, "Không thể lưu sản lượng."));
     } finally { setSaving(false); }
   }
 
   async function remove() {
     if (!confirmDelete) { setConfirmDelete(true); return; }
-    setSaving(true); setError("");
+    setSaving(true); setError(""); setConflict(false);
     try {
       await api.delete(`/api/production-entries/${record.id}?version=${editEntry?.version ?? record.version}`);
       onSaved?.();
     } catch (requestError) {
+      setConflict(isVersionConflict(requestError));
       setError(mapProductionEntryError(requestError, "Không thể xóa sản lượng."));
     } finally { setSaving(false); }
   }
@@ -107,7 +111,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
             <label className="erp-matrix-field-wide"><span>Ghi chú</span><input className="erp-control" value={note} onChange={(event) => setNote(event.target.value)} /></label>
           </div>
           {loadingEntry && <p className="erp-inline-message">Đang tải dữ liệu gốc...</p>}
-          {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
+          {error && <div className="erp-inline-message erp-inline-error" role="alert"><span>{error}</span>{conflict && <button type="button" className="erp-button erp-button-secondary" onClick={onReload}>Tải lại dữ liệu</button>}</div>}
           {confirmDelete && <p className="erp-inline-message erp-inline-error">Bấm Xóa lần nữa để xác nhận.</p>}
         </div>
         <div className="erp-dialog-actions erp-matrix-dialog-actions">
