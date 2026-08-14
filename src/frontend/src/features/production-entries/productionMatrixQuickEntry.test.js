@@ -4,8 +4,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
 import {
   canWriteQuickEntry,
+  createQuickEntry,
+  buildQuickEntryCreatePayload,
   isQuickEntryDetailCompatible,
   quickEntryExpectedVersion,
+  shouldShowQuickEntryReload,
 } from "./productionMatrixQuickEntry.js";
 
 const context = {
@@ -45,6 +48,30 @@ describe("production matrix quick entry guards", () => {
     expect(canWriteQuickEntry({ editing: true, detailLoaded: true, saving: false })).toBe(true);
     expect(canWriteQuickEntry({ editing: false, detailLoaded: false, saving: false })).toBe(true);
     expect(canWriteQuickEntry({ editing: true, detailLoaded: true, saving: true })).toBe(false);
+  });
+
+  test("shows reload and blocks Save after a create conflict", () => {
+    expect(shouldShowQuickEntryReload({ editing: false, loadingEntry: false, detailLoaded: true, conflict: true })).toBe(true);
+    expect(canWriteQuickEntry({ editing: false, detailLoaded: true, saving: false, conflict: true })).toBe(false);
+  });
+
+  test("wires expectedEmpty into the real create request and preserves a 409 conflict", async () => {
+    const originalFetch = globalThis.fetch;
+    let request;
+    globalThis.fetch = async (path, options) => {
+      request = { path, options };
+      return new Response(JSON.stringify({ code: "production_entry.cell_conflict", message: "Ô đã có dữ liệu." }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      });
+    };
+    try {
+      await expect(createQuickEntry({ ...buildQuickEntryCreatePayload({ workDate: "2026-08-27" }) })).rejects.toMatchObject({ status: 409, code: "production_entry.cell_conflict" });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(request.path).toBe("/api/production-entries");
+    expect(JSON.parse(request.options.body).expectedEmpty).toBe(true);
   });
 
   test("renders edit actions disabled while the detail request is pending", () => {
