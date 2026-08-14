@@ -58,7 +58,9 @@ The `Tổng sản lượng` field accepts only an addition expression made from 
 - `300+100`
 - `300 + 100 + 50`
 
-Operators `-`, `*`, `/`, parentheses, identifiers, and arbitrary JavaScript expressions are rejected. The parser must not use `eval` or `Function`.
+A numeric term uses digits with an optional decimal point; grouping separators are not supported. Whitespace around terms and `+` is allowed.
+
+Operators `-`, `*`, `/`, parentheses, identifiers, empty terms, and arbitrary JavaScript expressions are rejected. The parser must not use `eval` or `Function`.
 
 The UI shows a live preview:
 
@@ -104,7 +106,7 @@ Calculation:
 
 This preserves the parsed total exactly while following the existing proportional split convention. If `Htc = 0`, all production goes to HC. If `Hhc = 0`, all production goes to TC.
 
-The preview must be derived from the same helper used to build the save payload so displayed values and saved values cannot diverge.
+The preview must be derived from the same pure helper used to build the save payload so displayed values and saved values cannot diverge.
 
 ## Persistence model
 
@@ -131,21 +133,22 @@ When a new popup context opens:
 - for an existing Direct entry, load persisted HC/TC as today
 - clear hour-split-only draft values
 
-When switching from Direct to Hour split:
+Keep independent drafts for the two user-facing modes during the lifetime of one popup:
 
-- do not silently reinterpret existing HC/TC quantities as hours
-- show empty hour-split fields and require explicit input
+- switching from Direct to Hour split does not reinterpret HC/TC quantities as hours
+- Hour split starts empty the first time it is selected for that popup
+- switching back to Direct restores the current Direct HC/TC draft
+- switching again to Hour split restores its current hour/formula draft
+- Save always uses only the currently selected mode
+- no automatic copy between the two drafts is required
 
-When switching back to Direct:
-
-- keep the original/current direct HC/TC draft unless the user has explicitly chosen to apply the calculated preview
-- simplest implementation may set direct HC/TC from the latest valid split preview at save time only; it must not create hidden persistence state
+Closing the popup or moving to a different matrix context resets the hour-split draft.
 
 ## Error handling
 
 Inline validation errors should cover:
 
-- malformed total expression
+- malformed or empty total expression
 - unsupported operator/token
 - negative or non-finite term
 - missing/invalid HC or TC hours
@@ -153,7 +156,7 @@ Inline validation errors should cover:
 
 Existing API/version/conflict errors remain unchanged and continue to use the existing quick-entry error mapping and reload action.
 
-The Save button may remain enabled for ordinary validation errors if the current dialog pattern validates on click, but save must be blocked before any API request when the split draft is invalid.
+The Save button may remain enabled for ordinary validation errors if the current dialog pattern validates on click, but save must be blocked before any API request when the active split draft is invalid.
 
 ## Components and helpers
 
@@ -162,7 +165,7 @@ Keep the dialog focused on orchestration and rendering. Add isolated pure helper
 1. parsing the addition-only production expression
 2. validating split-hour input
 3. calculating the proportional HC/TC preview
-4. building the Direct quantities used by the payload
+4. resolving the Direct quantities used by the payload from the active user-facing mode
 
 Prefer reusing the existing production-calculation rounding helper/rule rather than introducing a second rounding convention.
 
@@ -172,8 +175,8 @@ No backend changes are expected unless implementation reveals an existing API va
 
 Add focused frontend tests for:
 
-- parser accepts `300`, `300+100`, and whitespace around `+`
-- parser rejects subtraction, multiplication, division, parentheses, empty terms, negative values, and non-numeric text
+- parser accepts `300`, `300+100`, decimal terms, and whitespace around `+`
+- parser rejects subtraction, multiplication, division, parentheses, empty terms, negative values, grouping separators, and non-numeric text
 - `8 HC / 2 TC / 300+100` produces HC 320, TC 80, total 400
 - zero TC hours sends all quantity to HC
 - zero HC hours sends all quantity to TC
@@ -181,6 +184,7 @@ Add focused frontend tests for:
 - rounding preserves `HC + TC = total`
 - Direct mode retains current HC/TC behavior
 - existing entry edit defaults to Direct using persisted values
+- switching modes preserves independent drafts without reinterpreting values
 - changing popup context resets hour-split-only state
 - split save still produces a `Direct` payload
 - existing version-conflict, expected-empty, loading, delete, and reload behavior remains covered
