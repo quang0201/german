@@ -9,6 +9,7 @@ import { api } from "../../lib/api.js";
 import { calculatePreview } from "./productionCalculation.js";
 import { ProductionEntryPreview } from "./ProductionEntryPreview.jsx";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
+import { productionOrderLookupPath } from "./productionOrderLookup.js";
 
 const MODES = [
   { value: "ByShift", label: "Theo ca", description: "Ca 1 + Ca 2, TC tự tính nếu chỉ nhập giờ." },
@@ -84,7 +85,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
 
   useEffect(() => {
     let active = true;
-    const requests = [api.get("/api/lookups/production-orders/active")];
+    const requests = [api.get(productionOrderLookupPath(canChooseEmployee))];
     if (canChooseEmployee) requests.push(api.get("/api/employees"));
     Promise.all(requests)
       .then(([activeOrders, employeeRows]) => {

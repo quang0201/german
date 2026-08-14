@@ -2,7 +2,7 @@ using German.Domain.Production;
 
 namespace German.Api.Contracts.ProductionOrders;
 
-public sealed record ProductionOperationRequest(int OperationNumber, string Name, string Unit, int SortOrder, bool IsActive = true);
+public sealed record ProductionOperationRequest(int OperationNumber, string Name, string Unit, int SortOrder, bool IsActive = true, decimal? FixedPrice = null);
 public sealed record CreateProductionOrderRequest(
     string Code,
     string ProductName,

@@ -2,7 +2,7 @@ using German.Domain.Production;
 
 namespace German.Application.ProductionOrders;
 
-public sealed record ProductionOperationInput(int OperationNumber, string Name, string Unit, int SortOrder, bool IsActive = true);
+public sealed record ProductionOperationInput(int OperationNumber, string Name, string Unit, int SortOrder, bool IsActive = true, decimal? FixedPrice = null);
 public sealed record CreateProductionOrderCommand(
     string Code,
     string ProductName,
@@ -19,7 +19,7 @@ public sealed record UpdateProductionOrderCommand(
     ProductionOrderStatus Status,
     DateOnly? StartDate,
     DateOnly? EndDate);
-public sealed record ProductionOperationDto(Guid Id, int OperationNumber, string Name, string Unit, int SortOrder, bool IsActive);
+public sealed record ProductionOperationDto(Guid Id, int OperationNumber, string Name, string Unit, decimal? FixedPrice, int SortOrder, bool IsActive);
 public sealed record ProductionOrderDto(
     Guid Id,
     string Code,

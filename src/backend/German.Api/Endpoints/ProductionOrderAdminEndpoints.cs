@@ -10,6 +10,11 @@ public static class ProductionOrderAdminEndpoints
         var group = endpoints.MapGroup("/api/production-orders").RequireAuthorization("ManagerOrAdmin");
 
         group.MapGet("/", async (ProductionOrderService service, CancellationToken ct) => Results.Ok(await service.ListAsync(ct)));
+        group.MapGet("/{id:guid}", async (Guid id, ProductionOrderService service, CancellationToken ct) =>
+        {
+            var result = await service.GetAsync(id, ct);
+            return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
+        });
         group.MapPost("/", async (CreateProductionOrderRequest request, ProductionOrderService service, CancellationToken ct) =>
         {
             var command = new CreateProductionOrderCommand(
@@ -45,5 +50,5 @@ public static class ProductionOrderAdminEndpoints
     }
 
     private static ProductionOperationInput ToInput(ProductionOperationRequest request) =>
-        new(request.OperationNumber, request.Name, request.Unit, request.SortOrder, request.IsActive);
+        new(request.OperationNumber, request.Name, request.Unit, request.SortOrder, request.IsActive, request.FixedPrice);
 }

@@ -89,6 +89,7 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
         {
             builder.Property(x => x.Name).HasMaxLength(300).IsRequired();
             builder.Property(x => x.Unit).HasMaxLength(50).IsRequired();
+            builder.Property(x => x.FixedPrice).HasPrecision(18, 2);
             builder.HasIndex(x => new { x.ProductionOrderId, x.OperationNumber }).IsUnique();
         });
 

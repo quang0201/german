@@ -60,6 +60,36 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Manager_CanReadProductionOrderDetailWithOperationPrice()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-detail", "M004", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-detail", "secret");
+        var createResponse = await client.PostAsJsonAsync("/api/production-orders", new
+        {
+            code = "SX-DETAIL",
+            productName = "Áo chi tiết",
+            plannedQuantity = 250,
+            status = "Draft",
+            operations = new[] { new { operationNumber = 10, name = "Cắt", unit = "cái", sortOrder = 1, fixedPrice = 25000.50m } }
+        });
+        Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var detailResponse = await client.GetAsync($"/api/production-orders/{created.GetProperty("id").GetGuid()}");
+
+        Assert.AreEqual(HttpStatusCode.OK, detailResponse.StatusCode);
+        var detail = await detailResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(25000.50m, detail.GetProperty("operations")[0].GetProperty("fixedPrice").GetDecimal());
+    }
+
+    [TestMethod]
     public async Task Manager_CanCreateShiftAndAssignEmployee()
     {
         await using var factory = new GermanApiFactory();
