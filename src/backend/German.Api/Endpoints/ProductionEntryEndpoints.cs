@@ -53,7 +53,8 @@ public static class ProductionEntryEndpoints
 
     private static async Task<IResult> CreateBatchDirectAsync(CreateProductionEntryBatchDirectRequest request, HttpContext httpContext, ProductionEntryBatchDirectService service, CancellationToken cancellationToken)
     {
-        var items = request.Items.Select(item => new CreateProductionEntryBatchDirectItem(item.ProductionOperationId, item.DirectHcQuantity, item.DirectTcQuantity, item.Note)).ToArray();
+        var requestItems = request.Items ?? Array.Empty<CreateProductionEntryBatchDirectItemRequest>();
+        var items = requestItems.Select(item => new CreateProductionEntryBatchDirectItem(item.ProductionOperationId, item.DirectHcQuantity, item.DirectTcQuantity, item.Note)).ToArray();
         var command = new CreateProductionEntryBatchDirectCommand(request.WorkDate, request.EmployeeId, request.ProductionOrderId, items);
         var result = await service.CreateAsync(httpContext.User.ToCurrentActor(), command, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
