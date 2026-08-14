@@ -19,6 +19,19 @@ export function quickEntryExpectedVersion(record) {
   return record?.version;
 }
 
-export function canWriteQuickEntry({ editing, detailLoaded, saving }) {
-  return !saving && (!editing || detailLoaded);
+export function canWriteQuickEntry({ editing, detailLoaded, saving, conflict = false }) {
+  return !saving && !conflict && (!editing || detailLoaded);
 }
+
+export function shouldShowQuickEntryReload({ editing, loadingEntry, detailLoaded, conflict }) {
+  return !loadingEntry && (conflict || (editing && !detailLoaded));
+}
+
+export function buildQuickEntryCreatePayload(payload) {
+  return { ...payload, expectedEmpty: true };
+}
+
+export function createQuickEntry(payload) {
+  return api.post("/api/production-entries", buildQuickEntryCreatePayload(payload));
+}
+import { api } from "../../lib/api.js";
