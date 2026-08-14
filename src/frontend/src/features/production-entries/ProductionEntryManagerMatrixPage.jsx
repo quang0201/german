@@ -81,6 +81,17 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   function resetFilters() { setDraft(emptyFilters); setFilters(emptyFilters); }
   function reload() { setQuickContext(null); setBatchDay(null); setRecordsContext(null); setReloadKey((value) => value + 1); }
 
+  function handleQuickSaved() {
+    toast.success("Đã lưu sản lượng.");
+    reload();
+  }
+
+  function handleBatchSaved(result) {
+    const count = Number(result?.createdCount ?? 0);
+    toast.success(count > 0 ? `Đã lưu ${count} công đoạn.` : "Đã lưu nhiều công đoạn.");
+    reload();
+  }
+
   function openEntry(id) {
     setRecordsContext(null);
     navigate(`/production/${id}`, { presentation: "panel", backgroundRoute: "/production" });
@@ -111,8 +122,8 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
       </FilterBar>
       <ProductionMonthlyMatrix data={data} monthKey={monthKey} selectedOrderId={selectedOrderId} excludeSundays={excludeSundays} loading={loading} error={error} onSelectOrder={selectOrder} onToggleSundays={setExcludeSundays} onCellClick={handleCell} onDayHeaderClick={setBatchDay} />
-      <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={reload} />
-      <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={reload} />
+      <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} />
+      <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />
       <ProductionExportDialog open={exportOpen} initialMode="month" initialAnchorDate={`${monthKey}-01`} initialFromDate={bounds.fromDate} initialUntilDate={bounds.untilDate} onClose={() => setExportOpen(false)} onExport={exportRows} />
       <DetailPanel open={Boolean(panelEntryId)} title="Chi tiết sản lượng" onClose={onPanelClose}>
