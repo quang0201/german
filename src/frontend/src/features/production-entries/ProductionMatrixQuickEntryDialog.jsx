@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
+import { mapProductionEntryError } from "./productionEntryErrors.js";
 import "./ProductionMatrixDialogs.css";
 
 function asNumber(value) {
@@ -38,7 +39,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
         setTc(String(entry.directTcQuantity ?? entry.tcQuantity ?? ""));
         setNote(entry.note ?? "");
       })
-      .catch((requestError) => active && setError(requestError.message || "Không thể tải bản ghi để chỉnh sửa."))
+      .catch((requestError) => active && setError(mapProductionEntryError(requestError, "Không thể tải bản ghi để chỉnh sửa.")))
       .finally(() => active && setLoadingEntry(false));
     return () => { active = false; };
   }, [context, editing, record?.id, record?.note]);
@@ -74,7 +75,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
       else await api.post("/api/production-entries", payload);
       onSaved?.();
     } catch (requestError) {
-      setError(requestError.message || "Không thể lưu sản lượng.");
+      setError(mapProductionEntryError(requestError, "Không thể lưu sản lượng."));
     } finally { setSaving(false); }
   }
 
@@ -85,7 +86,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved }) 
       await api.delete(`/api/production-entries/${record.id}?version=${editEntry?.version ?? record.version}`);
       onSaved?.();
     } catch (requestError) {
-      setError(requestError.message || "Không thể xóa sản lượng.");
+      setError(mapProductionEntryError(requestError, "Không thể xóa sản lượng."));
     } finally { setSaving(false); }
   }
 
