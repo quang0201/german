@@ -54,11 +54,11 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     if (selectedIds.some((id) => drafts[id].hc === "" || drafts[id].tc === "")) return setError("Hãy nhập HC và TC cho tất cả công đoạn đã chọn.");
     setSaving(true); setError("");
     try {
-      await api.post("/api/production-entries/batch-direct", {
+      const result = await api.post("/api/production-entries/batch-direct", {
         workDate: day.isoDate, employeeId, productionOrderId: orderId,
         items: selectedIds.map((id) => ({ productionOperationId: id, directHcQuantity: toNumber(drafts[id].hc), directTcQuantity: toNumber(drafts[id].tc), note: drafts[id].note.trim() || null })),
       });
-      onSaved?.();
+      onSaved?.(result);
     } catch (requestError) { setError(requestError.message || "Không thể lưu nhiều công đoạn."); }
     finally { setSaving(false); }
   }
