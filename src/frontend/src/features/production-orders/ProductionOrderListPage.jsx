@@ -7,7 +7,7 @@ import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { navigate } from "../../app/navigation.js";
 import { api } from "../../lib/api.js";
 import { orderStatusLabel } from "../../lib/i18n.js";
-import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft, resolveProductionOrderView } from "./productionOrderForm.js";
 import { emptyProductionOperation, productionOperationForm, productionOperationPayload } from "./productionOperationDialog.js";
 import { ProductionOperationDialog } from "./ProductionOperationDialog.jsx";
 
@@ -17,8 +17,11 @@ function emptyOrder() {
   return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", operations: [] };
 }
 
-export function ProductionOrderListPage({ params }) {
+export function ProductionOrderListPage({ params, pathname }) {
   const detailId = params?.id ?? "";
+  const view = resolveProductionOrderView(pathname, detailId);
+  const isCreateRoute = view === "create";
+  const isListRoute = view === "list";
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyOrder);
@@ -174,10 +177,10 @@ export function ProductionOrderListPage({ params }) {
 
   return (
     <div className="erp-feature-page">
-      <PageHeader title={detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={detailId ? <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}>Quay lại danh sách</button> : undefined} />
+      <PageHeader title={isCreateRoute ? "Tạo mã sản xuất" : detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={isListRoute ? <button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/orders/new")}>+ Tạo Mã SX</button> : <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}>Quay lại danh sách</button>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
 
-      {!detailId && <>
+      {isCreateRoute && <>
         <FormSection title="Thông tin Mã SX" description="Khai báo thông tin chung trước khi thêm công đoạn.">
           <form id="order-create" onSubmit={createOrder}>
             <Field label="Mã SX" required><input form="order-create" className="erp-control" required value={form.code} onChange={(event) => updateForm("code", event.target.value)} /></Field>
@@ -202,7 +205,7 @@ export function ProductionOrderListPage({ params }) {
         </FormSection>
       </>}
 
-      {!detailId && <DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
+      {isListRoute && <DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
 
       {detailId && <>
         {loading && <div className="erp-table-state">Đang tải chi tiết mã sản xuất...</div>}

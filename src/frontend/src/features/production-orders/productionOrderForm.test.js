@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView } from "./productionOrderForm.js";
 
 describe("production order form", () => {
   test("builds a create payload with operations and fixed prices", () => {
@@ -40,5 +40,11 @@ describe("production order form", () => {
 
     expect(resolveProductionOrderDetailDraft(serverOrder, draft, true)).toBe(draft);
     expect(resolveProductionOrderDetailDraft(serverOrder, draft, false)).toEqual(productionOrderDetailForm(serverOrder));
+  });
+
+  test("keeps the order list separate from the create route", () => {
+    expect(resolveProductionOrderView("/orders")).toBe("list");
+    expect(resolveProductionOrderView("/orders/new")).toBe("create");
+    expect(resolveProductionOrderView("/orders/abc-123", "abc-123")).toBe("detail");
   });
 });
