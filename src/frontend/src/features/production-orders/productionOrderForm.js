@@ -36,6 +36,19 @@ export function resolveProductionOrderDetailDraft(order, currentDraft, preserveD
   return preserveDraft ? currentDraft : productionOrderDetailForm(order);
 }
 
+export function resolveProductionOrderView(pathname, detailId = "") {
+  if (detailId) return "detail";
+  return pathname === "/orders/new" ? "create" : "list";
+}
+
+export function shouldLoadProductionOrderList(view) {
+  return view === "list";
+}
+
+export function shouldResetProductionOrderCreateDraft(previousView, nextView) {
+  return nextView === "create" && previousView !== "create";
+}
+
 export function formatFixedPrice(value) {
   if (value === null || value === undefined || value === "") return "Chưa thiết lập";
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(value));
