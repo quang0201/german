@@ -1,6 +1,6 @@
 # Production Monthly Matrix Implementation Plan
 
-> **Status (2026-08-14):** The original implementation and CI verification are complete. The plan below is retained as a historical checklist; `docs/testing/production-monthly-matrix.tdd.md` is the authoritative evidence record. Post-review concurrency and quick-create safeguards were added in commits `41a17a5` and `e7346ee`.
+> **Status (2026-08-14):** The original implementation and CI verification are complete. The plan below is retained as a historical checklist; `docs/testing/production-monthly-matrix.tdd.md` is the authoritative evidence record. Post-review concurrency and quick-create safeguards were added in commits `41a17a5`, `e7346ee`, `dbf263c`, and `8427d74`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

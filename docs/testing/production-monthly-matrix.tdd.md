@@ -77,3 +77,10 @@ Review identified two HIGH quick-edit issues and missing coverage for related wr
 - Quick edit now requires the detail response to match the matrix record's ID, version, Direct mode, date, employee, order, and operation. PUT/DELETE always use the matrix snapshot version; Save/Delete remain disabled until detail load succeeds.
 - Empty-cell quick create sends `expectedEmpty: true`; the server returns HTTP 409 with `production_entry.cell_conflict` when the matrix key is already occupied. This is a pre-check and does not replace a database uniqueness guarantee.
 - Batch operation loading ignores stale responses after a rapid Mã SX change. The existing batch conflict path preserves the draft.
+
+## Latest quick-create review follow-up
+
+- RED checkpoint: commit `dbf263c` added a regression for quick-create `409 production_entry.cell_conflict`, asserting the real `api.post` path carries `expectedEmpty: true` and preserves the 409 error.
+- GREEN checkpoint: commit `8427d74` makes reload visible for both create and edit conflicts and disables Save/Delete while `conflict` is active.
+- Full frontend verification after the fix: `110` passed, `0` failed across `32` files with `345` expectations; production build succeeded and bundled `69` modules.
+- The previously verified backend Release suite is unchanged by this frontend-only follow-up: Domain `9`, Application `54`, Infrastructure `8`, API `40` passed; build had `0` warnings and `0` errors.
