@@ -45,6 +45,11 @@ public static class ProductionOrderAdminEndpoints
             var result = await service.UpdateOperationAsync(orderId, operationId, ToInput(request), ct);
             return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
         });
+        group.MapDelete("/{orderId:guid}/operations/{operationId:guid}", async (Guid orderId, Guid operationId, ProductionOrderService service, CancellationToken ct) =>
+        {
+            var result = await service.DeleteOperationAsync(orderId, operationId, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResultMapper.Error(result.Error!);
+        });
 
         return endpoints;
     }

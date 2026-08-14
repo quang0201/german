@@ -200,6 +200,26 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         return AppResult<ProductionOperationDto>.Success(ToDto(operation));
     }
 
+    public async Task<AppResult> DeleteOperationAsync(Guid orderId, Guid operationId, CancellationToken cancellationToken)
+    {
+        var operation = await db.ProductionOperations
+            .FirstOrDefaultAsync(x => x.Id == operationId && x.ProductionOrderId == orderId, cancellationToken);
+        if (operation is null)
+        {
+            return AppResult.Failure("production_operation.not_found", "Không tìm thấy công đoạn.");
+        }
+
+        var entries = await db.ProductionEntries
+            .IgnoreQueryFilters()
+            .Where(x => x.ProductionOperationId == operationId)
+            .ToListAsync(cancellationToken);
+
+        db.ProductionEntries.RemoveRange(entries);
+        db.ProductionOperations.Remove(operation);
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult.Success();
+    }
+
     private static AppResult ValidateOrder(string code, string productName, decimal plannedQuantity, DateOnly? startDate, DateOnly? endDate)
     {
         if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(productName) || plannedQuantity < 0m)
