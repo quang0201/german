@@ -28,6 +28,7 @@ export function ProductionOrderListPage({ params, pathname }) {
   const [form, setForm] = useState(emptyOrder);
   const [detail, setDetail] = useState(emptyOrder);
   const [operationDialog, setOperationDialog] = useState(null);
+  const [operationDeleteId, setOperationDeleteId] = useState("");
   const [operationError, setOperationError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,6 +56,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     if (shouldResetProductionOrderCreateDraft(previousViewRef.current, view)) {
       setForm(emptyOrder());
       setOperationDialog(null);
+      setOperationDeleteId("");
       setOperationError("");
       setError("");
     }
@@ -176,6 +178,27 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
+  async function deleteOperation(item) {
+    if (!selected) return;
+    if (operationDeleteId !== item.id) {
+      setOperationDeleteId(item.id);
+      setError("");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await api.delete(`/api/production-orders/${selected.id}/operations/${item.id}`);
+      setOperationDeleteId("");
+      await load({ preserveDetail: true });
+    } catch (requestError) {
+      setError(requestError.message || "Không thể xóa công đoạn và dữ liệu liên quan.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const columns = [
     { key: "code", label: "Mã SX" },
     { key: "productName", label: "Sản phẩm" },
@@ -231,9 +254,9 @@ export function ProductionOrderListPage({ params, pathname }) {
             <Field label="Ngày kết thúc"><input form="production-order-detail" className="erp-control" type="date" value={detail.endDate} onChange={(event) => setDetail((current) => ({ ...current, endDate: event.target.value }))} /></Field>
             <div className="erp-field-wide erp-form-actions"><button form="production-order-detail" type="submit" className="erp-button erp-button-primary" disabled={saving}>Lưu thông tin Mã SX</button></div>
           </FormSection>
-          <FormSection title="Công đoạn" description="Không xóa cứng công đoạn đã có dữ liệu; dùng Tắt để giữ lịch sử.">
+          <FormSection title="Công đoạn" description="Tắt để giữ lịch sử; Xóa dữ liệu sẽ xóa công đoạn và toàn bộ sản lượng liên quan.">
             <div className="erp-field-wide erp-table-wrap"><table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên</th><th>ĐVT</th><th>Giá cố định</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-              {selected.operations.map((item) => <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button></td></tr>)}
+              {selected.operations.map((item) => <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td>{operationDeleteId === item.id ? <><span className="erp-inline-message erp-inline-error">Xóa toàn bộ dữ liệu liên quan</span> <button type="button" className="erp-button erp-button-danger" onClick={() => deleteOperation(item)} disabled={saving}>Xác nhận xóa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationDeleteId("")} disabled={saving}>Hủy</button></> : <><button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}> {item.isActive ? "Tắt" : "Bật"}</button> <button type="button" className="erp-button erp-button-link" onClick={() => deleteOperation(item)} disabled={saving}>Xóa dữ liệu</button></>}</td></tr>)}
               {!selected.operations.length && <tr><td colSpan="6">Chưa có công đoạn.</td></tr>}
             </tbody></table></div>
             <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => openDetailOperationDialog("create")}>+ Thêm công đoạn</button></div>
