@@ -31,6 +31,7 @@ This file records only CI evidence observed while implementing the approved mont
 - Active-employee RED: workflow run `31767161896` failed because the batch dialog did not yet select the first active employee. The helper now skips inactive employees and the dropdown already filters them.
 - Localization RED: workflow run `31767323360` failed after adding coverage requiring Vietnamese entry-mode labels in the multiple-record chooser. The chooser now uses the shared `entryModeLabel` mapping.
 - Responsive RED: workflow run `31767563172` failed the new narrow-screen contract because all three total columns remained sticky-right together with both sticky-left columns. At `<= 900px`, total columns now scroll normally while the two left identity columns remain sticky.
+- Visual-token RED: workflow run `31767871350` failed after adding a feature CSS guard against local hex/RGB literals. Matrix styles now use the existing ERP border, primary-soft, focus-ring and text tokens instead of feature-local color literals.
 
 ## Empty-month entry regression
 
@@ -41,9 +42,9 @@ Review found that an empty month previously hid the table header, which would ma
 
 ## Final code-head verification
 
-Workflow run `31767673327` verified code head `7ee99f7e6604591df3270c82e3ced1a6b1a5b9ba` after the final review fixes, including batch null-safety, localized aggregate-record choices, active employee defaulting, narrow-screen sticky behavior, success feedback, and quick-edit conflict reload.
+Workflow run `31767903229` verified code head `4bdb9e3f8ad0e3c7772d60a35d18348248429624` after the final review fixes, including batch null-safety, localized aggregate-record choices, active employee defaulting, narrow-screen sticky behavior, success feedback, quick-edit conflict reload, and ERP color-token compliance.
 
-- Frontend: `102` passed, `0` failed across `31` files with `324` expectations; production build succeeded and bundled `67` modules.
+- Frontend: `103` passed, `0` failed across `31` files with `326` expectations; production build succeeded and bundled `67` modules.
 - Backend Release build: succeeded with `0` warnings and `0` errors.
 - Domain tests: `9` passed, `0` failed.
 - Application tests: `53` passed, `0` failed.
@@ -62,6 +63,7 @@ Review of `dev...feat/production-monthly-matrix` found and fixed the following b
 - restored shared production-entry version-conflict messaging and an explicit matrix reload action;
 - localized entry modes in aggregate-cell record selection;
 - removed excessive sticky-right columns on narrow screens while preserving horizontal matrix scrolling;
+- kept new matrix/dialog colors on the shared ERP token system;
 - added role-dispatch coverage proving Worker remains on the existing period/list flow while Manager/Admin use the monthly matrix.
 
 No database migration or third-party dependency was added. The cumulative diff does not modify `ProductionCalculator` or the Excel exporter/workbook implementation. The known duplicate-key concurrency limitation remains unchanged by design: the database does not enforce a unique matrix cell key, so batch creation performs a conflict pre-check but cannot provide a database-level uniqueness guarantee without changing existing data semantics.
