@@ -192,7 +192,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private static Cell Num(int value) => Num((decimal)value);
     private static Cell Date(DateOnly value) => new() { StyleIndex = DateStyle, CellValue = new CellValue(value.ToDateTime(TimeOnly.MinValue).ToOADate().ToString(CultureInfo.InvariantCulture)) };
 
-    private static SheetViews FrozenManagementViews() => new(new SheetView(new Pane { VerticalSplit = 3D, HorizontalSplit = 5D, TopLeftCell = "D6", ActivePane = PaneValues.BottomRight, State = PaneStateValues.Frozen }) { WorkbookViewId = 0U });
+    private static SheetViews FrozenManagementViews() => new(new SheetView(new Pane { HorizontalSplit = 3D, VerticalSplit = 5D, TopLeftCell = "D6", ActivePane = PaneValues.BottomRight, State = PaneStateValues.Frozen }) { WorkbookViewId = 0U });
     private static Columns ManagementColumns(int days, int totalStart) { var columns = new Columns(Column(1, 26), Column(2, 9), Column(3, 10)); for (var i = 0; i < days * 2; i++) columns.Append(Column((uint)(4 + i), 10)); columns.Append(Column((uint)totalStart, 12), Column((uint)totalStart + 1, 12), Column((uint)totalStart + 2, 12)); return columns; }
     private static Columns OverviewColumns() => new(Column(1, 18), Column(2, 22), Column(3, 14), Column(4, 22), Column(5, 22));
     private static Column Column(uint index, double width) => new() { Min = index, Max = index, Width = width, CustomWidth = true };

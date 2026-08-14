@@ -69,8 +69,8 @@ public sealed class OpenXmlProductionReportExporterTests
         var pane = GetWorksheetPart(document, "Báo cáo quản lý").Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
         Assert.IsNotNull(pane);
         Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
-        Assert.AreEqual(3D, pane.VerticalSplit?.Value);
-        Assert.AreEqual(5D, pane.HorizontalSplit?.Value);
+        Assert.AreEqual(3D, pane.HorizontalSplit?.Value);
+        Assert.AreEqual(5D, pane.VerticalSplit?.Value);
         Assert.AreEqual("D6", pane.TopLeftCell?.Value);
     }
 
