@@ -122,7 +122,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
       </FilterBar>
       <ProductionMonthlyMatrix data={data} monthKey={monthKey} selectedOrderId={selectedOrderId} excludeSundays={excludeSundays} loading={loading} error={error} onSelectOrder={selectOrder} onToggleSundays={setExcludeSundays} onCellClick={handleCell} onDayHeaderClick={setBatchDay} />
-      <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} />
+      <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} onReload={reload} />
       <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />
       <ProductionExportDialog open={exportOpen} initialMode="month" initialAnchorDate={`${monthKey}-01`} initialFromDate={bounds.fromDate} initialUntilDate={bounds.untilDate} onClose={() => setExportOpen(false)} onExport={exportRows} />
