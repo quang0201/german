@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
 
 describe("production order form", () => {
   test("builds a create payload with operations and fixed prices", () => {
@@ -46,5 +46,18 @@ describe("production order form", () => {
     expect(resolveProductionOrderView("/orders")).toBe("list");
     expect(resolveProductionOrderView("/orders/new")).toBe("create");
     expect(resolveProductionOrderView("/orders/abc-123", "abc-123")).toBe("detail");
+  });
+
+  test("only loads the order list on the list route", () => {
+    expect(shouldLoadProductionOrderList("list")).toBe(true);
+    expect(shouldLoadProductionOrderList("create")).toBe(false);
+    expect(shouldLoadProductionOrderList("detail")).toBe(false);
+  });
+
+  test("resets create drafts only when entering the create route", () => {
+    expect(shouldResetProductionOrderCreateDraft("list", "create")).toBe(true);
+    expect(shouldResetProductionOrderCreateDraft("detail", "create")).toBe(true);
+    expect(shouldResetProductionOrderCreateDraft("create", "create")).toBe(false);
+    expect(shouldResetProductionOrderCreateDraft("create", "list")).toBe(false);
   });
 });

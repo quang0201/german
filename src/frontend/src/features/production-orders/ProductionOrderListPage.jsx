@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { DataTable } from "../../components/erp/DataTable.jsx";
 import { Field } from "../../components/erp/Field.jsx";
@@ -7,7 +7,7 @@ import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { navigate } from "../../app/navigation.js";
 import { api } from "../../lib/api.js";
 import { orderStatusLabel } from "../../lib/i18n.js";
-import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft, resolveProductionOrderView } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
 import { emptyProductionOperation, productionOperationForm, productionOperationPayload } from "./productionOperationDialog.js";
 import { ProductionOperationDialog } from "./ProductionOperationDialog.jsx";
 
@@ -22,6 +22,7 @@ export function ProductionOrderListPage({ params, pathname }) {
   const view = resolveProductionOrderView(pathname, detailId);
   const isCreateRoute = view === "create";
   const isListRoute = view === "list";
+  const previousViewRef = useRef(view);
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyOrder);
@@ -37,7 +38,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setError("");
     try {
       const [items, selectedOrder] = await Promise.all([
-        api.get("/api/production-orders"),
+        shouldLoadProductionOrderList(view) ? api.get("/api/production-orders") : Promise.resolve([]),
         detailId ? api.get(`/api/production-orders/${detailId}`) : Promise.resolve(null),
       ]);
       setRows(items);
@@ -50,7 +51,16 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
-  useEffect(() => { load(); }, [detailId]);
+  useEffect(() => {
+    if (shouldResetProductionOrderCreateDraft(previousViewRef.current, view)) {
+      setForm(emptyOrder());
+      setOperationDialog(null);
+      setOperationError("");
+      setError("");
+    }
+    previousViewRef.current = view;
+    load();
+  }, [detailId, view]);
 
   function updateForm(key, value) {
     setForm((current) => ({ ...current, [key]: value }));

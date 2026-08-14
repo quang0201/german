@@ -41,6 +41,14 @@ export function resolveProductionOrderView(pathname, detailId = "") {
   return pathname === "/orders/new" ? "create" : "list";
 }
 
+export function shouldLoadProductionOrderList(view) {
+  return view === "list";
+}
+
+export function shouldResetProductionOrderCreateDraft(previousView, nextView) {
+  return nextView === "create" && previousView !== "create";
+}
+
 export function formatFixedPrice(value) {
   if (value === null || value === undefined || value === "") return "Chưa thiết lập";
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(value));
