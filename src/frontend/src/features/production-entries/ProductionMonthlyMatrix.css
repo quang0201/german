@@ -43,4 +43,6 @@ thead .erp-month-total { z-index:12; background:var(--color-primary-soft) !impor
   .erp-month-sticky-employee { min-width:170px; width:170px; }
   .erp-month-sticky-operation { left:170px; }
   .erp-month-matrix-scroll { max-height:70vh; }
+  .erp-month-total-all, .erp-month-total-tc, .erp-month-total-hc { right:auto; }
+  .erp-month-matrix-table tbody .erp-month-total { position:static; }
 }
