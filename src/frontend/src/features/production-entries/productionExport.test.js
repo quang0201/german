@@ -3,6 +3,7 @@ import {
   createProductionExportDraft,
   createProductionExportPayload,
   exportRangeError,
+  productionExportFileName,
   listRangeError,
 } from "./productionExport.js";
 
@@ -54,5 +55,13 @@ describe("production export date range", () => {
       untilDate: "2026-08-17",
       excludeSundays: false,
     });
+  });
+
+  test("uses month-year in the downloaded filename for a single-month export", () => {
+    expect(productionExportFileName("2026-08-01", "2026-08-31")).toBe("san-luong_08-2026.xlsx");
+  });
+
+  test("keeps both month-year boundaries for a multi-month export", () => {
+    expect(productionExportFileName("2026-08-25", "2026-09-05")).toBe("san-luong_08-2026_09-2026.xlsx");
   });
 });
