@@ -1,4 +1,5 @@
 import React from "react";
+import { entryModeLabel } from "../../lib/i18n.js";
 
 const format = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 
@@ -13,7 +14,7 @@ export function ProductionMatrixCellRecordsDialog({ context, onClose, onOpenEntr
           <div className="erp-matrix-record-list">
             {context.cell.records.map((record) => (
               <button key={record.id} type="button" className="erp-matrix-record-item" onClick={() => onOpenEntry?.(record.id)}>
-                <strong>{record.entryMode}</strong>
+                <strong>{entryModeLabel(record.entryMode)}</strong>
                 <span>HC {format.format(record.hcQuantity)} · TC {format.format(record.tcQuantity)} · Tổng {format.format(record.totalQuantity)}</span>
               </button>
             ))}
