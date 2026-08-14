@@ -41,7 +41,12 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual("25", GetCell(firstRow, "E6").CellValue!.Text);
         Assert.AreEqual("80", GetCell(firstRow, "F6").CellValue!.Text);
         Assert.AreEqual("10", GetCell(firstRow, "G6").CellValue!.Text);
-        Assert.IsNull(GetCellOrNull(firstRow, "H6"));
+        var emptyHc = GetCell(firstRow, "H6");
+        var emptyTc = GetCell(firstRow, "I6");
+        Assert.IsNull(emptyHc.CellValue);
+        Assert.IsNull(emptyTc.CellValue);
+        Assert.AreEqual("FFEAF4FB", GetFillColor(document, emptyHc));
+        Assert.AreEqual("FFFFE6CC", GetFillColor(document, emptyTc));
         Assert.AreEqual("230", GetCell(firstRow, "L6").CellValue!.Text);
         Assert.AreEqual("35", GetCell(firstRow, "M6").CellValue!.Text);
         Assert.AreEqual("265", GetCell(firstRow, "N6").CellValue!.Text);

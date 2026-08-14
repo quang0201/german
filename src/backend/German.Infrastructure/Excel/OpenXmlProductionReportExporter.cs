@@ -144,10 +144,17 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         cells.Add(At($"C{row}", Text(first.Unit, CenterStyle)));
         for (var i = 0; i < days.Count; i++)
         {
-            if (!byDay.TryGetValue(days[i], out var quantity)) continue;
             var column = 4 + i * 2;
-            cells.Add(At($"{Col(column)}{row}", HcNum(quantity.Hc)));
-            cells.Add(At($"{Col(column + 1)}{row}", TcNum(quantity.Tc)));
+            if (byDay.TryGetValue(days[i], out var quantity))
+            {
+                cells.Add(At($"{Col(column)}{row}", HcNum(quantity.Hc)));
+                cells.Add(At($"{Col(column + 1)}{row}", TcNum(quantity.Tc)));
+            }
+            else
+            {
+                cells.Add(At($"{Col(column)}{row}", Blank(HcBodyStyle)));
+                cells.Add(At($"{Col(column + 1)}{row}", Blank(TcBodyStyle)));
+            }
         }
         cells.Add(At($"{Col(totalStart)}{row}", HcNum(hc)));
         cells.Add(At($"{Col(totalStart + 1)}{row}", TcNum(tc)));
@@ -179,6 +186,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private static Cell At(string reference, Cell cell) { cell.CellReference = reference; return cell; }
     private static Cell Text(string value, uint style = 0U) => new() { DataType = CellValues.InlineString, StyleIndex = style, InlineString = new InlineString(new Text(value)) };
     private static Cell Num(decimal value, uint style = NumericStyle) => new() { StyleIndex = style, CellValue = new CellValue(value.ToString(CultureInfo.InvariantCulture)) };
+    private static Cell Blank(uint style) => new() { StyleIndex = style };
     private static Cell HcNum(decimal value) => Num(value, HcBodyStyle);
     private static Cell TcNum(decimal value) => Num(value, TcBodyStyle);
     private static Cell Num(int value) => Num((decimal)value);
