@@ -91,6 +91,13 @@ describe("ERP responsive CSS contract", () => {
     expect(productionManagerMatrixPage).toContain("erp-production-manager-overview");
   });
 
+  test("lets the manager page scroll on mobile so the matrix cannot be clipped", () => {
+    const mobileStyles = styles.slice(styles.lastIndexOf("@media (max-width: 767px)"));
+    expect(mobileStyles).toMatch(/\.erp-production-manager-content\s*\{[^}]*height:\s*auto;[^}]*min-height:\s*calc\(100dvh - var\(--app-header-height\)\);[^}]*overflow:\s*visible;/s);
+    expect(mobileStyles).toMatch(/\.erp-production-manager-page\s*\{[^}]*height:\s*auto;/s);
+    expect(mobileStyles).toMatch(/\.erp-production-manager-page \.erp-month-matrix-scroll\s*\{[^}]*max-height:\s*70vh;/s);
+  });
+
   test("integrates the production page period, summary, export, and grouped table contracts", () => {
     expect(productionListPage).toContain('import { PeriodSelector } from "./PeriodSelector.jsx";');
     expect(productionListPage).toContain('import { ProductionSummary } from "./ProductionSummary.jsx";');
