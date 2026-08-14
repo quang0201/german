@@ -6,8 +6,10 @@ import {
   canWriteQuickEntry,
   createQuickEntry,
   buildQuickEntryCreatePayload,
+  buildQuickEntryPayload,
   isQuickEntryDetailCompatible,
   quickEntryExpectedVersion,
+  quickEntryFeedbackMessage,
   shouldShowQuickEntryReload,
 } from "./productionMatrixQuickEntry.js";
 
@@ -55,6 +57,12 @@ describe("production matrix quick entry guards", () => {
     expect(canWriteQuickEntry({ editing: false, detailLoaded: true, saving: false, conflict: true })).toBe(false);
   });
 
+  test("keeps the conflict reload feedback after the draft error is cleared", () => {
+    expect(quickEntryFeedbackMessage({ error: "", conflictError: "Ô đã có dữ liệu." })).toBe("Ô đã có dữ liệu.");
+    expect(shouldShowQuickEntryReload({ editing: false, loadingEntry: false, detailLoaded: true, conflict: true })).toBe(true);
+    expect(canWriteQuickEntry({ editing: false, detailLoaded: true, saving: false, conflict: true })).toBe(false);
+  });
+
   test("wires expectedEmpty into the real create request and preserves a 409 conflict", async () => {
     const originalFetch = globalThis.fetch;
     let request;
@@ -74,6 +82,21 @@ describe("production matrix quick entry guards", () => {
     expect(JSON.parse(request.options.body).expectedEmpty).toBe(true);
   });
 
+  test("persists hour-split results as a Direct payload", () => {
+    const payload = buildQuickEntryPayload({
+      context,
+      quantities: { hc: 320, tc: 80 },
+      editEntry: null,
+      note: "  Chia theo giờ  ",
+    });
+    expect(payload).toMatchObject({
+      entryMode: "Direct",
+      directHcQuantity: 320,
+      directTcQuantity: 80,
+      note: "Chia theo giờ",
+    });
+  });
+
   test("renders edit actions disabled while the detail request is pending", () => {
     const html = renderToStaticMarkup(
       <ProductionMatrixQuickEntryDialog
@@ -82,5 +105,17 @@ describe("production matrix quick entry guards", () => {
       />,
     );
     expect((html.match(/disabled=""/g) ?? []).length).toBe(2);
+  });
+
+  test("defaults an existing entry to Direct while exposing both input modes", () => {
+    const html = renderToStaticMarkup(
+      <ProductionMatrixQuickEntryDialog
+        context={{ ...context, cell: { entryCount: 1, hcQuantity: 10, tcQuantity: 2, records: [record] } }}
+        onClose={() => {}}
+      />,
+    );
+    expect(html).toContain("Nhập trực tiếp");
+    expect(html).toContain("Chia đều theo giờ");
+    expect(html).toContain('aria-pressed="true"');
   });
 });
