@@ -67,3 +67,13 @@ Review of `dev...feat/production-monthly-matrix` found and fixed the following b
 - added role-dispatch coverage proving Worker remains on the existing period/list flow while Manager/Admin use the monthly matrix.
 
 No database migration or third-party dependency was added. The cumulative diff does not modify `ProductionCalculator` or the Excel exporter/workbook implementation. The known duplicate-key concurrency limitation remains unchanged by design: the database does not enforce a unique matrix cell key, so batch creation performs a conflict pre-check but cannot provide a database-level uniqueness guarantee without changing existing data semantics.
+
+## Post-review concurrency safeguards
+
+Review identified two HIGH quick-edit issues and missing coverage for related write races. The fixes were developed with a RED/GREEN cycle:
+
+- RED checkpoint: commit `41a17a5` added tests for stale detail version/mode/key, detail-load write gating, and expected-empty cell creation; the focused frontend and application tests failed because the guards/contracts did not exist.
+- GREEN checkpoint: commit `e7346ee` added the guards and server contract. Focused frontend tests passed (`8` passed, `0` failed); application expected-empty test passed; API expected-empty conflict test passed.
+- Quick edit now requires the detail response to match the matrix record's ID, version, Direct mode, date, employee, order, and operation. PUT/DELETE always use the matrix snapshot version; Save/Delete remain disabled until detail load succeeds.
+- Empty-cell quick create sends `expectedEmpty: true`; the server returns HTTP 409 with `production_entry.cell_conflict` when the matrix key is already occupied. This is a pre-check and does not replace a database uniqueness guarantee.
+- Batch operation loading ignores stale responses after a rapid Mã SX change. The existing batch conflict path preserves the draft.
