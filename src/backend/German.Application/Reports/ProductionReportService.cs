@@ -36,6 +36,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             where !entry.IsDeleted
                 && entry.WorkDate >= fromDate
                 && entry.WorkDate <= untilDate
+                && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (!filter.EmployeeId.HasValue || entry.EmployeeId == filter.EmployeeId.Value)
                 && (!filter.OrderId.HasValue || entry.ProductionOrderId == filter.OrderId.Value)
                 && (!filter.OperationId.HasValue || entry.ProductionOperationId == filter.OperationId.Value)

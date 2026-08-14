@@ -28,6 +28,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
             join operation in db.ProductionOperations.AsNoTracking() on entry.ProductionOperationId equals operation.Id
             where entry.WorkDate >= fromDate
                 && entry.WorkDate <= untilDate
+                && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (!request.EmployeeId.HasValue || entry.EmployeeId == request.EmployeeId.Value)
                 && (!request.OperationId.HasValue || entry.ProductionOperationId == request.OperationId.Value)
             select new { entry, employee, order, operation };

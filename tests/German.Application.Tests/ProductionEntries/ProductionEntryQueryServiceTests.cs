@@ -64,6 +64,28 @@ public sealed class ProductionEntryQueryServiceTests
     }
 
     [TestMethod]
+    public async Task ListAsync_ExcludesEntriesWithNoProduction()
+    {
+        await using var db = CreateDb();
+        var date = new DateOnly(2026, 8, 12);
+        await SeedEntryAsync(db, date, "E001", "Nguyễn Văn A", "0417", "May thân");
+        var zeroEntry = await SeedEntryAsync(db, date, "E002", "Trần Văn B", "0417", "May thân");
+        zeroEntry.HcQuantity = 0m;
+        zeroEntry.TcQuantity = 0m;
+        zeroEntry.TotalQuantity = 0m;
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionEntryQueryService(db, TimeProvider.System).ListAsync(
+            new ProductionEntryListQuery(null, date, date, null, null, null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(1, result.Value!.Items.Count);
+        Assert.AreEqual(1, result.Value.TotalCount);
+        Assert.AreEqual("E001", result.Value.Items[0].EmployeeCode);
+    }
+
+    [TestMethod]
     public async Task ListAsync_RejectsConflictingLegacyDateAndRange()
     {
         await using var db = CreateDb();
