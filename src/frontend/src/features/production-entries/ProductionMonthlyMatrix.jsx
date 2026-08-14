@@ -14,7 +14,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
     <section className="erp-month-matrix-section" aria-label={`Sản lượng ${monthLabel(monthKey)}`}>
       <div className="erp-month-matrix-toolbar">
         <div className="erp-month-order-filter" role="group" aria-label="Lọc Mã SX">
-          {availableOrders.length <= 1 ? <strong>{availableOrders[0] ? `${monthLabel(monthKey)} · Mã SX: ${availableOrders[0].code}` : monthLabel(monthKey)}</strong> : <><button type="button" className="erp-button erp-button-secondary" aria-pressed={!selectedOrderId} onClick={() => onSelectOrder?.("")}>Tất cả mã SX</button>{availableOrders.map((order) => <button key={order.id} type="button" className="erp-button erp-button-secondary" aria-pressed={selectedOrderId === order.id} onClick={() => onSelectOrder?.(order.id)}>{order.code}</button>)}</>}
+          {availableOrders.length === 0 ? <strong>{monthLabel(monthKey)}</strong> : <><button type="button" className="erp-button erp-button-secondary" aria-pressed={!selectedOrderId} onClick={() => onSelectOrder?.("")}>Tất cả mã SX</button>{availableOrders.map((order) => <button key={order.id} type="button" className="erp-button erp-button-secondary" aria-pressed={selectedOrderId === order.id} onClick={() => onSelectOrder?.(order.id)}>{order.code}</button>)}</>}
         </div>
         <label className="erp-month-sunday-toggle"><input type="checkbox" checked={excludeSundays} onChange={(event) => onToggleSundays?.(event.target.checked)} /><span>Ẩn Chủ nhật</span></label>
       </div>
