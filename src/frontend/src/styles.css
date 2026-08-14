@@ -28,6 +28,7 @@
   --font-size-body: 14px;
   --control-height: 38px;
   --table-row-height: 42px;
+  --app-header-height: 72px;
   --sidebar-width: 240px;
   --sidebar-width-collapsed: 64px;
   --shadow-panel: 0 12px 32px rgb(15 23 42 / 12%);
@@ -192,6 +193,87 @@
 .erp-detail-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px; }
 .erp-state { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); padding: 24px; font-size: 14px; }
 .erp-feature-page { display: grid; gap: 20px; }
+.erp-production-manager-content {
+  height: calc(100dvh - var(--app-header-height));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.erp-production-manager-content > nav {
+  flex: 0 0 auto;
+  margin-bottom: 8px !important;
+}
+.erp-production-manager-content > .erp-production-manager-page {
+  flex: 1;
+  min-height: 0;
+}
+.erp-production-manager-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+.erp-production-manager-page .erp-page-header {
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 0 0 8px;
+}
+.erp-production-manager-page .erp-page-title { font-size: 20px; }
+.erp-production-manager-page .erp-page-description { display: none; }
+.erp-production-manager-overview {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  gap: 10px;
+  min-height: 52px;
+}
+.erp-production-manager-page .erp-production-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-width: 190px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+.erp-production-manager-page .erp-production-month-header > span { white-space: nowrap; }
+.erp-production-manager-page .erp-production-summary { flex: 1; gap: 8px; }
+.erp-production-manager-page .erp-production-summary > div {
+  min-height: 52px;
+  gap: 2px;
+  padding: 7px 10px;
+}
+.erp-production-manager-page .erp-production-summary span { font-size: 12px; }
+.erp-production-manager-page .erp-production-summary strong { font-size: 18px; }
+.erp-production-manager-page .erp-filter-bar {
+  align-items: flex-end;
+  flex: 0 0 auto;
+  flex-direction: row;
+  gap: 8px;
+  padding: 6px 0;
+}
+.erp-production-manager-page .erp-filter-fields {
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(220px, 1.5fr);
+  gap: 8px;
+}
+.erp-production-manager-page .erp-filter-fields .erp-field:last-child { grid-column: auto; }
+.erp-production-manager-page .erp-filter-actions { flex: 0 0 auto; gap: 8px; padding-top: 0; }
+.erp-production-manager-page .erp-month-matrix-section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.erp-production-manager-page .erp-month-matrix-toolbar { flex: 0 0 auto; padding: 6px 8px; }
+.erp-production-manager-page .erp-month-matrix-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
 .erp-report-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)) auto; align-items: end; gap: 14px; border-bottom: 1px solid var(--color-border); padding: 20px 0; }
 .erp-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .erp-summary-grid > div { display: grid; gap: 7px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 18px; }
@@ -250,7 +332,7 @@
 .erp-sidebar-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin: auto 10px 16px; min-height: var(--control-height); border: 1px solid rgb(148 163 184 / 24%); border-radius: var(--radius-sm); background: rgb(255 255 255 / 3%); color: #94a3b8; font-size: 13px; }
 .erp-sidebar-toggle:hover { background: rgb(255 255 255 / 7%); color: white; }
 .erp-main { width: calc(100% - var(--sidebar-width)); margin-left: var(--sidebar-width); }
-.erp-topbar { display: flex; position: sticky; z-index: 10; top: 0; align-items: center; justify-content: space-between; gap: 18px; min-height: 72px; border-bottom: 1px solid var(--color-border); background: rgb(255 255 255 / 94%); padding: 0 28px; box-shadow: 0 1px 3px rgb(15 23 42 / 5%); backdrop-filter: blur(12px); }
+.erp-topbar { display: flex; position: sticky; z-index: 10; top: 0; align-items: center; justify-content: space-between; gap: 18px; min-height: var(--app-header-height); border-bottom: 1px solid var(--color-border); background: rgb(255 255 255 / 94%); padding: 0 28px; box-shadow: 0 1px 3px rgb(15 23 42 / 5%); backdrop-filter: blur(12px); }
 .erp-topbar-context { display: none; color: var(--color-text); font-size: 14px; font-weight: 800; white-space: nowrap; }
 .erp-topbar-search { display: flex; align-items: center; gap: 10px; width: min(420px, 45vw); min-height: var(--control-height); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface-soft); color: var(--color-text-muted); padding: 0 12px; transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease; }
 .erp-topbar-search:focus-within { border-color: var(--color-primary); background: var(--color-surface); box-shadow: 0 0 0 3px var(--color-primary-soft); }
@@ -369,4 +451,31 @@
   .erp-detail-panel .erp-form-actions.erp-mobile-action-bar { margin-left: -16px; margin-right: -16px; }
   .erp-dialog-actions { flex-direction: column-reverse; }
   .erp-dialog-actions > * { width: 100%; }
+}
+
+@media (max-width: 1023px) {
+  .erp-production-manager-overview { flex-direction: column; }
+  .erp-production-manager-page .erp-production-month-header { min-width: 0; justify-content: space-between; }
+  .erp-production-manager-page .erp-production-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .erp-production-manager-page .erp-filter-bar { align-items: stretch; flex-direction: column; }
+  .erp-production-manager-page .erp-filter-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .erp-production-manager-page .erp-filter-actions { justify-content: flex-end; }
+}
+
+@media (max-width: 900px) {
+  .erp-production-manager-page .erp-month-matrix-toolbar { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 767px) {
+  .erp-production-manager-page .erp-production-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .erp-production-manager-page .erp-filter-fields { grid-template-columns: 1fr; }
+  .erp-production-manager-page .erp-filter-fields .erp-field:last-child { grid-column: auto; }
+  .erp-production-manager-page .erp-filter-actions > * { flex: 1; }
+}
+
+@media (max-width: 640px) {
+  .erp-production-manager-page .erp-page-header { align-items: stretch; flex-direction: column; }
+  .erp-production-manager-page .erp-page-actions { justify-content: stretch; }
+  .erp-production-manager-page .erp-page-actions > * { flex: 1; }
+  .erp-production-manager-page .erp-production-month-header { align-items: flex-start; flex-direction: column; }
 }

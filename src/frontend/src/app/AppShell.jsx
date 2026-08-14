@@ -11,7 +11,7 @@ function compactDesktopStartsCollapsed() {
     : false;
 }
 
-export function AppShell({ session, pathname, breadcrumbs, onLogout, children }) {
+export function AppShell({ session, pathname, breadcrumbs, onLogout, contentClassName = "", children }) {
   const [desktopCollapsed, setDesktopCollapsed] = useState(compactDesktopStartsCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => {
@@ -34,7 +34,7 @@ export function AppShell({ session, pathname, breadcrumbs, onLogout, children })
       </div>
       <div className="erp-main">
         <Topbar session={session} breadcrumbs={breadcrumbs} onLogout={onLogout} onMenu={() => setMobileOpen(true)} />
-        <main className="erp-content">
+        <main className={`erp-content ${contentClassName}`.trim()}>
           <Breadcrumbs items={breadcrumbs} />
           {children}
         </main>
