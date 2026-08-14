@@ -11,11 +11,11 @@ namespace German.Infrastructure.Tests.Excel;
 public sealed class OpenXmlProductionReportExporterTests
 {
     [TestMethod]
-    public void Export_CreatesManagementOverviewAndDetailSheetsInOrderAndActivatesManagementSheet()
+    public void Export_CreatesManagementAndOverviewSheetsInOrderAndActivatesManagementSheet()
     {
         using var document = OpenWorkbook(CreateReport());
         var sheets = GetSheets(document);
-        CollectionAssert.AreEqual(new[] { "Báo cáo quản lý", "Tổng quan", "Chi tiết" }, sheets.Select(sheet => sheet.Name!.Value).ToArray());
+        CollectionAssert.AreEqual(new[] { "Báo cáo quản lý", "Tổng quan" }, sheets.Select(sheet => sheet.Name!.Value).ToArray());
         Assert.AreEqual(0U, document.WorkbookPart!.Workbook!.BookViews!.Elements<WorkbookView>().Single().ActiveTab?.Value);
     }
 
@@ -70,6 +70,22 @@ public sealed class OpenXmlProductionReportExporterTests
     }
 
     [TestMethod]
+    public void Export_UsesDistinctHcAndTcColorsForBodyAndHeaders()
+    {
+        using var document = OpenWorkbook(CreateReport());
+        var rows = GetSheetData(document, "Báo cáo quản lý").Elements<Row>().ToList();
+        var subHeader = rows.Single(row => row.RowIndex!.Value == 5U);
+        var firstDataRow = rows.Single(row => row.RowIndex!.Value == 6U);
+
+        Assert.AreEqual("FF9DC3E6", GetFillColor(document, GetCell(subHeader, "D5")));
+        Assert.AreEqual("FFF4B183", GetFillColor(document, GetCell(subHeader, "E5")));
+        Assert.AreEqual("FFEAF4FB", GetFillColor(document, GetCell(firstDataRow, "D6")));
+        Assert.AreEqual("FFFFE6CC", GetFillColor(document, GetCell(firstDataRow, "E6")));
+        Assert.AreEqual("FFEAF4FB", GetFillColor(document, GetCell(firstDataRow, "L6")));
+        Assert.AreEqual("FFFFE6CC", GetFillColor(document, GetCell(firstDataRow, "M6")));
+    }
+
+    [TestMethod]
     public void Export_WritesOverviewMetadataMetricsAndAggregateTotals()
     {
         using var document = OpenWorkbook(CreateReport());
@@ -83,53 +99,15 @@ public sealed class OpenXmlProductionReportExporterTests
     }
 
     [TestMethod]
-    public void Export_WritesDetailHeadersAndExcelUsabilityFeatures()
-    {
-        using var document = OpenWorkbook(CreateReport());
-        var worksheet = GetWorksheetPart(document, "Chi tiết").Worksheet!;
-        var rows = GetSheetData(document, "Chi tiết").Elements<Row>().ToList();
-        var expectedHeaders = new[] { "Ngày", "Mã NV", "Họ tên", "Mã SX", "Sản phẩm", "Công đoạn", "Đơn vị", "HC", "TC", "Tổng", "Giờ TC", "Kiểu nhập", "Ghi chú" };
-        CollectionAssert.AreEqual(expectedHeaders, GetCells(rows[0]).Select(cell => cell.InnerText).ToArray());
-        var pane = worksheet.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
-        Assert.IsNotNull(pane);
-        Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
-        Assert.AreEqual(1D, pane.VerticalSplit?.Value);
-        Assert.AreEqual("A2", pane.TopLeftCell?.Value);
-        Assert.AreEqual("A1:M7", worksheet.GetFirstChild<AutoFilter>()?.Reference?.Value);
-        Assert.IsNull(worksheet.GetFirstChild<MergeCells>());
-        var columns = worksheet.GetFirstChild<Columns>()?.Elements<Column>().ToArray();
-        Assert.IsNotNull(columns);
-        CollectionAssert.AreEqual(new[] { 12D, 12D, 24D, 14D, 24D, 28D, 12D, 12D, 12D, 12D, 12D, 18D, 30D }, columns.Select(column => column.Width!.Value).ToArray());
-        Assert.IsTrue(columns.All(column => column.CustomWidth?.Value == true));
-        var cells = GetCells(rows[1]);
-        AssertDateFormat(document, cells[0]);
-        Assert.AreEqual("CĐ11 — May thân", cells[5].InnerText);
-        Assert.AreEqual("HC / TC trực tiếp", cells[11].InnerText);
-        foreach (var index in new[] { 7, 8, 9, 10 })
-        {
-            var dataType = cells[index].DataType?.Value;
-            Assert.IsTrue(dataType is null || dataType == CellValues.Number);
-            AssertRightAligned(document, cells[index]);
-        }
-        Assert.AreEqual("100", cells[7].CellValue?.Text);
-        Assert.AreEqual("20", cells[8].CellValue?.Text);
-        Assert.AreEqual("120", cells[9].CellValue?.Text);
-        Assert.AreEqual("2", cells[10].CellValue?.Text);
-    }
-
-    [TestMethod]
-    public void Export_EmptyRowsStillCreatesValidThreeSheetWorkbook()
+    public void Export_EmptyRowsStillCreatesValidTwoSheetWorkbook()
     {
         var report = new ProductionReportData(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), Array.Empty<ProductionReportRow>())
         {
             Summary = new ProductionReportSummary(0, 0, 0m, 0m, 0m), ByDay = [], ByEmployee = []
         };
         using var document = OpenWorkbook(report);
-        Assert.AreEqual(3, GetSheets(document).Count);
+        Assert.AreEqual(2, GetSheets(document).Count);
         StringAssert.Contains(GetSheetData(document, "Báo cáo quản lý").InnerText, "Không có dữ liệu trong kỳ đã chọn.");
-        var detailWorksheet = GetWorksheetPart(document, "Chi tiết").Worksheet!;
-        Assert.AreEqual(1, GetSheetData(document, "Chi tiết").Elements<Row>().Count());
-        Assert.AreEqual("A1:M1", detailWorksheet.GetFirstChild<AutoFilter>()?.Reference?.Value);
     }
 
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)
@@ -176,6 +154,15 @@ public sealed class OpenXmlProductionReportExporterTests
         var formats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!;
         var format = formats.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
         Assert.AreEqual(HorizontalAlignmentValues.Right, format.Alignment?.Horizontal?.Value);
+    }
+
+    private static string? GetFillColor(SpreadsheetDocument document, Cell cell)
+    {
+        var formats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!;
+        var format = formats.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
+        var fills = document.WorkbookPart.WorkbookStylesPart.Stylesheet.Fills!;
+        var fill = fills.Elements<Fill>().ElementAt((int)(format.FillId?.Value ?? 0U));
+        return fill.PatternFill?.ForegroundColor?.Rgb?.Value;
     }
 
     private static ProductionReportData CreateReport() => new(
