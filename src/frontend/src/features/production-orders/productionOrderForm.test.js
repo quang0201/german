@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
+import { resolve } from "node:path";
 import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
+
+const orderPageSource = readFileSync(resolve(import.meta.dir, "ProductionOrderListPage.jsx"), "utf8");
 
 describe("production order form", () => {
   test("builds a create payload with operations and fixed prices", () => {
@@ -59,5 +63,11 @@ describe("production order form", () => {
     expect(shouldResetProductionOrderCreateDraft("detail", "create")).toBe(true);
     expect(shouldResetProductionOrderCreateDraft("create", "create")).toBe(false);
     expect(shouldResetProductionOrderCreateDraft("create", "list")).toBe(false);
+  });
+
+  test("offers confirmed deletion for an operation and its related production data", () => {
+    expect(orderPageSource).toContain("api.delete(`/api/production-orders/${selected.id}/operations/${item.id}`)");
+    expect(orderPageSource).toContain("Xóa toàn bộ dữ liệu liên quan");
+    expect(orderPageSource).toContain("Xác nhận xóa");
   });
 });
