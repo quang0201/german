@@ -2,7 +2,7 @@ import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { firstActiveEmployeeId, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
-import { isCurrentBatchOperationsRequest } from "./productionMatrixBatch.js";
+import { isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
 
 describe("ProductionMatrixBatchEntryDialog helpers", () => {
   test("defaults to the first active employee instead of an inactive first row", () => {
@@ -19,6 +19,15 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(isCurrentBatchOperationsRequest(false, "order-a", "order-b")).toBe(false);
     expect(isCurrentBatchOperationsRequest(true, "order-a", "order-b")).toBe(false);
     expect(isCurrentBatchOperationsRequest(true, "order-b", "order-b")).toBe(true);
+  });
+
+  test("ignores production orders from an obsolete day request", () => {
+    const dayA = { isoDate: "2026-08-01", preferredOrderId: "order-a" };
+    const dayB = { isoDate: "2026-08-02", preferredOrderId: "order-b" };
+
+    expect(isCurrentBatchOrdersRequest(false, dayA, dayB)).toBe(false);
+    expect(isCurrentBatchOrdersRequest(true, dayA, dayB)).toBe(false);
+    expect(isCurrentBatchOrdersRequest(true, dayB, dayB)).toBe(true);
   });
 
   test("prefers the selected matrix order when it is available for batch entry", () => {
