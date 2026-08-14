@@ -36,11 +36,16 @@ public sealed class ProductionEntryBatchDirectService(IGermanDbContext db)
             return Failure("production_entry.employee_not_found", "Nhân viên không tồn tại hoặc đã ngừng hoạt động.");
         }
 
-        var orderExists = await db.ProductionOrders.AsNoTracking()
-            .AnyAsync(item => item.Id == command.ProductionOrderId, cancellationToken);
-        if (!orderExists)
+        var order = await db.ProductionOrders.AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == command.ProductionOrderId, cancellationToken);
+        if (order is null)
         {
             return Failure("production_entry.order_not_found", "Không tìm thấy mã sản xuất.");
+        }
+
+        if (order.Status != ProductionOrderStatus.InProduction)
+        {
+            return Failure("production_entry.order_not_in_production", "Chỉ được nhập nhiều công đoạn vào mã đang sản xuất.");
         }
 
         var operations = await db.ProductionOperations.AsNoTracking()
@@ -50,6 +55,11 @@ public sealed class ProductionEntryBatchDirectService(IGermanDbContext db)
             || operations.Any(item => item.ProductionOrderId != command.ProductionOrderId))
         {
             return Failure("production_entry.operation_mismatch", "Có công đoạn không thuộc mã sản xuất đã chọn.");
+        }
+
+        if (operations.Any(item => !item.IsActive))
+        {
+            return Failure("production_entry.operation_inactive", "Có công đoạn đã ngừng sử dụng.");
         }
 
         var conflictingIds = await db.ProductionEntries.AsNoTracking()
