@@ -20,8 +20,9 @@
 .erp-month-sticky-employee, .erp-month-sticky-operation, .erp-month-total { position:sticky; z-index:5; background:var(--color-surface) !important; }
 .erp-month-sticky-employee { left:0; min-width:220px; width:220px; }
 .erp-month-sticky-operation { left:220px; min-width:78px; width:78px; box-shadow:none; border-right:2px solid var(--color-border) !important; }
-thead .erp-month-sticky-employee, thead .erp-month-sticky-operation { z-index:12; background:var(--color-surface-soft) !important; }
-.erp-month-employee { font-weight:700; vertical-align:middle; }
+.erp-month-matrix-table thead .erp-month-sticky-employee,
+.erp-month-matrix-table thead .erp-month-sticky-operation { z-index:12; background:var(--color-surface-soft) !important; }
+.erp-month-employee { font-weight:700; vertical-align:top; padding-top:10px !important; }
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; }
 .erp-month-value-cell button { width:100%; height:100%; border:0; background:transparent; padding:0 7px; color:var(--color-text); text-align:right; font:inherit; font-variant-numeric:tabular-nums; }

@@ -15,4 +15,12 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(featureCss).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(featureCss).not.toMatch(/\brgba?\(/i);
   });
+
+  test("keeps sticky employee and operation headers above scrolling day headers", () => {
+    expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-sticky-employee,[\s\n]*\.erp-month-matrix-table thead \.erp-month-sticky-operation[\s\S]*z-index:\s*12/);
+  });
+
+  test("aligns row-spanned employee names with the first operation row", () => {
+    expect(matrixCss).toMatch(/\.erp-month-employee[\s\S]*vertical-align:\s*top[\s\S]*padding-top:\s*10px\s*!important/);
+  });
 });

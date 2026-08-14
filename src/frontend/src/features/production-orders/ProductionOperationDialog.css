@@ -1,0 +1,7 @@
+.erp-production-operation-dialog { width:min(520px,calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; }
+.erp-production-operation-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.erp-production-operation-dialog-header h2 { margin:0; }
+.erp-production-operation-dialog-fields { display:grid; gap:14px; margin-top:16px; }
+.erp-production-operation-dialog-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.erp-production-operation-active { display:flex; align-items:center; gap:8px; color:var(--color-text); font-size:14px; font-weight:700; }
+@media (max-width: 560px) { .erp-production-operation-dialog-row { grid-template-columns:1fr; } }
