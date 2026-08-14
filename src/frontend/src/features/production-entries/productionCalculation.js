@@ -10,7 +10,7 @@ function valueOrZero(value) {
   return parsed;
 }
 
-function roundQuantity(value) {
+export function roundQuantity(value) {
   return value >= 0 ? Math.floor(value + 0.5) : Math.ceil(value - 0.5);
 }
 

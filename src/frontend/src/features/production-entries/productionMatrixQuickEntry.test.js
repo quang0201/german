@@ -6,6 +6,7 @@ import {
   canWriteQuickEntry,
   createQuickEntry,
   buildQuickEntryCreatePayload,
+  buildQuickEntryPayload,
   isQuickEntryDetailCompatible,
   quickEntryExpectedVersion,
   shouldShowQuickEntryReload,
@@ -74,6 +75,21 @@ describe("production matrix quick entry guards", () => {
     expect(JSON.parse(request.options.body).expectedEmpty).toBe(true);
   });
 
+  test("persists hour-split results as a Direct payload", () => {
+    const payload = buildQuickEntryPayload({
+      context,
+      quantities: { hc: 320, tc: 80 },
+      editEntry: null,
+      note: "  Chia theo giờ  ",
+    });
+    expect(payload).toMatchObject({
+      entryMode: "Direct",
+      directHcQuantity: 320,
+      directTcQuantity: 80,
+      note: "Chia theo giờ",
+    });
+  });
+
   test("renders edit actions disabled while the detail request is pending", () => {
     const html = renderToStaticMarkup(
       <ProductionMatrixQuickEntryDialog
@@ -82,5 +98,17 @@ describe("production matrix quick entry guards", () => {
       />,
     );
     expect((html.match(/disabled=""/g) ?? []).length).toBe(2);
+  });
+
+  test("defaults an existing entry to Direct while exposing both input modes", () => {
+    const html = renderToStaticMarkup(
+      <ProductionMatrixQuickEntryDialog
+        context={{ ...context, cell: { entryCount: 1, hcQuantity: 10, tcQuantity: 2, records: [record] } }}
+        onClose={() => {}}
+      />,
+    );
+    expect(html).toContain("Nhập trực tiếp");
+    expect(html).toContain("Chia đều theo giờ");
+    expect(html).toContain('aria-pressed="true"');
   });
 });
