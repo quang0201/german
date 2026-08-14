@@ -111,6 +111,42 @@ public sealed class ProductionEntryServiceTests
         Assert.AreEqual(0, await db.ProductionEntries.CountAsync());
     }
 
+    [TestMethod]
+    public async Task Create_WithExpectedEmpty_RejectsExistingMatrixCell()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "E004", FullName = "Hạnh" };
+        var order = new ProductionOrder { Code = "0701", ProductName = "Túi D", PlannedQuantity = 5000m, Status = ProductionOrderStatus.InProduction };
+        var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 4, Name = "Cắt", Unit = "cái", SortOrder = 4 };
+        db.AddRange(employee, order, operation, new ProductionEntry
+        {
+            WorkDate = new DateOnly(2026, 8, 27),
+            EmployeeId = employee.Id,
+            ProductionOrderId = order.Id,
+            ProductionOperationId = operation.Id,
+            EntryMode = ProductionEntryMode.Direct,
+            DirectHcQuantity = 10m,
+            DirectTcQuantity = 0m,
+            HcQuantity = 10m,
+            TcQuantity = 0m,
+            TotalQuantity = 10m,
+            SubmittedByUserId = Guid.NewGuid()
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionEntryService(db).CreateAsync(
+            new CurrentActor(Guid.NewGuid(), UserRole.Manager, employee.Id),
+            new CreateProductionEntryCommand(
+                new DateOnly(2026, 8, 27), employee.Id, order.Id, operation.Id,
+                ProductionEntryMode.Direct, DirectHcQuantity: 20m, DirectTcQuantity: 0m,
+                ExpectedEmpty: true),
+            CancellationToken.None);
+
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual("production_entry.cell_conflict", result.Error?.Code);
+        Assert.AreEqual(1, await db.ProductionEntries.CountAsync());
+    }
+
     private static GermanDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<GermanDbContext>()

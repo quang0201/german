@@ -1,5 +1,8 @@
 export function mapProductionEntryError(error, fallback = "Không thể hoàn tất thao tác.") {
   if (!error) return fallback;
+  if (error.code === "production_entry.cell_conflict") {
+    return "Ô sản lượng đã được ghi bởi người khác. Hãy tải lại ma trận.";
+  }
   if (error.status === 409 || error.code === "production_entry.version_conflict") {
     return "Dữ liệu đã được thay đổi bởi người khác.";
   }
