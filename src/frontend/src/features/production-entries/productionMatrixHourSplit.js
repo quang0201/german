@@ -35,7 +35,14 @@ export function calculateHourSplitPreview({ hcHours, tcHours, totalExpression })
   const totalHours = normalizedHcHours + normalizedTcHours;
   if (totalHours <= 0) throw new RangeError("Tổng giờ phải lớn hơn 0.");
 
-  const hc = roundQuantity((total * normalizedHcHours) / totalHours);
+  if (normalizedTcHours === 0) {
+    return { total, totalHours, quantityPerHour: total / totalHours, hc: total, tc: 0 };
+  }
+  if (normalizedHcHours === 0) {
+    return { total, totalHours, quantityPerHour: total / totalHours, hc: 0, tc: total };
+  }
+
+  const hc = Math.min(total, Math.max(0, roundQuantity((total * normalizedHcHours) / totalHours)));
   return {
     total,
     totalHours,

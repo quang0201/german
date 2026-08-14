@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/api.js";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
-import { buildQuickEntryPayload, canWriteQuickEntry, createQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion, shouldShowQuickEntryReload } from "./productionMatrixQuickEntry.js";
+import { buildQuickEntryPayload, canWriteQuickEntry, createQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion, quickEntryFeedbackMessage, shouldShowQuickEntryReload } from "./productionMatrixQuickEntry.js";
 import { calculateHourSplitPreview, resolveQuickEntryQuantities } from "./productionMatrixHourSplit.js";
 import "./ProductionMatrixDialogs.css";
 
@@ -21,6 +21,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
   const [note, setNote] = useState("");
   const [editEntry, setEditEntry] = useState(null);
   const [error, setError] = useState("");
+  const [conflictError, setConflictError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [loadingEntry, setLoadingEntry] = useState(false);
   const [detailLoaded, setDetailLoaded] = useState(!editing);
@@ -39,6 +40,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     setNote(editing ? (record?.note ?? "") : "");
     setEditEntry(null);
     setError("");
+    setConflictError("");
     setConflict(false);
     setDetailLoaded(!editing);
     setConfirmDelete(false);
@@ -52,7 +54,9 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
           setEditEntry(null);
           setDetailLoaded(false);
           setConflict(true);
-          setError("Dữ liệu trên ma trận đã thay đổi. Hãy tải lại trước khi sửa.");
+          const compatibilityError = "Dữ liệu trên ma trận đã thay đổi. Hãy tải lại trước khi sửa.";
+          setConflictError(compatibilityError);
+          setError(compatibilityError);
           return;
         }
         setEditEntry(entry);
@@ -97,28 +101,36 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
       return;
     }
     const savePayload = { ...payload, directHcQuantity: quantities.hc, directTcQuantity: quantities.tc };
-    setSaving(true); setError(""); setConflict(false);
+    setSaving(true); setError(""); setConflictError(""); setConflict(false);
     try {
       if (editing) await api.put(`/api/production-entries/${record.id}`, { ...savePayload, version: quickEntryExpectedVersion(record) });
       else await createQuickEntry(savePayload);
       onSaved?.();
     } catch (requestError) {
-      setConflict(isVersionConflict(requestError));
-      setError(mapProductionEntryError(requestError, "Không thể lưu sản lượng."));
+      const requestErrorMessage = mapProductionEntryError(requestError, "Không thể lưu sản lượng.");
+      const requestConflict = isVersionConflict(requestError);
+      setConflict(requestConflict);
+      setConflictError(requestConflict ? requestErrorMessage : "");
+      setError(requestErrorMessage);
     } finally { setSaving(false); }
   }
 
   async function remove() {
     if (!confirmDelete) { setConfirmDelete(true); return; }
-    setSaving(true); setError(""); setConflict(false);
+    setSaving(true); setError(""); setConflictError(""); setConflict(false);
     try {
       await api.delete(`/api/production-entries/${record.id}?version=${quickEntryExpectedVersion(record)}`);
       onSaved?.();
     } catch (requestError) {
-      setConflict(isVersionConflict(requestError));
-      setError(mapProductionEntryError(requestError, "Không thể xóa sản lượng."));
+      const requestErrorMessage = mapProductionEntryError(requestError, "Không thể xóa sản lượng.");
+      const requestConflict = isVersionConflict(requestError);
+      setConflict(requestConflict);
+      setConflictError(requestConflict ? requestErrorMessage : "");
+      setError(requestErrorMessage);
     } finally { setSaving(false); }
   }
+
+  const feedbackError = quickEntryFeedbackMessage({ error, conflictError });
 
   return (
     <div className="erp-dialog-backdrop" role="presentation">
@@ -159,7 +171,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
             </div>}
           </>}
           {loadingEntry && <p className="erp-inline-message">Đang tải dữ liệu gốc...</p>}
-          {(error || splitPreview?.error) && <div className="erp-inline-message erp-inline-error" role="alert"><span>{error || splitPreview.error}</span>{shouldShowQuickEntryReload({ editing, loadingEntry, detailLoaded, conflict }) && <button type="button" className="erp-button erp-button-secondary" onClick={onReload}>Tải lại dữ liệu</button>}</div>}
+          {(feedbackError || splitPreview?.error) && <div className="erp-inline-message erp-inline-error" role="alert"><span>{feedbackError || splitPreview.error}</span>{shouldShowQuickEntryReload({ editing, loadingEntry, detailLoaded, conflict }) && <button type="button" className="erp-button erp-button-secondary" onClick={onReload}>Tải lại dữ liệu</button>}</div>}
           {confirmDelete && <p className="erp-inline-message erp-inline-error">Bấm Xóa lần nữa để xác nhận.</p>}
         </div>
         <div className="erp-dialog-actions erp-matrix-dialog-actions">

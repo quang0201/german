@@ -27,6 +27,10 @@ export function shouldShowQuickEntryReload({ editing, loadingEntry, detailLoaded
   return !loadingEntry && (conflict || (editing && !detailLoaded));
 }
 
+export function quickEntryFeedbackMessage({ error = "", conflictError = "" }) {
+  return error || conflictError || "";
+}
+
 export function buildQuickEntryCreatePayload(payload) {
   return { ...payload, expectedEmpty: true };
 }
