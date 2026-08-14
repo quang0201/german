@@ -99,7 +99,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }
 
   function handleDayHeaderClick(day) {
-    setBatchDay({ ...day, preferredOrderId: selectedOrderId });
+    setBatchDay({ ...day, preferredOrderId: selectedOrderId, preferredEmployeeId: filters.employeeId });
   }
 
   function handleCell(context) {

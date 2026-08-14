@@ -9,6 +9,13 @@ export function firstActiveEmployeeId(employees = []) {
   return employee?.id ? String(employee.id) : "";
 }
 
+export function initialBatchEmployeeId(employees = [], preferredEmployeeId = "") {
+  if (employees.some((item) => item.isActive !== false && String(item.id) === String(preferredEmployeeId))) {
+    return String(preferredEmployeeId);
+  }
+  return firstActiveEmployeeId(employees);
+}
+
 export function initialBatchOrderId(orders = [], preferredOrderId = "") {
   return orders.some((item) => String(item.id) === String(preferredOrderId)) ? String(preferredOrderId) : "";
 }
@@ -32,7 +39,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     if (!day) return;
     let active = true;
     const requestedDay = day;
-    setEmployeeId(firstActiveEmployeeId(employees));
+    setEmployeeId(initialBatchEmployeeId(employees, requestedDay.preferredEmployeeId));
     setOrderId(""); setOrders([]); setOperations([]); setDrafts({}); setError("");
     api.get("/api/lookups/production-orders/active").then((items) => {
       if (!isCurrentBatchOrdersRequest(active, requestedDay, dayRef.current)) return;
