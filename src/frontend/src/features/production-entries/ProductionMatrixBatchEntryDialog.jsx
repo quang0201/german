@@ -3,6 +3,11 @@ import { api } from "../../lib/api.js";
 
 const toNumber = (value) => value === "" ? null : Number(value);
 
+export function firstActiveEmployeeId(employees = []) {
+  const employee = employees.find((item) => item.isActive !== false);
+  return employee?.id ? String(employee.id) : "";
+}
+
 export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose, onSaved }) {
   const [orders, setOrders] = useState([]);
   const [operations, setOperations] = useState([]);
@@ -15,7 +20,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
 
   useEffect(() => {
     if (!day) return;
-    setEmployeeId(employees[0]?.id ? String(employees[0].id) : "");
+    setEmployeeId(firstActiveEmployeeId(employees));
     setOrderId(""); setOperations([]); setDrafts({}); setError("");
     api.get("/api/lookups/production-orders/active").then(setOrders)
       .catch((requestError) => setError(requestError.message || "Không thể tải Mã SX."));
