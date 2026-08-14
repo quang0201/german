@@ -7,7 +7,7 @@ import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { navigate } from "../../app/navigation.js";
 import { api } from "../../lib/api.js";
 import { orderStatusLabel } from "../../lib/i18n.js";
-import { buildProductionOrderPayload, formatFixedPrice } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft } from "./productionOrderForm.js";
 
 const STATUSES = ["Draft", "InProduction", "Completed", "Cancelled"];
 
@@ -17,17 +17,6 @@ function emptyOperation() {
 
 function emptyOrder() {
   return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", operations: [] };
-}
-
-function detailForm(order) {
-  return {
-    code: order.code ?? "",
-    productName: order.productName ?? "",
-    plannedQuantity: order.plannedQuantity ?? "",
-    status: order.status ?? "Draft",
-    startDate: order.startDate ?? "",
-    endDate: order.endDate ?? "",
-  };
 }
 
 function operationPayload(operation) {
@@ -54,7 +43,7 @@ export function ProductionOrderListPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  async function load() {
+  async function load({ preserveDetail = false } = {}) {
     setLoading(true);
     setError("");
     try {
@@ -64,7 +53,7 @@ export function ProductionOrderListPage({ params }) {
       ]);
       setRows(items);
       setSelected(selectedOrder);
-      if (selectedOrder) setDetail(detailForm(selectedOrder));
+      if (selectedOrder) setDetail((current) => resolveProductionOrderDetailDraft(selectedOrder, current, preserveDetail));
     } catch (requestError) {
       setError(requestError.message || "Không thể tải mã sản xuất.");
     } finally {
@@ -137,7 +126,7 @@ export function ProductionOrderListPage({ params }) {
     try {
       await api.post(`/api/production-orders/${selected.id}/operations`, operationPayload(operation));
       setOperation(emptyOperation());
-      await load();
+      await load({ preserveDetail: true });
     } catch (requestError) {
       setError(requestError.message || "Không thể thêm công đoạn.");
     } finally {
@@ -158,7 +147,7 @@ export function ProductionOrderListPage({ params }) {
     try {
       await api.put(`/api/production-orders/${selected.id}/operations/${editingId}`, operationPayload(editingOperation));
       setEditingId("");
-      await load();
+      await load({ preserveDetail: true });
     } catch (requestError) {
       setError(requestError.message || "Không thể cập nhật công đoạn.");
     } finally {
@@ -172,7 +161,7 @@ export function ProductionOrderListPage({ params }) {
     setError("");
     try {
       await api.put(`/api/production-orders/${selected.id}/operations/${item.id}`, operationPayload({ ...item, isActive }));
-      await load();
+      await load({ preserveDetail: true });
     } catch (requestError) {
       setError(requestError.message || "Không thể cập nhật trạng thái công đoạn.");
     } finally {

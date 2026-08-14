@@ -21,6 +21,21 @@ export function buildProductionOrderPayload(form) {
   };
 }
 
+export function productionOrderDetailForm(order) {
+  return {
+    code: order.code ?? "",
+    productName: order.productName ?? "",
+    plannedQuantity: order.plannedQuantity ?? "",
+    status: order.status ?? "Draft",
+    startDate: order.startDate ?? "",
+    endDate: order.endDate ?? "",
+  };
+}
+
+export function resolveProductionOrderDetailDraft(order, currentDraft, preserveDraft = false) {
+  return preserveDraft ? currentDraft : productionOrderDetailForm(order);
+}
+
 export function formatFixedPrice(value) {
   if (value === null || value === undefined || value === "") return "Chưa thiết lập";
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 2 }).format(Number(value));
