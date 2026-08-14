@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
 import {
   canWriteQuickEntry,
   isQuickEntryDetailCompatible,
@@ -42,5 +45,15 @@ describe("production matrix quick entry guards", () => {
     expect(canWriteQuickEntry({ editing: true, detailLoaded: true, saving: false })).toBe(true);
     expect(canWriteQuickEntry({ editing: false, detailLoaded: false, saving: false })).toBe(true);
     expect(canWriteQuickEntry({ editing: true, detailLoaded: true, saving: true })).toBe(false);
+  });
+
+  test("renders edit actions disabled while the detail request is pending", () => {
+    const html = renderToStaticMarkup(
+      <ProductionMatrixQuickEntryDialog
+        context={{ ...context, cell: { entryCount: 1, hcQuantity: 10, tcQuantity: 2, records: [record] } }}
+        onClose={() => {}}
+      />,
+    );
+    expect((html.match(/disabled=""/g) ?? []).length).toBe(2);
   });
 });

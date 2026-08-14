@@ -28,6 +28,22 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             return AppResult<ProductionEntryDto>.Failure(validation.Error!.Code, validation.Error.Message);
         }
 
+        if (command.ExpectedEmpty)
+        {
+            var cellOccupied = await db.ProductionEntries.AsNoTracking().AnyAsync(
+                x => x.WorkDate == command.WorkDate
+                    && x.EmployeeId == command.EmployeeId
+                    && x.ProductionOrderId == command.ProductionOrderId
+                    && x.ProductionOperationId == command.ProductionOperationId,
+                cancellationToken);
+            if (cellOccupied)
+            {
+                return AppResult<ProductionEntryDto>.Failure(
+                    "production_entry.cell_conflict",
+                    "Ô sản lượng đã được ghi bởi người khác. Hãy tải lại ma trận.");
+            }
+        }
+
         var calculation = await CalculateAsync(
             command.WorkDate,
             command.EmployeeId,

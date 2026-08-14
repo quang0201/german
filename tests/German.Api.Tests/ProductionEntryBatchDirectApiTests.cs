@@ -154,6 +154,51 @@ public sealed class ProductionEntryBatchDirectApiTests
         Assert.AreEqual("production_entry.batch_empty", json.RootElement.GetProperty("code").GetString());
     }
 
+    [TestMethod]
+    public async Task GenericCreate_ExpectedEmptyReturns409WhenMatrixCellIsOccupied()
+    {
+        await using var factory = new GermanApiFactory();
+        BatchSeed seed = default!;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            seed = await SeedAsync(services, db, "manager-create-conflict", "M924", UserRole.Manager);
+            db.ProductionEntries.Add(new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 8, 27),
+                EmployeeId = seed.Employee.Id,
+                ProductionOrderId = seed.Order.Id,
+                ProductionOperationId = seed.Operations[0].Id,
+                EntryMode = ProductionEntryMode.Direct,
+                DirectHcQuantity = 5m,
+                DirectTcQuantity = 0m,
+                HcQuantity = 5m,
+                TcQuantity = 0m,
+                TotalQuantity = 5m,
+                SubmittedByUserId = seed.Account.Id
+            });
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-create-conflict");
+        var response = await client.PostAsJsonAsync("/api/production-entries", new
+        {
+            workDate = "2026-08-27",
+            employeeId = seed.Employee.Id,
+            productionOrderId = seed.Order.Id,
+            productionOperationId = seed.Operations[0].Id,
+            entryMode = "Direct",
+            directHcQuantity = 20m,
+            directTcQuantity = 0m,
+            expectedEmpty = true
+        });
+
+        Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual("production_entry.cell_conflict", json.RootElement.GetProperty("code").GetString());
+    }
+
     private static object Payload(BatchSeed seed) => new
     {
         workDate = "2026-08-27",

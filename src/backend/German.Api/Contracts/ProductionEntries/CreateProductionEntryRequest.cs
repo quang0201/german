@@ -17,4 +17,5 @@ public sealed record CreateProductionEntryRequest(
     decimal? OvertimeQuantity = null,
     TimeOnly? WorkStart = null,
     TimeOnly? WorkEnd = null,
-    string? Note = null);
+    string? Note = null,
+    bool ExpectedEmpty = false);

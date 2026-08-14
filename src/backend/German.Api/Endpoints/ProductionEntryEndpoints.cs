@@ -47,7 +47,7 @@ public static class ProductionEntryEndpoints
 
     private static async Task<IResult> CreateAsync(CreateProductionEntryRequest request, HttpContext httpContext, ProductionEntryService service, CancellationToken cancellationToken)
     {
-        var result = await service.CreateAsync(httpContext.User.ToCurrentActor(), new CreateProductionEntryCommand(request.WorkDate, request.EmployeeId, request.ProductionOrderId, request.ProductionOperationId, request.EntryMode, request.Shift1Quantity, request.Shift2Quantity, request.DirectHcQuantity, request.DirectTcQuantity, request.TotalInputQuantity, request.OvertimeHours, request.OvertimeQuantity, request.WorkStart, request.WorkEnd, request.Note), cancellationToken);
+        var result = await service.CreateAsync(httpContext.User.ToCurrentActor(), new CreateProductionEntryCommand(request.WorkDate, request.EmployeeId, request.ProductionOrderId, request.ProductionOperationId, request.EntryMode, request.Shift1Quantity, request.Shift2Quantity, request.DirectHcQuantity, request.DirectTcQuantity, request.TotalInputQuantity, request.OvertimeHours, request.OvertimeQuantity, request.WorkStart, request.WorkEnd, request.Note, request.ExpectedEmpty), cancellationToken);
         return result.IsSuccess ? Results.Created($"/api/production-entries/{result.Value!.Id}", result.Value) : ApiResultMapper.Error(result.Error!);
     }
 

@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
+import { isCurrentBatchOperationsRequest } from "./productionMatrixBatch.js";
 
 const toNumber = (value) => value === "" ? null : Number(value);
 
@@ -16,6 +17,8 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const [drafts, setDrafts] = useState({});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const orderIdRef = useRef(orderId);
+  orderIdRef.current = orderId;
   const selectedIds = useMemo(() => Object.keys(drafts), [drafts]);
 
   useEffect(() => {
@@ -28,9 +31,15 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
 
   useEffect(() => {
     if (!day || !orderId) { setOperations([]); return; }
+    let active = true;
+    const requestedOrderId = orderId;
     setDrafts({});
-    api.get(`/api/production-orders/${orderId}/operations`).then(setOperations)
-      .catch((requestError) => setError(requestError.message || "Không thể tải công đoạn."));
+    api.get(`/api/production-orders/${orderId}/operations`).then((items) => {
+      if (isCurrentBatchOperationsRequest(active, requestedOrderId, orderIdRef.current)) setOperations(items);
+    }).catch((requestError) => {
+      if (isCurrentBatchOperationsRequest(active, requestedOrderId, orderIdRef.current)) setError(requestError.message || "Không thể tải công đoạn.");
+    });
+    return () => { active = false; };
   }, [day, orderId]);
 
   if (!day) return null;

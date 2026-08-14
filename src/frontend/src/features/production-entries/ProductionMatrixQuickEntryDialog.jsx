@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
+import { canWriteQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion } from "./productionMatrixQuickEntry.js";
 import "./ProductionMatrixDialogs.css";
 
 function asNumber(value) {
@@ -17,6 +18,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [loadingEntry, setLoadingEntry] = useState(false);
+  const [detailLoaded, setDetailLoaded] = useState(!editing);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -29,6 +31,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     setEditEntry(null);
     setError("");
     setConflict(false);
+    setDetailLoaded(!editing);
     setConfirmDelete(false);
     if (!editing) return () => { active = false; };
 
@@ -36,7 +39,15 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     api.get(`/api/production-entries/${record.id}`)
       .then((entry) => {
         if (!active) return;
+        if (!isQuickEntryDetailCompatible({ record, context, detail: entry })) {
+          setEditEntry(null);
+          setDetailLoaded(false);
+          setConflict(true);
+          setError("Dữ liệu trên ma trận đã thay đổi. Hãy tải lại trước khi sửa.");
+          return;
+        }
         setEditEntry(entry);
+        setDetailLoaded(true);
         setHc(String(entry.directHcQuantity ?? entry.hcQuantity ?? ""));
         setTc(String(entry.directTcQuantity ?? entry.tcQuantity ?? ""));
         setNote(entry.note ?? "");
@@ -73,8 +84,8 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     }
     setSaving(true); setError(""); setConflict(false);
     try {
-      if (editing) await api.put(`/api/production-entries/${record.id}`, { ...payload, version: editEntry?.version ?? record.version });
-      else await api.post("/api/production-entries", payload);
+      if (editing) await api.put(`/api/production-entries/${record.id}`, { ...payload, version: quickEntryExpectedVersion(record) });
+      else await api.post("/api/production-entries", { ...payload, expectedEmpty: true });
       onSaved?.();
     } catch (requestError) {
       setConflict(isVersionConflict(requestError));
@@ -86,7 +97,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     if (!confirmDelete) { setConfirmDelete(true); return; }
     setSaving(true); setError(""); setConflict(false);
     try {
-      await api.delete(`/api/production-entries/${record.id}?version=${editEntry?.version ?? record.version}`);
+      await api.delete(`/api/production-entries/${record.id}?version=${quickEntryExpectedVersion(record)}`);
       onSaved?.();
     } catch (requestError) {
       setConflict(isVersionConflict(requestError));
@@ -111,14 +122,14 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
             <label className="erp-matrix-field-wide"><span>Ghi chú</span><input className="erp-control" value={note} onChange={(event) => setNote(event.target.value)} /></label>
           </div>
           {loadingEntry && <p className="erp-inline-message">Đang tải dữ liệu gốc...</p>}
-          {error && <div className="erp-inline-message erp-inline-error" role="alert"><span>{error}</span>{conflict && <button type="button" className="erp-button erp-button-secondary" onClick={onReload}>Tải lại dữ liệu</button>}</div>}
+          {error && <div className="erp-inline-message erp-inline-error" role="alert"><span>{error}</span>{editing && !loadingEntry && (!detailLoaded || conflict) && <button type="button" className="erp-button erp-button-secondary" onClick={onReload}>Tải lại dữ liệu</button>}</div>}
           {confirmDelete && <p className="erp-inline-message erp-inline-error">Bấm Xóa lần nữa để xác nhận.</p>}
         </div>
         <div className="erp-dialog-actions erp-matrix-dialog-actions">
-          {editing && <button type="button" className="erp-button erp-button-danger" disabled={saving || loadingEntry} onClick={remove}>Xóa</button>}
+          {editing && <button type="button" className="erp-button erp-button-danger" disabled={!canWriteQuickEntry({ editing, detailLoaded, saving }) || loadingEntry} onClick={remove}>Xóa</button>}
           <span className="erp-matrix-action-spacer" />
           <button type="button" className="erp-button erp-button-secondary" onClick={onClose}>Hủy</button>
-          <button type="button" className="erp-button erp-button-primary" disabled={saving || loadingEntry} onClick={save}>{saving ? "Đang lưu..." : "Lưu"}</button>
+          <button type="button" className="erp-button erp-button-primary" disabled={!canWriteQuickEntry({ editing, detailLoaded, saving }) || loadingEntry} onClick={save}>{saving ? "Đang lưu..." : "Lưu"}</button>
         </div>
       </section>
     </div>
