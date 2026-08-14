@@ -479,3 +479,13 @@
   .erp-production-manager-page .erp-page-actions > * { flex: 1; }
   .erp-production-manager-page .erp-production-month-header { align-items: flex-start; flex-direction: column; }
 }
+
+@media (max-width: 767px) {
+  .erp-production-manager-content {
+    height: auto;
+    min-height: calc(100dvh - var(--app-header-height));
+    overflow: visible;
+  }
+  .erp-production-manager-page { height: auto; }
+  .erp-production-manager-page .erp-month-matrix-scroll { max-height: 70vh; }
+}
