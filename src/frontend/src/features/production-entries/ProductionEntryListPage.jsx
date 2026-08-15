@@ -13,7 +13,7 @@ import { ProductionEntryGroupedTable } from "./ProductionEntryGroupedTable.jsx";
 import { PeriodSelector } from "./PeriodSelector.jsx";
 import { ProductionSummary } from "./ProductionSummary.jsx";
 import { ProductionExportDialog } from "./ProductionExportDialog.jsx";
-import { listRangeError } from "./productionExport.js";
+import { listRangeError, productionExportFileName } from "./productionExport.js";
 import { derivePeriodRange, formatDisplayDate, localIsoDate, shiftPeriod } from "./productionPeriod.js";
 import { entryModeLabel } from "../../lib/i18n.js";
 
@@ -155,7 +155,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
 
   async function exportRows(exportRange) {
     try {
-      await api.download(buildProductionExportUrl({ ...filters, ...exportRange }), "san-luong.xlsx");
+      await api.download(buildProductionExportUrl({ ...filters, ...exportRange }), productionExportFileName(exportRange.fromDate, exportRange.untilDate));
       setExportDialogOpen(false);
       toast.success("Đã chuẩn bị file Excel.");
     } catch (requestError) {

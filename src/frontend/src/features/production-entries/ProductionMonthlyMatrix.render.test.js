@@ -1,7 +1,10 @@
 import React from "react";
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
+
+const matrixSource = readFileSync(new URL("./ProductionMonthlyMatrix.jsx", import.meta.url), "utf8");
 
 const operation = (id, number, cells = []) => ({
   operationId: id,
@@ -59,5 +62,12 @@ describe("ProductionMonthlyMatrix render", () => {
 
     expect(html).toContain('data-date="2026-08-01"');
     expect(html).toContain("Bấm vào ngày phía trên để nhập nhanh nhiều công đoạn.");
+  });
+
+  test("restores the horizontal matrix position after a data refresh", () => {
+    expect(matrixSource).toContain("useLayoutEffect");
+    expect(matrixSource).toContain("scrollLeftRef.current");
+    expect(matrixSource).toContain("scrollLeft = scrollLeftRef.current");
+    expect(matrixSource).toContain("onScroll");
   });
 });

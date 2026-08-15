@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { firstActiveEmployeeId, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
+import { firstActiveEmployeeId, initialBatchEmployeeId, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
 import { isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
 
 describe("ProductionMatrixBatchEntryDialog helpers", () => {
@@ -13,6 +13,17 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     ])).toBe("active-1");
     expect(firstActiveEmployeeId([{ id: "active-default" }])).toBe("active-default");
     expect(firstActiveEmployeeId([{ id: "inactive-only", isActive: false }])).toBe("");
+  });
+
+  test("keeps the applied employee filter when opening a day batch entry", () => {
+    const employees = [
+      { id: "employee-1", isActive: true },
+      { id: "employee-2", isActive: true },
+    ];
+
+    expect(initialBatchEmployeeId(employees, "employee-2")).toBe("employee-2");
+    expect(initialBatchEmployeeId(employees, "missing")).toBe("employee-1");
+    expect(initialBatchEmployeeId([{ id: "employee-2", isActive: false }], "employee-2")).toBe("");
   });
 
   test("ignores operations from an obsolete order request", () => {

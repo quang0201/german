@@ -20,11 +20,13 @@ public sealed class ProductionMonthlyMatrixServiceTests
         var op11 = NewOperation(order0417, 11, "May thân");
         var op12 = NewOperation(order0417, 12, "May đáy");
         var op16 = NewOperation(order0417, 16, "Đóng gói");
+        var opZero = NewOperation(order0417, 99, "Không hiển thị");
         var op3 = NewOperation(order0521, 3, "Cắt");
-        db.AddRange(employee, order0417, order0521, op11, op12, op16, op3);
+        db.AddRange(employee, order0417, order0521, op11, op12, op16, opZero, op3);
         AddEntry(db, employee, order0417, op11, new DateOnly(2026, 8, 5), 100m, 20m);
         AddEntry(db, employee, order0417, op12, new DateOnly(2026, 8, 5), 80m, 10m);
         AddEntry(db, employee, order0417, op16, new DateOnly(2026, 8, 6), 70m, 0m);
+        AddEntry(db, employee, order0417, opZero, new DateOnly(2026, 8, 7), 0m, 0m);
         AddEntry(db, employee, order0521, op3, new DateOnly(2026, 8, 13), 50m, 5m);
         await db.SaveChangesAsync();
 

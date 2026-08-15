@@ -15,6 +15,7 @@ import { ProductionMonthNavigator } from "./ProductionMonthNavigator.jsx";
 import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
 import { ProductionSummary } from "./ProductionSummary.jsx";
 import { buildProductionExportUrl } from "./productionEntryQuery.js";
+import { productionExportFileName } from "./productionExport.js";
 import { buildProductionMonthlyMatrixUrl, currentMonthKey, matrixCellAction, monthBounds, shiftMonth } from "./productionMonthlyMatrix.js";
 import { localIsoDate } from "./productionPeriod.js";
 import "./ProductionMonthlyMatrix.css";
@@ -98,7 +99,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }
 
   function handleDayHeaderClick(day) {
-    setBatchDay({ ...day, preferredOrderId: selectedOrderId });
+    setBatchDay({ ...day, preferredOrderId: selectedOrderId, preferredEmployeeId: filters.employeeId });
   }
 
   function handleCell(context) {
@@ -110,7 +111,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
 
   async function exportRows(exportRange) {
     try {
-      await api.download(buildProductionExportUrl({ ...filters, orderId: selectedOrderId, ...exportRange }), "san-luong.xlsx");
+      await api.download(buildProductionExportUrl({ ...filters, orderId: selectedOrderId, ...exportRange }), productionExportFileName(exportRange.fromDate, exportRange.untilDate));
       setExportOpen(false); toast.success("Đã chuẩn bị file Excel.");
     } catch (requestError) { toast.error(requestError.message || "Không thể xuất Excel."); }
   }
