@@ -64,7 +64,7 @@ public sealed class ProductionOrderServiceTests
         await db.SaveChangesAsync();
 
         var service = new ProductionOrderService(db);
-        var result = await service.DeleteOperationAsync(order.Id, target.Id, CancellationToken.None);
+        var result = await service.Cleanup0417Operation567Async(CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess);
         Assert.IsNotNull(await db.ProductionOrders.FindAsync(order.Id));

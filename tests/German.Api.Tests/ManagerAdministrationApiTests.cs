@@ -120,7 +120,7 @@ public sealed class ManagerAdministrationApiTests
         using var client = factory.CreateClient(new() { HandleCookies = true });
         await LoginAsync(client, "manager-delete-operation", "secret");
 
-        var response = await client.DeleteAsync($"/api/production-orders/{orderId}/operations/{operationId}");
+        var response = await client.PostAsync("/api/production-orders/0417/operations/567/cleanup", null);
 
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         await factory.SeedAsync(async services =>

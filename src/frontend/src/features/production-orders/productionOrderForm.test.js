@@ -66,8 +66,9 @@ describe("production order form", () => {
   });
 
   test("offers confirmed deletion for an operation and its related production data", () => {
-    expect(orderPageSource).toContain("api.delete(`/api/production-orders/${selected.id}/operations/${item.id}`)");
-    expect(orderPageSource).toContain("Xóa toàn bộ dữ liệu liên quan");
+    expect(orderPageSource).toContain("api.post(\"/api/production-orders/0417/operations/567/cleanup\")");
+    expect(orderPageSource).toContain('selected.code === "0417" && item.operationNumber === 567');
+    expect(orderPageSource).toContain("Xóa dữ liệu CĐ567 của Mã SX 0417");
     expect(orderPageSource).toContain("Xác nhận xóa");
   });
 });
