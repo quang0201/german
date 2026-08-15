@@ -34,7 +34,8 @@ public sealed class ProductionEntryService(IGermanDbContext db)
                 x => x.WorkDate == command.WorkDate
                     && x.EmployeeId == command.EmployeeId
                     && x.ProductionOrderId == command.ProductionOrderId
-                    && x.ProductionOperationId == command.ProductionOperationId,
+                    && x.ProductionOperationId == command.ProductionOperationId
+                    && (x.HcQuantity != 0m || x.TcQuantity != 0m || x.TotalQuantity != 0m),
                 cancellationToken);
             if (cellOccupied)
             {
