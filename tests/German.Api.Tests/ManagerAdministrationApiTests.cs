@@ -102,7 +102,7 @@ public sealed class ManagerAdministrationApiTests
             await AddAccountAsync(services, db, "manager-delete-operation", "M005", UserRole.Manager, "secret");
             await db.SaveChangesAsync();
             var account = await db.UserAccounts.SingleAsync(x => x.Username == "manager-delete-operation");
-            var order = new ProductionOrder { Code = "0417-DELETE", ProductName = "Áo xóa", PlannedQuantity = 100m };
+            var order = new ProductionOrder { Code = "0417", ProductName = "Áo xóa", PlannedQuantity = 100m };
             var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 567, Name = "CĐ567", Unit = "cái", SortOrder = 567 };
             db.AddRange(order, operation, new ProductionEntry
             {
