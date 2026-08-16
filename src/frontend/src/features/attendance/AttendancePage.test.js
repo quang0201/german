@@ -24,4 +24,17 @@ describe("AttendancePage", () => {
     expect(html).toContain(">TC<");
     expect(html).toContain('value="P"');
   });
+
+  test("keeps regular shift rows dynamic per employee", () => {
+    const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
+      data={{ employees: [
+        { employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] },
+        { employeeId: "e2", employeeCode: "E2", fullName: "Bình", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }, { slotNumber: 2, scheduledHours: 4 }] }] },
+      ] }}
+      drafts={{ "e1|2026-08-16": { overtimeHours: "", shifts: { 1: "" } }, "e2|2026-08-16": { overtimeHours: "", shifts: { 1: "", 2: "" } } }}
+      loading={false}
+    />);
+    expect(html).not.toContain('aria-label="An Ca 2');
+    expect(html).toContain('aria-label="Bình Ca 2');
+  });
 });

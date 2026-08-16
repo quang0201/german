@@ -24,9 +24,6 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
   const scrollRef = useRef(null);
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
-  const maxSlots = useMemo(() => Math.max(0, ...employees.map((employee) =>
-    Math.max(0, ...(employee.days ?? []).map((day) => day.shifts?.length ?? 0)))), [employees]);
-
   useLayoutEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft;
   }, [data, scrollLeft]);
@@ -56,6 +53,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
           <tbody>
             {employees.map((employee) => {
               const dayMap = new Map((employee.days ?? []).map((day) => [day.workDate, day]));
+              const maxSlots = Math.max(0, ...(employee.days ?? []).map((day) => day.shifts?.length ?? 0));
               const totals = calculateDraftTotals(employee, drafts);
               const rowCount = maxSlots + 1;
               return Array.from({ length: rowCount }, (_, rowIndex) => {
