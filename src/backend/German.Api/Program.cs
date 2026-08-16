@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using German.Api.Endpoints;
 using German.Api.Startup;
 using German.Application.Auth;
+using German.Application.Attendance;
 using German.Application.Auditing;
 using German.Application.Employees;
 using German.Application.Lookups;
@@ -22,6 +23,8 @@ var builder = WebApplication.CreateBuilder(StartModeParser.GetHostArguments(args
 builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AttendanceService>();
+builder.Services.AddScoped<AttendanceHoursQueryService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<ProductionEntryService>();
 builder.Services.AddScoped<ProductionEntryBatchDirectService>();
@@ -97,6 +100,7 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuthEndpoints();
+app.MapAttendanceEndpoints();
 app.MapUserAccountAdminEndpoints();
 app.MapProductionEntryEndpoints();
 app.MapLookupEndpoints();
