@@ -213,6 +213,30 @@ public sealed class AttendanceServiceTests
         Assert.IsFalse(nextDay.HasAttendance);
     }
 
+    [TestMethod]
+    public async Task GetMonth_PaginatesEmployeesWithCursorAndLimit()
+    {
+        await using var db = CreateDbContext();
+        db.Employees.AddRange(
+            new Employee { EmployeeCode = "A201", FullName = "Một" },
+            new Employee { EmployeeCode = "A202", FullName = "Hai" },
+            new Employee { EmployeeCode = "A203", FullName = "Ba" });
+        await db.SaveChangesAsync();
+        var service = new AttendanceService(db);
+
+        var first = await service.GetMonthAsync(new AttendanceMonthlyQuery(2026, 8, EmployeeLimit: 2), CancellationToken.None);
+        var second = await service.GetMonthAsync(new AttendanceMonthlyQuery(2026, 8, EmployeeCursor: first.NextEmployeeCursor, EmployeeLimit: 2), CancellationToken.None);
+
+        CollectionAssert.AreEqual(new[] { "A201", "A202" }, first.Employees.Select(x => x.EmployeeCode).ToArray());
+        Assert.IsTrue(first.HasMoreEmployees);
+        Assert.AreEqual("2", first.NextEmployeeCursor);
+        CollectionAssert.AreEqual(new[] { "A203" }, second.Employees.Select(x => x.EmployeeCode).ToArray());
+        Assert.IsFalse(second.HasMoreEmployees);
+        Assert.AreEqual(1, second.DayFrom);
+        Assert.AreEqual(31, second.DayTo);
+        Assert.IsFalse(second.HasMoreDays);
+    }
+
     private static ShiftTemplate CreateShift(string name, params (string Name, int SortOrder, int Start, int End)[] periods)
     {
         var shift = new ShiftTemplate { Name = name };

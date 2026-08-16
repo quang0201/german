@@ -114,6 +114,29 @@ public sealed class AttendanceApiTests
         Assert.AreEqual("attendance.invalid_value", json.RootElement.GetProperty("code").GetString());
     }
 
+    [TestMethod]
+    public async Task Manager_CanLoadAttendanceEmployeesByCursor()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedUsersAsync(factory);
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "attendance-manager", "secret");
+
+        var first = await client.GetFromJsonAsync<JsonElement>(
+            "/api/attendance/monthly?year=2026&month=8&employeeLimit=1");
+        Assert.AreEqual(1, first.GetProperty("employees").GetArrayLength());
+        Assert.IsTrue(first.GetProperty("hasMoreEmployees").GetBoolean());
+        var cursor = first.GetProperty("nextEmployeeCursor").GetString();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(cursor));
+
+        var second = await client.GetFromJsonAsync<JsonElement>(
+            $"/api/attendance/monthly?year=2026&month=8&employeeCursor={cursor}&employeeLimit=1");
+        Assert.AreEqual(1, second.GetProperty("employees").GetArrayLength());
+        Assert.AreNotEqual(
+            first.GetProperty("employees")[0].GetProperty("employeeId").GetGuid(),
+            second.GetProperty("employees")[0].GetProperty("employeeId").GetGuid());
+    }
+
     private static async Task<Guid> SeedUsersAsync(GermanApiFactory factory, bool withShift = false)
     {
         var employeeId = Guid.Empty;

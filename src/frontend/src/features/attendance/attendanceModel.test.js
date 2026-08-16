@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAttendanceSavePayload, calculateDraftTotals, parseAttendanceCell } from "./attendanceModel.js";
+import { buildAttendanceSavePayload, calculateDraftTotals, mergeAttendanceEmployees, parseAttendanceCell } from "./attendanceModel.js";
 
 describe("attendance model", () => {
   test("parses hours, leave codes and blank cells without accepting X", () => {
@@ -79,5 +79,16 @@ describe("attendance model", () => {
     expect(payload.days).toHaveLength(1);
     expect(payload.days[0].employeeId).toBe("e1");
     expect(payload.days[0].workDate).toBe("2026-08-16");
+  });
+
+  test("merges a loaded employee batch without dropping existing drafts", () => {
+    expect(mergeAttendanceEmployees(
+      [{ employeeId: "e1", fullName: "Một" }, { employeeId: "e2", fullName: "Hai" }],
+      [{ employeeId: "e2", fullName: "Hai updated" }, { employeeId: "e3", fullName: "Ba" }],
+    )).toEqual([
+      { employeeId: "e1", fullName: "Một" },
+      { employeeId: "e2", fullName: "Hai updated" },
+      { employeeId: "e3", fullName: "Ba" },
+    ]);
   });
 });

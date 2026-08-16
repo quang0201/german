@@ -13,27 +13,53 @@ public sealed class AttendanceService(IGermanDbContext db)
         CancellationToken cancellationToken)
     {
         ValidateMonth(query.Year, query.Month);
+        var employeeOffset = ParseEmployeeCursor(query.EmployeeCursor);
+        var employeeLimit = ValidateEmployeeLimit(query.EmployeeLimit);
         var from = new DateOnly(query.Year, query.Month, 1);
         var until = from.AddMonths(1).AddDays(-1);
 
-        var savedDaysQuery = db.AttendanceDays.AsNoTracking()
-            .Include(x => x.Shifts)
+        var historicalEmployeeIdsQuery = db.AttendanceDays.AsNoTracking()
             .Where(x => x.WorkDate >= from && x.WorkDate <= until);
         if (query.EmployeeId.HasValue)
         {
-            savedDaysQuery = savedDaysQuery.Where(x => x.EmployeeId == query.EmployeeId.Value);
+            historicalEmployeeIdsQuery = historicalEmployeeIdsQuery.Where(x => x.EmployeeId == query.EmployeeId.Value);
         }
 
-        var savedDays = await savedDaysQuery.ToListAsync(cancellationToken);
-        var historicalEmployeeIds = savedDays.Select(x => x.EmployeeId).Distinct().ToArray();
-        var employeesQuery = db.Employees.AsNoTracking()
-            .Where(x => x.IsActive || historicalEmployeeIds.Contains(x.Id));
-        if (query.EmployeeId.HasValue)
+        var historicalEmployeeIds = await historicalEmployeeIdsQuery
+            .Select(x => x.EmployeeId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var employeesQuery = db.Employees.AsNoTracking();
+        if (query.EmployeeIds is not null)
         {
-            employeesQuery = employeesQuery.Where(x => x.Id == query.EmployeeId.Value);
+            employeesQuery = employeesQuery.Where(x => query.EmployeeIds.Contains(x.Id));
         }
-        var employees = await employeesQuery.OrderBy(x => x.EmployeeCode).ToListAsync(cancellationToken);
+        else
+        {
+            employeesQuery = employeesQuery.Where(x => x.IsActive || historicalEmployeeIds.Contains(x.Id));
+            if (query.EmployeeId.HasValue)
+            {
+                employeesQuery = employeesQuery.Where(x => x.Id == query.EmployeeId.Value);
+            }
+        }
+
+        var orderedEmployeesQuery = employeesQuery
+            .OrderBy(x => x.EmployeeCode)
+            .ThenBy(x => x.Id);
+        var pagedEmployeesQuery = query.EmployeeIds is null && employeeOffset > 0
+            ? orderedEmployeesQuery.Skip(employeeOffset)
+            : orderedEmployeesQuery;
+
+        var employeeCandidates = await pagedEmployeesQuery
+            .Take(query.EmployeeIds is null ? employeeLimit + 1 : employeeLimit)
+            .ToListAsync(cancellationToken);
+        var hasMoreEmployees = query.EmployeeIds is null && employeeCandidates.Count > employeeLimit;
+        var employees = employeeCandidates.Take(employeeLimit).ToList();
         var employeeIds = employees.Select(x => x.Id).ToArray();
+        var savedDays = await db.AttendanceDays.AsNoTracking()
+            .Include(x => x.Shifts)
+            .Where(x => employeeIds.Contains(x.EmployeeId) && x.WorkDate >= from && x.WorkDate <= until)
+            .ToListAsync(cancellationToken);
         var scheduleContext = await LoadScheduleContextAsync(employeeIds, from, until, cancellationToken);
 
         var resultEmployees = new List<AttendanceEmployeeMonthDto>(employees.Count);
@@ -62,7 +88,18 @@ public sealed class AttendanceService(IGermanDbContext db)
                 CalculateTotals(days)));
         }
 
-        return new AttendanceMonthlyResult(query.Year, query.Month, resultEmployees);
+        var nextEmployeeOffset = hasMoreEmployees ? employeeOffset + employeeLimit : (int?)null;
+        return new AttendanceMonthlyResult(
+            query.Year,
+            query.Month,
+            resultEmployees,
+            query.EmployeeCursor,
+            employeeLimit,
+            nextEmployeeOffset?.ToString(),
+            hasMoreEmployees,
+            1,
+            until.Day,
+            false);
     }
 
     public async Task<AppResult<AttendanceMonthlyResult>> SaveMonthAsync(
@@ -152,7 +189,11 @@ public sealed class AttendanceService(IGermanDbContext db)
 
         await db.SaveChangesAsync(cancellationToken);
         return AppResult<AttendanceMonthlyResult>.Success(await GetMonthAsync(
-            new AttendanceMonthlyQuery(command.Year, command.Month), cancellationToken));
+            new AttendanceMonthlyQuery(
+                command.Year,
+                command.Month,
+                EmployeeLimit: Math.Max(employeeIds.Length, 1),
+                EmployeeIds: employeeIds), cancellationToken));
     }
 
     private async Task<ShiftScheduleContext> LoadScheduleContextAsync(
@@ -298,4 +339,20 @@ public sealed class AttendanceService(IGermanDbContext db)
     }
 
     private static bool IsValidMonth(int year, int month) => year is >= 2000 and <= 2100 && month is >= 1 and <= 12;
+
+    private static int ParseEmployeeCursor(string? cursor)
+    {
+        if (string.IsNullOrWhiteSpace(cursor)) return 0;
+        if (int.TryParse(cursor, out var offset) && offset >= 0) return offset;
+        throw new ArgumentException("Cursor nhân viên không hợp lệ.", nameof(cursor));
+    }
+
+    private static int ValidateEmployeeLimit(int limit)
+    {
+        if (limit is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limit), "Số nhân viên mỗi lần tải phải từ 1 đến 100.");
+        }
+        return limit;
+    }
 }

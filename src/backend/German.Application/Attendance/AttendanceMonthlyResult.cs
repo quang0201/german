@@ -5,7 +5,14 @@ namespace German.Application.Attendance;
 public sealed record AttendanceMonthlyResult(
     int Year,
     int Month,
-    IReadOnlyList<AttendanceEmployeeMonthDto> Employees);
+    IReadOnlyList<AttendanceEmployeeMonthDto> Employees,
+    string? EmployeeCursor,
+    int EmployeeLimit,
+    string? NextEmployeeCursor,
+    bool HasMoreEmployees,
+    int DayFrom,
+    int DayTo,
+    bool HasMoreDays);
 
 public sealed record AttendanceEmployeeMonthDto(
     Guid EmployeeId,

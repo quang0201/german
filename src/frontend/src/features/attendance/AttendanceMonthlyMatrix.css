@@ -47,6 +47,7 @@
 .erp-attendance-cell { width: 66px; min-width: 66px; text-align: center; padding: 6px 4px; }
 .erp-attendance-tc-cell { background: color-mix(in srgb, var(--color-warning, #f4b183) 12%, var(--color-surface)); }
 .erp-attendance-total { min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
+.erp-attendance-load-more { padding: 12px; text-align: center; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
 .erp-attendance-sunday { background: color-mix(in srgb, var(--color-warning, #f4b183) 10%, var(--color-surface-soft)) !important; }
 
 @media (max-width: 767px) {

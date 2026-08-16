@@ -13,16 +13,27 @@ public static class AttendanceEndpoints
             int year,
             int month,
             Guid? employeeId,
+            string? employeeCursor,
+            int? employeeLimit,
             AttendanceService service,
             CancellationToken ct) =>
         {
             try
             {
-                return Results.Ok(await service.GetMonthAsync(new AttendanceMonthlyQuery(year, month, employeeId), ct));
+                return Results.Ok(await service.GetMonthAsync(new AttendanceMonthlyQuery(year, month, employeeId, employeeCursor, employeeLimit ?? 20), ct));
             }
-            catch (ArgumentOutOfRangeException)
+            catch (ArgumentOutOfRangeException exception)
             {
-                return Results.BadRequest(new { code = "attendance.invalid_month", message = "Tháng chấm công không hợp lệ." });
+                var isLimit = exception.ParamName == "limit";
+                return Results.BadRequest(new
+                {
+                    code = isLimit ? "attendance.invalid_employee_limit" : "attendance.invalid_month",
+                    message = isLimit ? "Số nhân viên mỗi lần tải phải từ 1 đến 100." : "Tháng chấm công không hợp lệ."
+                });
+            }
+            catch (ArgumentException)
+            {
+                return Results.BadRequest(new { code = "attendance.invalid_employee_cursor", message = "Cursor nhân viên không hợp lệ." });
             }
         });
 

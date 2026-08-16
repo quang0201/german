@@ -24,6 +24,13 @@ export function attendanceDayKey(employeeId, workDate) {
   return `${employeeId}|${workDate}`;
 }
 
+export function mergeAttendanceEmployees(existing, incoming) {
+  const byId = new Map((incoming ?? []).map((employee) => [employee.employeeId, employee]));
+  const merged = (existing ?? []).map((employee) => byId.get(employee.employeeId) ?? employee);
+  const existingIds = new Set((existing ?? []).map((employee) => employee.employeeId));
+  return merged.concat((incoming ?? []).filter((employee) => !existingIds.has(employee.employeeId)));
+}
+
 export function buildAttendanceDrafts(data) {
   const drafts = {};
   for (const employee of data?.employees ?? []) {

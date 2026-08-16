@@ -20,7 +20,7 @@ function draftDay(drafts, employee, day) {
   };
 }
 
-export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeft = 0, onScrollPositionChange }) {
+export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeft = 0, onScrollPositionChange, onLoadMore, loadingMore }) {
   const scrollRef = useRef(null);
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
@@ -33,7 +33,11 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
 
   return (
     <section className="erp-attendance-matrix-section" aria-label="Ma trận chấm công">
-      <div ref={scrollRef} className="erp-attendance-matrix-scroll" onScroll={(event) => onScrollPositionChange?.(event.currentTarget.scrollLeft)}>
+      <div ref={scrollRef} className="erp-attendance-matrix-scroll" onScroll={(event) => {
+        onScrollPositionChange?.(event.currentTarget.scrollLeft);
+        const target = event.currentTarget;
+        if (target.scrollTop + target.clientHeight >= target.scrollHeight - 400) onLoadMore?.();
+      }}>
         <table className="erp-attendance-matrix-table">
           <thead>
             <tr>
@@ -85,6 +89,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
             })}
           </tbody>
         </table>
+        {data.hasMoreEmployees && <div className="erp-attendance-load-more">{loadingMore ? "Đang tải thêm nhân viên..." : "Cuộn xuống để tải thêm nhân viên"}</div>}
       </div>
     </section>
   );
