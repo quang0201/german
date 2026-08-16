@@ -55,8 +55,19 @@ public sealed class OpenXmlAttendanceExporterTests
         Assert.AreEqual("FFF0F7FC", GetFillColor(document, GetCell(data, "E6")));
         Assert.AreEqual("FFFDECEC", GetFillColor(document, GetCell(data, "F6")));
         Assert.AreEqual("FF1F6B3A", GetFontColor(document, GetCell(data, "E8")));
-        var borderId = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!.Elements<CellFormat>().ElementAt((int)GetCell(data, "E8").StyleIndex!.Value).BorderId!.Value;
-        Assert.AreEqual(2U, borderId);
+        Assert.AreEqual(2U, GetBorderId(document, GetCell(data, "E8")));
+        Assert.AreEqual(2U, GetBorderId(document, GetCell(data, "F6")));
+    }
+
+    [TestMethod]
+    public void Export_StylesAllMergedEmployeeCellsWithGridBorders()
+    {
+        using var document = OpenWorkbook(CreateData(2026, 8));
+        var data = GetSheetData(document);
+        Assert.AreEqual(1U, GetBorderId(document, GetCell(data, "B6")));
+        Assert.AreEqual(1U, GetBorderId(document, GetCell(data, "B7")));
+        Assert.AreEqual(1U, GetBorderId(document, GetCell(data, "C6")));
+        Assert.AreEqual(1U, GetBorderId(document, GetCell(data, "C7")));
     }
 
     [DataTestMethod]
@@ -127,5 +138,10 @@ public sealed class OpenXmlAttendanceExporterTests
     {
         var format = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
         return document.WorkbookPart.WorkbookStylesPart.Stylesheet.Fonts!.Elements<Font>().ElementAt((int)(format.FontId?.Value ?? 0U)).Color!.Rgb!.Value!;
+    }
+    private static uint GetBorderId(SpreadsheetDocument document, Cell cell)
+    {
+        var format = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
+        return format.BorderId!.Value;
     }
 }

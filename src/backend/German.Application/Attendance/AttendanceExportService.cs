@@ -9,6 +9,7 @@ public sealed class AttendanceExportService(
 {
     public async Task<byte[]> ExportAsync(int year, int month, CancellationToken cancellationToken)
     {
+        AttendanceMonthValidator.Validate(year, month);
         var monthFrom = new DateOnly(year, month, 1);
         var monthUntil = monthFrom.AddMonths(1).AddDays(-1);
         var employees = await db.Employees

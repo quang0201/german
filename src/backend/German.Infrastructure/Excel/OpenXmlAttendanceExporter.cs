@@ -23,6 +23,8 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
     private const uint TcSundayStyle = 12U;
     private const uint TotalStyle = 13U;
     private const uint NoteStyle = 14U;
+    private const uint EmployeeCellStyle = 15U;
+    private const uint EmployeeNumberStyle = 16U;
 
     public byte[] Export(AttendanceExportData data)
     {
@@ -83,9 +85,15 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
                 var cells = new List<Cell>();
                 if (rowIndex == 0)
                 {
-                    cells.Add(At($"A{row}", Num(employeeNumber)));
-                    cells.Add(At($"B{row}", Text(employee.EmployeeCode)));
-                    cells.Add(At($"C{row}", Text(employee.FullName)));
+                    cells.Add(At($"A{row}", Num(employeeNumber, EmployeeNumberStyle)));
+                    cells.Add(At($"B{row}", Text(employee.EmployeeCode, EmployeeCellStyle)));
+                    cells.Add(At($"C{row}", Text(employee.FullName, EmployeeCellStyle)));
+                }
+                else
+                {
+                    cells.Add(At($"A{row}", Blank(EmployeeNumberStyle)));
+                    cells.Add(At($"B{row}", Blank(EmployeeCellStyle)));
+                    cells.Add(At($"C{row}", Blank(EmployeeCellStyle)));
                 }
                 cells.Add(At($"D{row}", Text(isTc ? "TC" : $"Ca {slotNumber}", isTc ? TcStyle : BodyStyle)));
                 foreach (var (day, dayIndex) in days.Select((day, index) => (day, index)))
@@ -103,6 +111,14 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
                     cells.Add(At($"{Col(totalStart + 3)}{row}", Num(employee.Totals.SickLeaveHours, TotalStyle)));
                     var note = string.Join("; ", employee.Days.Select(day => day.Note).Where(note => !string.IsNullOrWhiteSpace(note)).Distinct());
                     cells.Add(At($"{Col(totalStart + 4)}{row}", Text(note, NoteStyle)));
+                }
+                else
+                {
+                    cells.Add(At($"{Col(totalStart)}{row}", Blank(TotalStyle)));
+                    cells.Add(At($"{Col(totalStart + 1)}{row}", Blank(TotalStyle)));
+                    cells.Add(At($"{Col(totalStart + 2)}{row}", Blank(TotalStyle)));
+                    cells.Add(At($"{Col(totalStart + 3)}{row}", Blank(TotalStyle)));
+                    cells.Add(At($"{Col(totalStart + 4)}{row}", Blank(NoteStyle)));
                 }
                 AddCells(sheetData, row, cells.ToArray());
                 row++;
@@ -294,13 +310,15 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
             Format(fontId: 1U, fillId: 7U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
             Format(fontId: 1U, fillId: 2U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
             Format(borderId: 1U, alignment: HorizontalAlignmentValues.Center),
-            Format(fillId: 3U, borderId: 1U, alignment: HorizontalAlignmentValues.Center),
-            Format(fillId: 4U, borderId: 1U, alignment: HorizontalAlignmentValues.Center),
+            Format(fillId: 3U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
+            Format(fillId: 4U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
             Format(fontId: 3U, fillId: 5U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
             Format(fontId: 3U, fillId: 5U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
             Format(fontId: 3U, fillId: 5U, borderId: 2U, alignment: HorizontalAlignmentValues.Center),
             Format(borderId: 1U, alignment: HorizontalAlignmentValues.Right),
-            Format(borderId: 1U, alignment: HorizontalAlignmentValues.Left)) { Count = 15U };
+            Format(borderId: 1U, alignment: HorizontalAlignmentValues.Left),
+            Format(borderId: 1U, alignment: HorizontalAlignmentValues.Left),
+            Format(borderId: 1U, alignment: HorizontalAlignmentValues.Center)) { Count = 17U };
         return new Stylesheet(
             new NumberingFormats(),
             fonts,

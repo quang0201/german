@@ -113,7 +113,7 @@ public sealed class AttendanceService(IGermanDbContext db)
         SaveAttendanceMonthCommand command,
         CancellationToken cancellationToken)
     {
-        if (!IsValidMonth(command.Year, command.Month))
+        if (!AttendanceMonthValidator.IsValid(command.Year, command.Month))
         {
             return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_month", "Tháng chấm công không hợp lệ.");
         }
@@ -376,14 +376,7 @@ public sealed class AttendanceService(IGermanDbContext db)
     }
 
     private static void ValidateMonth(int year, int month)
-    {
-        if (!IsValidMonth(year, month))
-        {
-            throw new ArgumentOutOfRangeException(nameof(month), "Tháng chấm công không hợp lệ.");
-        }
-    }
-
-    private static bool IsValidMonth(int year, int month) => year is >= 2000 and <= 2100 && month is >= 1 and <= 12;
+        => AttendanceMonthValidator.Validate(year, month);
 
     private static (int DayFrom, int DayTo) ValidateDayWindow(int dayFrom, int dayCount, int lastDay)
     {

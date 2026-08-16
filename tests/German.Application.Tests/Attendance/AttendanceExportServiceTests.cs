@@ -49,6 +49,16 @@ public sealed class AttendanceExportServiceTests
         Assert.AreEqual(4m, exporter.Data.Employees[1].Totals.RegularWorkedHours);
     }
 
+    [TestMethod]
+    public async Task ExportAsync_RejectsYearOutsideAttendanceRange()
+    {
+        await using var db = CreateDbContext();
+        var exporter = new CapturingExporter();
+
+        await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(() =>
+            new AttendanceExportService(db, exporter).ExportAsync(1999, 8, CancellationToken.None));
+    }
+
     private sealed class CapturingExporter : IAttendanceExcelExporter
     {
         public AttendanceExportData? Data { get; private set; }
