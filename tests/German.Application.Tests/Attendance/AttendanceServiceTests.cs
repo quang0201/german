@@ -229,12 +229,45 @@ public sealed class AttendanceServiceTests
 
         CollectionAssert.AreEqual(new[] { "A201", "A202" }, first.Employees.Select(x => x.EmployeeCode).ToArray());
         Assert.IsTrue(first.HasMoreEmployees);
-        Assert.AreEqual("2", first.NextEmployeeCursor);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(first.NextEmployeeCursor));
         CollectionAssert.AreEqual(new[] { "A203" }, second.Employees.Select(x => x.EmployeeCode).ToArray());
         Assert.IsFalse(second.HasMoreEmployees);
         Assert.AreEqual(1, second.DayFrom);
         Assert.AreEqual(31, second.DayTo);
         Assert.IsFalse(second.HasMoreDays);
+    }
+
+    [TestMethod]
+    public async Task SaveMonth_ReturnsAllSubmittedEmployeesWhenMoreThanPageLimit()
+    {
+        await using var db = CreateDbContext();
+        var employees = Enumerable.Range(1, 101)
+            .Select(index => new Employee { EmployeeCode = $"A{index:000}", FullName = $"Nhân viên {index}" })
+            .ToArray();
+        var shift = CreateShift("Ca chung", ("Ca 1", 1, 7, 11));
+        db.Employees.AddRange(employees);
+        db.ShiftTemplates.Add(shift);
+        db.EmployeeShiftAssignments.AddRange(employees.Select(employee => new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        }));
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).SaveMonthAsync(new SaveAttendanceMonthCommand(
+            2026,
+            8,
+            employees.Select(employee => new AttendanceDayInput(
+                employee.Id,
+                new DateOnly(2026, 8, 1),
+                0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 4m)])).ToArray()),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(101, result.Value!.Employees.Count);
+        Assert.AreEqual(101, await db.AttendanceDays.CountAsync());
     }
 
     private static ShiftTemplate CreateShift(string name, params (string Name, int SortOrder, int Start, int End)[] periods)

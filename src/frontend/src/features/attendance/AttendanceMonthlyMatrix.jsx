@@ -20,13 +20,13 @@ function draftDay(drafts, employee, day) {
   };
 }
 
-export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeft = 0, onScrollPositionChange, onLoadMore, loadingMore }) {
+export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeftRef, onLoadMore, loadingMore }) {
   const scrollRef = useRef(null);
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
   useLayoutEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft;
-  }, [data, scrollLeft]);
+    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeftRef?.current ?? 0;
+  }, [data, scrollLeftRef]);
 
   if (loading) return <div className="erp-empty-state">Đang tải dữ liệu chấm công...</div>;
   if (!employees.length) return <div className="erp-empty-state">Chưa có nhân viên đang hoạt động.</div>;
@@ -34,7 +34,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
   return (
     <section className="erp-attendance-matrix-section" aria-label="Ma trận chấm công">
       <div ref={scrollRef} className="erp-attendance-matrix-scroll" onScroll={(event) => {
-        onScrollPositionChange?.(event.currentTarget.scrollLeft);
+        if (scrollLeftRef) scrollLeftRef.current = event.currentTarget.scrollLeft;
         const target = event.currentTarget;
         if (target.scrollTop + target.clientHeight >= target.scrollHeight - 400) onLoadMore?.();
       }}>

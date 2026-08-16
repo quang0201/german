@@ -3,7 +3,7 @@ import { Alert } from "../../components/erp/Alert.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
 import { AttendanceMonthlyMatrix } from "./AttendanceMonthlyMatrix.jsx";
-import { attendanceDayKey, buildAttendanceDrafts, buildAttendanceSavePayload, currentAttendanceMonth, mergeAttendanceEmployees, shiftAttendanceMonth } from "./attendanceModel.js";
+import { attendanceDayKey, buildAttendanceDrafts, buildAttendanceSavePayload, currentAttendanceMonth, isCurrentAttendanceBatch, mergeAttendanceEmployees, shiftAttendanceMonth } from "./attendanceModel.js";
 import "./AttendanceMonthlyMatrix.css";
 
 function monthLabel(monthKey) {
@@ -20,11 +20,16 @@ export function AttendancePage() {
   const [saving, setSaving] = useState(false);
   const [dirtyDayKeys, setDirtyDayKeys] = useState(() => new Set());
   const [error, setError] = useState("");
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const scrollLeftRef = useRef(0);
   const loadingMoreRef = useRef(false);
+  const monthGenerationRef = useRef(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
+    const generation = monthGenerationRef.current + 1;
+    monthGenerationRef.current = generation;
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
     let active = true;
     setLoading(true);
     setError("");
@@ -43,12 +48,15 @@ export function AttendancePage() {
 
   async function loadMoreEmployees() {
     if (!data.hasMoreEmployees || !data.nextEmployeeCursor || loadingMoreRef.current) return;
+    const requestedMonthKey = monthKey;
+    const requestedGeneration = monthGenerationRef.current;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     setError("");
     const [year, month] = monthKey.split("-");
     try {
       const payload = await api.get(`/api/attendance/monthly?year=${year}&month=${month}&employeeCursor=${encodeURIComponent(data.nextEmployeeCursor)}&employeeLimit=20`);
+      if (!isCurrentAttendanceBatch(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) return;
       setData((current) => ({
         ...current,
         employees: mergeAttendanceEmployees(current.employees, payload.employees),
@@ -57,10 +65,14 @@ export function AttendancePage() {
       }));
       setDrafts((current) => ({ ...current, ...buildAttendanceDrafts(payload) }));
     } catch (requestError) {
-      setError(requestError.message || "Không thể tải thêm nhân viên.");
+      if (isCurrentAttendanceBatch(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
+        setError(requestError.message || "Không thể tải thêm nhân viên.");
+      }
     } finally {
-      loadingMoreRef.current = false;
-      setLoadingMore(false);
+      if (isCurrentAttendanceBatch(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
     }
   }
 
@@ -135,7 +147,7 @@ export function AttendancePage() {
         <label className="erp-field erp-attendance-filter-field"><span className="erp-field-label">Nhân viên</span><select className="erp-control" value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}><option value="">Tất cả nhân viên</option>{(data.employees ?? []).map((employee) => <option key={employee.employeeId} value={employee.employeeId}>{employee.employeeCode} — {employee.fullName}</option>)}</select></label>
         <span className="erp-field-hint">Ô trống = chưa nhập · nhập P/Ô cho nghỉ · TC nhập một lần theo ngày</span>
       </div>
-      <AttendanceMonthlyMatrix data={visibleData} drafts={drafts} onCellChange={handleCellChange} onOvertimeChange={handleOvertimeChange} loading={loading} scrollLeft={scrollLeft} onScrollPositionChange={setScrollLeft} onLoadMore={loadMoreEmployees} loadingMore={loadingMore} />
+      <AttendanceMonthlyMatrix data={visibleData} drafts={drafts} onCellChange={handleCellChange} onOvertimeChange={handleOvertimeChange} loading={loading} scrollLeftRef={scrollLeftRef} onLoadMore={loadMoreEmployees} loadingMore={loadingMore} />
     </div>
   );
 }

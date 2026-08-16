@@ -1,8 +1,11 @@
 using German.Application.Abstractions;
 using German.Application.Common;
 using German.Domain.Attendance;
+using German.Domain.Employees;
 using German.Domain.Shifts;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using System.Text.Json;
 
 namespace German.Application.Attendance;
 
@@ -13,22 +16,13 @@ public sealed class AttendanceService(IGermanDbContext db)
         CancellationToken cancellationToken)
     {
         ValidateMonth(query.Year, query.Month);
-        var employeeOffset = ParseEmployeeCursor(query.EmployeeCursor);
-        var employeeLimit = ValidateEmployeeLimit(query.EmployeeLimit);
+        var employeeCursor = query.EmployeeIds is null ? ParseEmployeeCursor(query.EmployeeCursor) : null;
+        var employeeLimit = query.EmployeeIds is null
+            ? ValidateEmployeeLimit(query.EmployeeLimit)
+            : Math.Max(query.EmployeeIds.Count, 1);
         var from = new DateOnly(query.Year, query.Month, 1);
         var until = from.AddMonths(1).AddDays(-1);
 
-        var historicalEmployeeIdsQuery = db.AttendanceDays.AsNoTracking()
-            .Where(x => x.WorkDate >= from && x.WorkDate <= until);
-        if (query.EmployeeId.HasValue)
-        {
-            historicalEmployeeIdsQuery = historicalEmployeeIdsQuery.Where(x => x.EmployeeId == query.EmployeeId.Value);
-        }
-
-        var historicalEmployeeIds = await historicalEmployeeIdsQuery
-            .Select(x => x.EmployeeId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
         var employeesQuery = db.Employees.AsNoTracking();
         if (query.EmployeeIds is not null)
         {
@@ -36,21 +30,26 @@ public sealed class AttendanceService(IGermanDbContext db)
         }
         else
         {
-            employeesQuery = employeesQuery.Where(x => x.IsActive || historicalEmployeeIds.Contains(x.Id));
+            employeesQuery = employeesQuery.Where(x => x.IsActive || db.AttendanceDays.Any(attendance =>
+                attendance.EmployeeId == x.Id
+                && attendance.WorkDate >= from
+                && attendance.WorkDate <= until));
             if (query.EmployeeId.HasValue)
             {
                 employeesQuery = employeesQuery.Where(x => x.Id == query.EmployeeId.Value);
+            }
+            if (employeeCursor is not null)
+            {
+                employeesQuery = employeesQuery.Where(x =>
+                    string.Compare(x.EmployeeCode, employeeCursor.EmployeeCode) > 0
+                    || (x.EmployeeCode == employeeCursor.EmployeeCode && x.Id.CompareTo(employeeCursor.EmployeeId) > 0));
             }
         }
 
         var orderedEmployeesQuery = employeesQuery
             .OrderBy(x => x.EmployeeCode)
             .ThenBy(x => x.Id);
-        var pagedEmployeesQuery = query.EmployeeIds is null && employeeOffset > 0
-            ? orderedEmployeesQuery.Skip(employeeOffset)
-            : orderedEmployeesQuery;
-
-        var employeeCandidates = await pagedEmployeesQuery
+        var employeeCandidates = await orderedEmployeesQuery
             .Take(query.EmployeeIds is null ? employeeLimit + 1 : employeeLimit)
             .ToListAsync(cancellationToken);
         var hasMoreEmployees = query.EmployeeIds is null && employeeCandidates.Count > employeeLimit;
@@ -88,14 +87,16 @@ public sealed class AttendanceService(IGermanDbContext db)
                 CalculateTotals(days)));
         }
 
-        var nextEmployeeOffset = hasMoreEmployees ? employeeOffset + employeeLimit : (int?)null;
+        var nextEmployeeCursor = hasMoreEmployees && employees.Count > 0
+            ? EncodeEmployeeCursor(employees[^1])
+            : null;
         return new AttendanceMonthlyResult(
             query.Year,
             query.Month,
             resultEmployees,
             query.EmployeeCursor,
             employeeLimit,
-            nextEmployeeOffset?.ToString(),
+            nextEmployeeCursor,
             hasMoreEmployees,
             1,
             until.Day,
@@ -340,12 +341,39 @@ public sealed class AttendanceService(IGermanDbContext db)
 
     private static bool IsValidMonth(int year, int month) => year is >= 2000 and <= 2100 && month is >= 1 and <= 12;
 
-    private static int ParseEmployeeCursor(string? cursor)
+    private static EmployeeCursor? ParseEmployeeCursor(string? cursor)
     {
-        if (string.IsNullOrWhiteSpace(cursor)) return 0;
-        if (int.TryParse(cursor, out var offset) && offset >= 0) return offset;
+        if (string.IsNullOrWhiteSpace(cursor)) return null;
+        try
+        {
+            var normalized = cursor.Replace('-', '+').Replace('_', '/');
+            normalized = normalized.PadRight(normalized.Length + (4 - normalized.Length % 4) % 4, '=');
+            var json = Encoding.UTF8.GetString(Convert.FromBase64String(normalized));
+            var parsed = JsonSerializer.Deserialize<EmployeeCursor>(json);
+            if (parsed is not null && !string.IsNullOrWhiteSpace(parsed.EmployeeCode)) return parsed;
+        }
+        catch (FormatException)
+        {
+            // Normalize all malformed cursors to the same API error below.
+        }
+        catch (JsonException)
+        {
+            // Normalize all malformed cursors to the same API error below.
+        }
+
         throw new ArgumentException("Cursor nhân viên không hợp lệ.", nameof(cursor));
     }
+
+    private static string EncodeEmployeeCursor(Employee employee)
+    {
+        var json = JsonSerializer.Serialize(new EmployeeCursor(employee.EmployeeCode, employee.Id));
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+
+    private sealed record EmployeeCursor(string EmployeeCode, Guid EmployeeId);
 
     private static int ValidateEmployeeLimit(int limit)
     {
