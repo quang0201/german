@@ -49,7 +49,7 @@ public static class AttendanceEndpoints
                     employeeCursor,
                     employeeLimit ?? 20,
                     DayFrom: dayFrom ?? 1,
-                    DayCount: dayCount ?? 10), ct));
+                    DayCount: dayCount ?? 7), ct));
             }
             catch (ArgumentOutOfRangeException exception)
             {

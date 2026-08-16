@@ -106,12 +106,12 @@ describe("attendance model", () => {
   });
 
   test("merges day rectangles without dropping earlier blocks", () => {
-    const first = { year: 2026, month: 8, dayFrom: 1, dayTo: 10, nextEmployeeCursor: "next", employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 4 }, days: [{ workDate: "2026-08-01", hasShiftSetup: true, shifts: [] }] }] };
-    const second = { year: 2026, month: 8, dayFrom: 11, dayTo: 20, nextEmployeeCursor: null, employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 8 }, days: [{ workDate: "2026-08-11", hasShiftSetup: true, shifts: [] }] }] };
+    const first = { year: 2026, month: 8, dayFrom: 1, dayTo: 7, nextEmployeeCursor: "next", employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 4 }, days: [{ workDate: "2026-08-01", hasShiftSetup: true, shifts: [] }] }] };
+    const second = { year: 2026, month: 8, dayFrom: 8, dayTo: 14, nextEmployeeCursor: null, employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 8 }, days: [{ workDate: "2026-08-08", hasShiftSetup: true, shifts: [] }] }] };
     let cache = mergeAttendanceCache(emptyAttendanceCache("2026-08", 1), first, { batchId: "batch-0" });
     cache = mergeAttendanceCache(cache, second, { batchId: "batch-0" });
-    const rendered = buildAttendanceRenderData(cache, "2026-08", [1, 11]);
-    expect(rendered.employees[0].days.map((day) => day.workDate)).toEqual(["2026-08-01", "2026-08-11"]);
+    const rendered = buildAttendanceRenderData(cache, "2026-08", [1, 8]);
+    expect(rendered.employees[0].days.map((day) => day.workDate)).toEqual(["2026-08-01", "2026-08-08"]);
     expect(rendered.employees[0].totals.regularWorkedHours).toBe(8);
   });
 
