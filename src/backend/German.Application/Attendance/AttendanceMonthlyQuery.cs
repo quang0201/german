@@ -8,4 +8,4 @@ public sealed record AttendanceMonthlyQuery(
     int EmployeeLimit = 20,
     IReadOnlyCollection<Guid>? EmployeeIds = null,
     int DayFrom = 1,
-    int DayCount = 10);
+    int DayCount = 7);

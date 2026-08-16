@@ -98,20 +98,20 @@ describe("attendance model", () => {
     expect(isCurrentAttendanceRequest("2026-08", "2026-08", 2, 2)).toBe(true);
   });
 
-  test("builds exactly three fixed day blocks with the correct final length", () => {
-    expect(attendanceDayBlocks(2026, 2).map((block) => block.dayCount)).toEqual([10, 10, 8]);
-    expect(attendanceDayBlocks(2028, 2).map((block) => block.dayCount)).toEqual([10, 10, 9]);
-    expect(attendanceDayBlocks(2026, 4).map((block) => block.dayCount)).toEqual([10, 10, 10]);
-    expect(attendanceDayBlocks(2026, 8).map((block) => block.dayCount)).toEqual([10, 10, 11]);
+  test("builds weekly day blocks with the correct final length", () => {
+    expect(attendanceDayBlocks(2026, 2).map((block) => block.dayCount)).toEqual([7, 7, 7, 7]);
+    expect(attendanceDayBlocks(2028, 2).map((block) => block.dayCount)).toEqual([7, 7, 7, 7, 1]);
+    expect(attendanceDayBlocks(2026, 4).map((block) => block.dayCount)).toEqual([7, 7, 7, 7, 2]);
+    expect(attendanceDayBlocks(2026, 8).map((block) => block.dayCount)).toEqual([7, 7, 7, 7, 3]);
   });
 
   test("merges day rectangles without dropping earlier blocks", () => {
-    const first = { year: 2026, month: 8, dayFrom: 1, dayTo: 10, nextEmployeeCursor: "next", employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 4 }, days: [{ workDate: "2026-08-01", hasShiftSetup: true, shifts: [] }] }] };
-    const second = { year: 2026, month: 8, dayFrom: 11, dayTo: 20, nextEmployeeCursor: null, employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 8 }, days: [{ workDate: "2026-08-11", hasShiftSetup: true, shifts: [] }] }] };
+    const first = { year: 2026, month: 8, dayFrom: 1, dayTo: 7, nextEmployeeCursor: "next", employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 4 }, days: [{ workDate: "2026-08-01", hasShiftSetup: true, shifts: [] }] }] };
+    const second = { year: 2026, month: 8, dayFrom: 8, dayTo: 14, nextEmployeeCursor: null, employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", totals: { regularWorkedHours: 8 }, days: [{ workDate: "2026-08-08", hasShiftSetup: true, shifts: [] }] }] };
     let cache = mergeAttendanceCache(emptyAttendanceCache("2026-08", 1), first, { batchId: "batch-0" });
     cache = mergeAttendanceCache(cache, second, { batchId: "batch-0" });
-    const rendered = buildAttendanceRenderData(cache, "2026-08", [1, 11]);
-    expect(rendered.employees[0].days.map((day) => day.workDate)).toEqual(["2026-08-01", "2026-08-11"]);
+    const rendered = buildAttendanceRenderData(cache, "2026-08", [1, 8]);
+    expect(rendered.employees[0].days.map((day) => day.workDate)).toEqual(["2026-08-01", "2026-08-08"]);
     expect(rendered.employees[0].totals.regularWorkedHours).toBe(8);
   });
 

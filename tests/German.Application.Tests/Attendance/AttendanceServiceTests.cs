@@ -233,7 +233,7 @@ public sealed class AttendanceServiceTests
         CollectionAssert.AreEqual(new[] { "A203" }, second.Employees.Select(x => x.EmployeeCode).ToArray());
         Assert.IsFalse(second.HasMoreEmployees);
         Assert.AreEqual(1, second.DayFrom);
-        Assert.AreEqual(10, second.DayTo);
+        Assert.AreEqual(7, second.DayTo);
         Assert.IsTrue(second.HasMoreDays);
     }
 

@@ -37,11 +37,11 @@ export function isCurrentAttendanceRequest(requestedMonthKey, currentMonthKey, r
 
 export function attendanceDayBlocks(year, month) {
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return [
-    { dayFrom: 1, dayTo: Math.min(10, lastDay), dayCount: Math.min(10, lastDay) },
-    ...(lastDay > 10 ? [{ dayFrom: 11, dayTo: Math.min(20, lastDay), dayCount: Math.min(10, lastDay - 10) }] : []),
-    ...(lastDay > 20 ? [{ dayFrom: 21, dayTo: lastDay, dayCount: lastDay - 20 }] : []),
-  ];
+  return Array.from({ length: Math.ceil(lastDay / 7) }, (_, index) => {
+    const dayFrom = index * 7 + 1;
+    const dayTo = Math.min(dayFrom + 6, lastDay);
+    return { dayFrom, dayTo, dayCount: dayTo - dayFrom + 1 };
+  });
 }
 
 export function attendanceBlockKey(generation, batchId, dayFrom) {
