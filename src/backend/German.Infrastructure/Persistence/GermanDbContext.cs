@@ -1,5 +1,6 @@
 using German.Application.Abstractions;
 using German.Domain.Auditing;
+using German.Domain.Attendance;
 using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
@@ -20,6 +21,8 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
     public DbSet<ProductionOperation> ProductionOperations => Set<ProductionOperation>();
     public DbSet<ProductionEntry> ProductionEntries => Set<ProductionEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<AttendanceDay> AttendanceDays => Set<AttendanceDay>();
+    public DbSet<AttendanceShiftEntry> AttendanceShiftEntries => Set<AttendanceShiftEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +74,29 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
                 .WithMany()
                 .HasForeignKey(x => x.ShiftTemplateId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AttendanceDay>(builder =>
+        {
+            builder.Property(x => x.OvertimeHours).HasPrecision(8, 2);
+            builder.Property(x => x.Note).HasMaxLength(1000).IsRequired();
+            builder.HasIndex(x => new { x.EmployeeId, x.WorkDate }).IsUnique();
+            builder.HasOne<Employee>()
+                .WithMany()
+                .HasForeignKey(x => x.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasMany(x => x.Shifts)
+                .WithOne()
+                .HasForeignKey(x => x.AttendanceDayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AttendanceShiftEntry>(builder =>
+        {
+            builder.Property(x => x.ShiftName).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.ScheduledHours).HasPrecision(8, 2);
+            builder.Property(x => x.WorkedHours).HasPrecision(8, 2);
+            builder.HasIndex(x => new { x.AttendanceDayId, x.SlotNumber }).IsUnique();
         });
 
         modelBuilder.Entity<ProductionOrder>(builder =>

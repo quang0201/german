@@ -1,4 +1,5 @@
 using German.Domain.Auditing;
+using German.Domain.Attendance;
 using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
@@ -18,6 +19,8 @@ public interface IGermanDbContext
     DbSet<ProductionOperation> ProductionOperations { get; }
     DbSet<ProductionEntry> ProductionEntries { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<AttendanceDay> AttendanceDays { get; }
+    DbSet<AttendanceShiftEntry> AttendanceShiftEntries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
