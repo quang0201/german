@@ -37,6 +37,7 @@ export function AttendancePage() {
   const [employeeId, setEmployeeId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [dirtyDayKeys, setDirtyDayKeys] = useState(() => new Set());
   const [error, setError] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -259,12 +260,29 @@ export function AttendancePage() {
     }
   }
 
+  async function exportExcel() {
+    if (dirtyDayKeys.size > 0 || loading || exporting) return;
+    const [year, month] = monthKey.split("-");
+    setExporting(true);
+    setError("");
+    try {
+      await api.download(
+        `/api/attendance/export?year=${year}&month=${month}`,
+        `ChamCong_${month}_${year}_tc_t7_cn_ro.xlsx`,
+      );
+    } catch (requestError) {
+      setError(requestError.message || "Không thể xuất file chấm công.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const totalEmployees = cache.batches.reduce((total, batch) => total + batch.employeeIds.length, 0);
   const dirty = dirtyDayKeys.size > 0;
 
   return (
     <div className="erp-feature-page erp-attendance-page">
-      <PageHeader title="Chấm công" description="Nhập giờ HC theo ca, nghỉ P/Ô và giờ TC theo ngày." actions={<div className="erp-attendance-actions"><span className="erp-attendance-dirty">{dirty ? "Có thay đổi chưa lưu" : "Đã đồng bộ"}</span><button type="button" className="erp-button erp-button-primary" onClick={save} disabled={saving || !dirty}>{saving ? "Đang lưu..." : "Lưu thay đổi"}</button></div>} />
+      <PageHeader title="Chấm công" description="Nhập giờ HC theo ca, nghỉ P/Ô và giờ TC theo ngày." actions={<div className="erp-attendance-actions"><span className="erp-attendance-dirty">{dirty ? "Có thay đổi chưa lưu" : "Đã đồng bộ"}</span><button type="button" className="erp-button erp-button-secondary" onClick={exportExcel} disabled={dirty || loading || exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button><button type="button" className="erp-button erp-button-primary" onClick={save} disabled={saving || !dirty}>{saving ? "Đang lưu..." : "Lưu thay đổi"}</button></div>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
       <div className="erp-attendance-toolbar"><div className="erp-attendance-month" aria-label="Chọn tháng"><button type="button" className="erp-button erp-button-secondary" onClick={() => setMonthKey((value) => shiftAttendanceMonth(value, -1))}>←</button><strong>{monthLabel(monthKey)}</strong><button type="button" className="erp-button erp-button-secondary" onClick={() => setMonthKey((value) => shiftAttendanceMonth(value, 1))}>→</button></div><div className="erp-attendance-summary"><span>Đã tải nhân viên: <strong>{totalEmployees}</strong></span><span>Block ngày: <strong>{activeBlock ? `${activeBlock.dayFrom}–${activeBlock.dayTo}` : "—"}</strong></span></div></div>
       <div className="erp-attendance-filters"><label className="erp-field erp-attendance-filter-field"><span className="erp-field-label">Nhân viên</span><select className="erp-control" value={employeeId} onChange={(event) => setEmployeeId(event.target.value)}><option value="">Tất cả nhân viên</option>{Object.values(cache.employeesById).map((employee) => <option key={employee.employeeId} value={employee.employeeId}>{employee.employeeCode} — {employee.fullName}</option>)}</select></label><span className="erp-field-hint">Ô trống = chưa nhập · nhập P/Ô cho nghỉ · TC nhập một lần theo ngày</span></div>

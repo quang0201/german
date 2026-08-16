@@ -24,6 +24,7 @@ builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AttendanceService>();
+builder.Services.AddScoped<AttendanceExportService>();
 builder.Services.AddScoped<AttendanceHoursQueryService>();
 builder.Services.AddScoped<UserAccountService>();
 builder.Services.AddScoped<ProductionEntryService>();

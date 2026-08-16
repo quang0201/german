@@ -9,6 +9,26 @@ public static class AttendanceEndpoints
     {
         var group = endpoints.MapGroup("/api/attendance").RequireAuthorization("ManagerOrAdmin");
 
+        group.MapGet("/export", async (
+            int year,
+            int month,
+            AttendanceExportService service,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var bytes = await service.ExportAsync(year, month, ct);
+                return Results.File(
+                    bytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"ChamCong_{month:00}_{year}_tc_t7_cn_ro.xlsx");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return Results.BadRequest(new { code = "attendance.invalid_month", message = "Tháng chấm công không hợp lệ." });
+            }
+        });
+
         group.MapGet("/monthly", async (
             int year,
             int month,

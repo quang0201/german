@@ -23,16 +23,24 @@ public sealed class AttendanceApiTests
         using var anonymous = factory.CreateClient();
         Assert.AreEqual(HttpStatusCode.Unauthorized,
             (await anonymous.GetAsync("/api/attendance/monthly?year=2026&month=8")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.Unauthorized,
+            (await anonymous.GetAsync("/api/attendance/export?year=2026&month=8")).StatusCode);
 
         using var worker = factory.CreateClient(new() { HandleCookies = true });
         await LoginAsync(worker, "attendance-worker", "secret");
         Assert.AreEqual(HttpStatusCode.Forbidden,
             (await worker.GetAsync("/api/attendance/monthly?year=2026&month=8")).StatusCode);
+        Assert.AreEqual(HttpStatusCode.Forbidden,
+            (await worker.GetAsync("/api/attendance/export?year=2026&month=8")).StatusCode);
 
         using var manager = factory.CreateClient(new() { HandleCookies = true });
         await LoginAsync(manager, "attendance-manager", "secret");
         Assert.AreEqual(HttpStatusCode.OK,
             (await manager.GetAsync("/api/attendance/monthly?year=2026&month=8")).StatusCode);
+        var export = await manager.GetAsync("/api/attendance/export?year=2026&month=8");
+        Assert.AreEqual(HttpStatusCode.OK, export.StatusCode);
+        Assert.AreEqual("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", export.Content.Headers.ContentType?.MediaType);
+        StringAssert.Contains(export.Content.Headers.ContentDisposition?.FileNameStar ?? export.Content.Headers.ContentDisposition?.FileName ?? "", "ChamCong_08_2026");
 
         using var admin = factory.CreateClient(new() { HandleCookies = true });
         await LoginAsync(admin, "attendance-admin", "secret");

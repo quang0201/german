@@ -113,7 +113,7 @@ public sealed class AttendanceService(IGermanDbContext db)
         SaveAttendanceMonthCommand command,
         CancellationToken cancellationToken)
     {
-        if (!IsValidMonth(command.Year, command.Month))
+        if (!AttendanceMonthValidator.IsValid(command.Year, command.Month))
         {
             return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_month", "Tháng chấm công không hợp lệ.");
         }
@@ -230,53 +230,7 @@ public sealed class AttendanceService(IGermanDbContext db)
         DateOnly from,
         DateOnly until,
         CancellationToken cancellationToken)
-    {
-        if (employeeIds.Count == 0)
-        {
-            return [];
-        }
-
-        var totals = await db.AttendanceDays.AsNoTracking()
-            .Where(day => employeeIds.Contains(day.EmployeeId) && day.WorkDate >= from && day.WorkDate <= until)
-            .SelectMany(day => day.Shifts.Select(shift => new
-            {
-                day.EmployeeId,
-                shift.ValueKind,
-                shift.WorkedHours,
-                shift.ScheduledHours
-            }))
-            .GroupBy(row => row.EmployeeId)
-            .Select(group => new
-            {
-                EmployeeId = group.Key,
-                RegularWorkedHours = group.Where(row => row.ValueKind == AttendanceShiftValueKind.Hours)
-                    .Sum(row => row.WorkedHours ?? 0m),
-                PaidLeaveHours = group.Where(row => row.ValueKind == AttendanceShiftValueKind.PaidLeave)
-                    .Sum(row => row.ScheduledHours),
-                SickLeaveHours = group.Where(row => row.ValueKind == AttendanceShiftValueKind.SickLeave)
-                    .Sum(row => row.ScheduledHours)
-            })
-            .ToListAsync(cancellationToken);
-
-        var overtime = await db.AttendanceDays.AsNoTracking()
-            .Where(day => employeeIds.Contains(day.EmployeeId) && day.WorkDate >= from && day.WorkDate <= until)
-            .GroupBy(day => day.EmployeeId)
-            .Select(group => new { EmployeeId = group.Key, OvertimeHours = group.Sum(day => day.OvertimeHours) })
-            .ToDictionaryAsync(row => row.EmployeeId, row => row.OvertimeHours, cancellationToken);
-
-        var result = totals.ToDictionary(
-            row => row.EmployeeId,
-            row => new AttendanceTotalsDto(
-                row.RegularWorkedHours,
-                overtime.GetValueOrDefault(row.EmployeeId),
-                row.PaidLeaveHours,
-                row.SickLeaveHours));
-        foreach (var row in overtime)
-        {
-            if (!result.ContainsKey(row.Key)) result[row.Key] = new AttendanceTotalsDto(0m, row.Value, 0m, 0m);
-        }
-        return result;
-    }
+        => await AttendanceTotalsQuery.LoadAsync(db, employeeIds, from, until, cancellationToken);
 
     private async Task<IReadOnlyList<AttendanceEmployeeSavePatchDto>> LoadSavedEmployeePatchesAsync(
         IReadOnlyCollection<Guid> employeeIds,
@@ -422,14 +376,7 @@ public sealed class AttendanceService(IGermanDbContext db)
     }
 
     private static void ValidateMonth(int year, int month)
-    {
-        if (!IsValidMonth(year, month))
-        {
-            throw new ArgumentOutOfRangeException(nameof(month), "Tháng chấm công không hợp lệ.");
-        }
-    }
-
-    private static bool IsValidMonth(int year, int month) => year is >= 2000 and <= 2100 && month is >= 1 and <= 12;
+        => AttendanceMonthValidator.Validate(year, month);
 
     private static (int DayFrom, int DayTo) ValidateDayWindow(int dayFrom, int dayCount, int lastDay)
     {
