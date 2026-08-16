@@ -17,6 +17,8 @@
 .erp-attendance-toolbar { justify-content: space-between; }
 .erp-attendance-month { display: flex; align-items: center; gap: 8px; }
 .erp-attendance-month strong { min-width: 82px; text-align: center; }
+.erp-attendance-block-navigation { display: flex; align-items: center; gap: 8px; }
+.erp-attendance-block-navigation strong { min-width: 90px; text-align: center; }
 .erp-attendance-summary { color: var(--color-text-muted); font-size: 0.9rem; }
 .erp-attendance-summary strong { color: var(--color-text); }
 .erp-attendance-filters { padding: 8px 0; }
@@ -56,4 +58,5 @@
 @media (max-width: 767px) {
   .erp-attendance-page { min-height: auto; }
   .erp-attendance-matrix-section { min-height: 60vh; }
+  .erp-attendance-block-navigation { width: 100%; justify-content: space-between; }
 }
