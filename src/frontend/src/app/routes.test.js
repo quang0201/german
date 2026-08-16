@@ -25,4 +25,10 @@ describe("ERP route metadata", () => {
       { label: "entry-1" },
     ]);
   });
+
+  test("exposes attendance only to Manager and Admin", () => {
+    const route = routes.find((item) => item.path === "/attendance");
+    expect(route?.roles).toEqual(["Manager", "Admin"]);
+    expect(route?.navLabel).toBe("Chấm công");
+  });
 });
