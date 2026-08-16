@@ -98,11 +98,11 @@ describe("attendance model", () => {
     expect(isCurrentAttendanceRequest("2026-08", "2026-08", 2, 2)).toBe(true);
   });
 
-  test("builds exactly three fixed day blocks with the correct final length", () => {
-    expect(attendanceDayBlocks(2026, 2).map((block) => block.dayCount)).toEqual([10, 10, 8]);
-    expect(attendanceDayBlocks(2028, 2).map((block) => block.dayCount)).toEqual([10, 10, 9]);
-    expect(attendanceDayBlocks(2026, 4).map((block) => block.dayCount)).toEqual([10, 10, 10]);
-    expect(attendanceDayBlocks(2026, 8).map((block) => block.dayCount)).toEqual([10, 10, 11]);
+  test("builds weekly day blocks with the correct final length", () => {
+    expect(attendanceDayBlocks(2026, 2).map((block) => block.dayCount)).toEqual([7, 7, 7, 7]);
+    expect(attendanceDayBlocks(2028, 2).map((block) => block.dayCount)).toEqual([7, 7, 7, 7, 1]);
+    expect(attendanceDayBlocks(2026, 4).map((block) => block.dayCount)).toEqual([7, 7, 7, 7, 2]);
+    expect(attendanceDayBlocks(2026, 8).map((block) => block.dayCount)).toEqual([7, 7, 7, 7, 3]);
   });
 
   test("merges day rectangles without dropping earlier blocks", () => {

@@ -10,8 +10,8 @@ describe("AttendancePage", () => {
     expect(html).toContain("Chấm công");
     expect(html).toContain("Lưu thay đổi");
     expect(html).toContain("Xuất Excel");
-    expect(html).toContain("10 ngày tiếp ›");
-    expect(html).toContain("‹ 10 ngày trước");
+    expect(html).toContain("Tuần tiếp ›");
+    expect(html).toContain("‹ Tuần trước");
     expect(html).toContain("Tất cả nhân viên");
     expect(html).toContain("Ô trống = chưa nhập");
   });
