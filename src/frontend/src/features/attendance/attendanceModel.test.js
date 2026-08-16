@@ -165,6 +165,11 @@ describe("attendance model", () => {
     expect(resolveAttendanceHorizontalScrollIntent(400, 400, 120, 280)).toBeNull();
   });
 
+  test("does not go previous while the active block start is far left", () => {
+    expect(resolveAttendanceHorizontalScrollIntent(600, 550, -600, 500)).toBeNull();
+    expect(resolveAttendanceHorizontalScrollIntent(600, 550, -250, 500)).toBe("previous");
+  });
+
   test("does not resolve a block when scrolling vertically", () => {
     expect(resolveAttendanceHorizontalScrollIntent(400, 450, 120, 280)).toBe("next");
     expect(resolveAttendanceHorizontalScrollIntent(450, 400, 120, 280)).toBe("previous");
