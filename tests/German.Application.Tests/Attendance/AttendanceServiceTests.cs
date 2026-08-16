@@ -158,6 +158,61 @@ public sealed class AttendanceServiceTests
         Assert.AreEqual(4, saved.ScheduledHours);
     }
 
+    [TestMethod]
+    public async Task GetMonth_IncludesInactiveEmployeeWhenAttendanceExistsInRequestedMonth()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "A105", FullName = "Nghỉ việc", IsActive = false };
+        var day = new AttendanceDay { EmployeeId = employee.Id, WorkDate = new DateOnly(2026, 8, 17), OvertimeHours = 1m };
+        day.Shifts.Add(new AttendanceShiftEntry
+        {
+            AttendanceDayId = day.Id,
+            SlotNumber = 1,
+            ShiftName = "Ca lịch sử",
+            ScheduledStartTime = new TimeOnly(7, 0),
+            ScheduledEndTime = new TimeOnly(11, 0),
+            ScheduledHours = 4m,
+            ValueKind = AttendanceShiftValueKind.Hours,
+            WorkedHours = 4m
+        });
+        db.AddRange(employee, day);
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 8), CancellationToken.None);
+
+        var historical = result.Employees.Single(x => x.EmployeeId == employee.Id);
+        Assert.AreEqual("Nghỉ việc", historical.FullName);
+        Assert.IsTrue(historical.Days.Single(x => x.WorkDate.Day == 17).HasAttendance);
+    }
+
+    [TestMethod]
+    public async Task SaveMonth_PersistsOnlySubmittedDays()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "A106", FullName = "Chỉ một ngày" };
+        var shift = CreateShift("Ca", ("Ca 1", 1, 7, 11));
+        db.AddRange(employee, shift, new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).SaveMonthAsync(new SaveAttendanceMonthCommand(
+            2026,
+            8,
+            [new AttendanceDayInput(employee.Id, new DateOnly(2026, 8, 16), 0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 4m)])]), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(1, await db.AttendanceDays.CountAsync());
+        var nextDay = await new AttendanceHoursQueryService(db).GetAsync(
+            employee.Id, new DateOnly(2026, 8, 17), CancellationToken.None);
+        Assert.IsFalse(nextDay.HasAttendance);
+    }
+
     private static ShiftTemplate CreateShift(string name, params (string Name, int SortOrder, int Start, int End)[] periods)
     {
         var shift = new ShiftTemplate { Name = name };

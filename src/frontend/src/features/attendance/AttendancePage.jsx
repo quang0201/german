@@ -18,7 +18,7 @@ export function AttendancePage() {
   const [employeeId, setEmployeeId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const [dirtyDayKeys, setDirtyDayKeys] = useState(() => new Set());
   const [error, setError] = useState("");
   const [scrollLeft, setScrollLeft] = useState(0);
 
@@ -32,7 +32,7 @@ export function AttendancePage() {
         if (!active) return;
         setData(payload);
         setDrafts(buildAttendanceDrafts(payload));
-        setDirty(false);
+        setDirtyDayKeys(new Set());
       })
       .catch((requestError) => { if (active) setError(requestError.message || "Không thể tải dữ liệu chấm công."); })
       .finally(() => { if (active) setLoading(false); });
@@ -57,7 +57,7 @@ export function AttendancePage() {
     const key = attendanceDayKey(employee.employeeId, day.workDate);
     const current = ensureDraft(employee, day);
     setDrafts((previous) => ({ ...previous, [key]: { ...current, shifts: { ...current.shifts, [shift.slotNumber]: value } } }));
-    setDirty(true);
+    setDirtyDayKeys((previous) => new Set(previous).add(key));
     setError("");
   }
 
@@ -65,7 +65,7 @@ export function AttendancePage() {
     const key = attendanceDayKey(employee.employeeId, day.workDate);
     const current = ensureDraft(employee, day);
     setDrafts((previous) => ({ ...previous, [key]: { ...current, overtimeHours: value } }));
-    setDirty(true);
+    setDirtyDayKeys((previous) => new Set(previous).add(key));
     setError("");
   }
 
@@ -74,11 +74,11 @@ export function AttendancePage() {
     setError("");
     try {
       const [year, month] = monthKey.split("-").map(Number);
-      const payload = buildAttendanceSavePayload(data, drafts, year, month);
+      const payload = buildAttendanceSavePayload(data, drafts, year, month, dirtyDayKeys);
       const result = await api.put("/api/attendance/monthly", payload);
       setData(result);
       setDrafts(buildAttendanceDrafts(result));
-      setDirty(false);
+      setDirtyDayKeys(new Set());
     } catch (requestError) {
       setError(requestError.message || "Không thể lưu chấm công.");
     } finally {
@@ -88,6 +88,7 @@ export function AttendancePage() {
 
   const [year, month] = monthKey.split("-").map(Number);
   const totalEmployees = data.employees?.length ?? 0;
+  const dirty = dirtyDayKeys.size > 0;
 
   return (
     <div className="erp-feature-page erp-attendance-page">

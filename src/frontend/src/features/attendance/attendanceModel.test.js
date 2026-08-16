@@ -29,7 +29,7 @@ describe("attendance model", () => {
     };
     const payload = buildAttendanceSavePayload(data, {
       "e1|2026-08-16": { overtimeHours: "2", shifts: { 1: "4", 2: "P" } },
-    }, 2026, 8);
+    }, 2026, 8, new Set(["e1|2026-08-16"]));
     expect(payload.days[0]).toEqual({
       employeeId: "e1",
       workDate: "2026-08-16",
@@ -55,5 +55,29 @@ describe("attendance model", () => {
     expect(calculateDraftTotals(employee, {
       "e1|2026-08-16": { overtimeHours: "2", shifts: { 1: "3", 2: "P" } },
     })).toEqual({ regularWorkedHours: 3, overtimeHours: 2, paidLeaveHours: 4, sickLeaveHours: 0 });
+  });
+
+  test("saves only dirty employee-days instead of every configured day", () => {
+    const day = (workDate) => ({
+      workDate,
+      hasAttendance: false,
+      hasShiftSetup: true,
+      overtimeHours: 0,
+      shifts: [{ slotNumber: 1, scheduledHours: 4, valueKind: "Empty", workedHours: null }],
+    });
+    const data = { employees: [
+      { employeeId: "e1", days: [day("2026-08-16"), day("2026-08-17")] },
+      { employeeId: "e2", days: [day("2026-08-16"), day("2026-08-17")] },
+    ] };
+    const drafts = {
+      "e1|2026-08-16": { overtimeHours: "", shifts: { 1: "4" } },
+      "e1|2026-08-17": { overtimeHours: "", shifts: { 1: "" } },
+      "e2|2026-08-16": { overtimeHours: "", shifts: { 1: "" } },
+      "e2|2026-08-17": { overtimeHours: "", shifts: { 1: "" } },
+    };
+    const payload = buildAttendanceSavePayload(data, drafts, 2026, 8, new Set(["e1|2026-08-16"]));
+    expect(payload.days).toHaveLength(1);
+    expect(payload.days[0].employeeId).toBe("e1");
+    expect(payload.days[0].workDate).toBe("2026-08-16");
   });
 });

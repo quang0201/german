@@ -16,18 +16,25 @@ public sealed class AttendanceService(IGermanDbContext db)
         var from = new DateOnly(query.Year, query.Month, 1);
         var until = from.AddMonths(1).AddDays(-1);
 
-        var employeesQuery = db.Employees.AsNoTracking().Where(x => x.IsActive);
+        var savedDaysQuery = db.AttendanceDays.AsNoTracking()
+            .Include(x => x.Shifts)
+            .Where(x => x.WorkDate >= from && x.WorkDate <= until);
+        if (query.EmployeeId.HasValue)
+        {
+            savedDaysQuery = savedDaysQuery.Where(x => x.EmployeeId == query.EmployeeId.Value);
+        }
+
+        var savedDays = await savedDaysQuery.ToListAsync(cancellationToken);
+        var historicalEmployeeIds = savedDays.Select(x => x.EmployeeId).Distinct().ToArray();
+        var employeesQuery = db.Employees.AsNoTracking()
+            .Where(x => x.IsActive || historicalEmployeeIds.Contains(x.Id));
         if (query.EmployeeId.HasValue)
         {
             employeesQuery = employeesQuery.Where(x => x.Id == query.EmployeeId.Value);
         }
-
         var employees = await employeesQuery.OrderBy(x => x.EmployeeCode).ToListAsync(cancellationToken);
         var employeeIds = employees.Select(x => x.Id).ToArray();
-        var savedDays = await db.AttendanceDays.AsNoTracking()
-            .Include(x => x.Shifts)
-            .Where(x => employeeIds.Contains(x.EmployeeId) && x.WorkDate >= from && x.WorkDate <= until)
-            .ToListAsync(cancellationToken);
+        var scheduleContext = await LoadScheduleContextAsync(employeeIds, from, until, cancellationToken);
 
         var resultEmployees = new List<AttendanceEmployeeMonthDto>(employees.Count);
         foreach (var employee in employees)
@@ -43,7 +50,7 @@ public sealed class AttendanceService(IGermanDbContext db)
                     continue;
                 }
 
-                var slots = await ResolveCurrentSlotsAsync(employee.Id, date, cancellationToken);
+                var slots = ResolveCurrentSlots(employee.Id, date, scheduleContext);
                 days.Add(new AttendanceDayDto(date, false, slots.Count > 0, 0m, slots));
             }
 
@@ -77,6 +84,7 @@ public sealed class AttendanceService(IGermanDbContext db)
 
         var employeeIds = command.Days.Select(x => x.EmployeeId).Distinct().ToArray();
         var employees = await db.Employees.Where(x => employeeIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, cancellationToken);
+        var scheduleContext = await LoadScheduleContextAsync(employeeIds, from, until, cancellationToken);
         var existingDays = await db.AttendanceDays
             .Include(x => x.Shifts)
             .Where(x => employeeIds.Contains(x.EmployeeId) && x.WorkDate >= from && x.WorkDate <= until)
@@ -108,7 +116,7 @@ public sealed class AttendanceService(IGermanDbContext db)
             var key = (inputDay.EmployeeId, inputDay.WorkDate);
             if (!existingByKey.TryGetValue(key, out var day))
             {
-                var snapshots = await ResolveCurrentSlotsAsync(inputDay.EmployeeId, inputDay.WorkDate, cancellationToken);
+                var snapshots = ResolveCurrentSlots(inputDay.EmployeeId, inputDay.WorkDate, scheduleContext);
                 if (snapshots.Count == 0)
                 {
                     return AppResult<AttendanceMonthlyResult>.Failure("attendance.shift_not_setup", "Nhân viên chưa được cấu hình ca cho ngày này.");
@@ -147,28 +155,51 @@ public sealed class AttendanceService(IGermanDbContext db)
             new AttendanceMonthlyQuery(command.Year, command.Month), cancellationToken));
     }
 
-    private async Task<List<AttendanceShiftDto>> ResolveCurrentSlotsAsync(
-        Guid employeeId,
-        DateOnly workDate,
+    private async Task<ShiftScheduleContext> LoadScheduleContextAsync(
+        IReadOnlyCollection<Guid> employeeIds,
+        DateOnly from,
+        DateOnly until,
         CancellationToken cancellationToken)
     {
-        var assignment = await db.EmployeeShiftAssignments.AsNoTracking()
+        if (employeeIds.Count == 0)
+        {
+            return new ShiftScheduleContext([], []);
+        }
+
+        var assignments = await db.EmployeeShiftAssignments.AsNoTracking()
+            .Where(x => employeeIds.Contains(x.EmployeeId)
+                && x.EffectiveFrom <= until
+                && (x.EffectiveTo == null || x.EffectiveTo >= from))
+            .OrderByDescending(x => x.EffectiveFrom)
+            .ToListAsync(cancellationToken);
+        var templateIds = assignments.Select(x => x.ShiftTemplateId).Distinct().ToArray();
+        var periods = await db.ShiftPeriods.AsNoTracking()
+            .Where(x => templateIds.Contains(x.ShiftTemplateId))
+            .OrderBy(x => x.ShiftTemplateId)
+            .ThenBy(x => x.SortOrder)
+            .ToListAsync(cancellationToken);
+        return new ShiftScheduleContext(assignments, periods);
+    }
+
+    private static List<AttendanceShiftDto> ResolveCurrentSlots(
+        Guid employeeId,
+        DateOnly workDate,
+        ShiftScheduleContext context)
+    {
+        var assignment = context.Assignments
             .Where(x => x.EmployeeId == employeeId
                 && x.EffectiveFrom <= workDate
                 && (x.EffectiveTo == null || x.EffectiveTo >= workDate))
             .OrderByDescending(x => x.EffectiveFrom)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefault();
         if (assignment is null)
         {
             return [];
         }
 
-        var periods = await db.ShiftPeriods.AsNoTracking()
-            .Where(x => x.ShiftTemplateId == assignment.ShiftTemplateId)
+        return context.Periods.Where(x => x.ShiftTemplateId == assignment.ShiftTemplateId)
             .OrderBy(x => x.SortOrder)
-            .ToListAsync(cancellationToken);
-
-        return periods.Select((period, index) => new AttendanceShiftDto(
+            .Select((period, index) => new AttendanceShiftDto(
             index + 1,
             period.Id,
             period.Name,
@@ -178,6 +209,10 @@ public sealed class AttendanceService(IGermanDbContext db)
             AttendanceShiftValueKind.Empty,
             null)).ToList();
     }
+
+    private sealed record ShiftScheduleContext(
+        IReadOnlyList<EmployeeShiftAssignment> Assignments,
+        IReadOnlyList<ShiftPeriod> Periods);
 
     private static AttendanceShiftDto ToDto(AttendanceShiftEntry shift) => new(
         shift.SlotNumber,

@@ -38,13 +38,14 @@ export function buildAttendanceDrafts(data) {
   return drafts;
 }
 
-export function buildAttendanceSavePayload(data, drafts, year, month) {
+export function buildAttendanceSavePayload(data, drafts, year, month, dirtyDayKeys) {
   const days = [];
   for (const employee of data?.employees ?? []) {
     for (const day of employee.days ?? []) {
       const key = attendanceDayKey(employee.employeeId, day.workDate);
       const draft = drafts[key];
       if (!draft || !day.hasShiftSetup) continue;
+      if (!dirtyDayKeys.has(key)) continue;
       const overtimeHours = draft.overtimeHours.trim() === "" ? 0 : Number(draft.overtimeHours.replace(",", "."));
       if (!Number.isFinite(overtimeHours) || overtimeHours < 0 || overtimeHours > 24) {
         throw new Error("Giờ TC phải nằm trong khoảng từ 0 đến 24.");
