@@ -323,6 +323,49 @@ public sealed class AttendanceServiceTests
         Assert.AreEqual(101, await db.AttendanceDays.CountAsync());
     }
 
+    [TestMethod]
+    public async Task SaveMonth_ReturnsOnlySubmittedEmployeeDatePairs()
+    {
+        await using var db = CreateDbContext();
+        var employees = new[]
+        {
+            new Employee { EmployeeCode = "A107", FullName = "Một" },
+            new Employee { EmployeeCode = "A108", FullName = "Hai" }
+        };
+        var shift = CreateShift("Ca", ("Ca 1", 1, 7, 11));
+        db.Employees.AddRange(employees);
+        db.ShiftTemplates.Add(shift);
+        db.EmployeeShiftAssignments.AddRange(employees.Select(employee => new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        }));
+        await db.SaveChangesAsync();
+        var service = new AttendanceService(db);
+
+        var allDays = new[]
+        {
+            new AttendanceDayInput(employees[0].Id, new DateOnly(2026, 8, 1), 0m, [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 1m)]),
+            new AttendanceDayInput(employees[0].Id, new DateOnly(2026, 8, 2), 0m, [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 1m)]),
+            new AttendanceDayInput(employees[1].Id, new DateOnly(2026, 8, 1), 0m, [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 1m)]),
+            new AttendanceDayInput(employees[1].Id, new DateOnly(2026, 8, 2), 0m, [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 1m)])
+        };
+        var initial = await service.SaveMonthAsync(new SaveAttendanceMonthCommand(2026, 8, allDays), CancellationToken.None);
+        Assert.IsTrue(initial.IsSuccess, initial.Error?.Message);
+
+        var result = await service.SaveMonthAsync(new SaveAttendanceMonthCommand(2026, 8, [
+            allDays[0] with { Shifts = [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 2m)] },
+            allDays[3] with { Shifts = [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 2m)] }
+        ]), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(1, result.Value!.Employees.Single(employee => employee.EmployeeId == employees[0].Id).Days.Count);
+        Assert.AreEqual(new DateOnly(2026, 8, 1), result.Value.Employees.Single(employee => employee.EmployeeId == employees[0].Id).Days.Single().WorkDate);
+        Assert.AreEqual(1, result.Value.Employees.Single(employee => employee.EmployeeId == employees[1].Id).Days.Count);
+        Assert.AreEqual(new DateOnly(2026, 8, 2), result.Value.Employees.Single(employee => employee.EmployeeId == employees[1].Id).Days.Single().WorkDate);
+    }
+
     private static ShiftTemplate CreateShift(string name, params (string Name, int SortOrder, int Start, int End)[] periods)
     {
         var shift = new ShiftTemplate { Name = name };

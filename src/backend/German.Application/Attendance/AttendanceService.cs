@@ -4,6 +4,7 @@ using German.Domain.Attendance;
 using German.Domain.Employees;
 using German.Domain.Shifts;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using System.Text;
 using System.Text.Json;
 
@@ -289,13 +290,13 @@ public sealed class AttendanceService(IGermanDbContext db)
             return [];
         }
 
-        var submittedDates = submittedDays.Select(day => day.WorkDate).Distinct().ToArray();
+        var submittedPairs = submittedDays
+            .Select(day => (day.EmployeeId, day.WorkDate))
+            .Distinct()
+            .ToArray();
         var savedDays = await db.AttendanceDays.AsNoTracking()
             .Include(day => day.Shifts)
-            .Where(day => employeeIds.Contains(day.EmployeeId)
-                && day.WorkDate >= from
-                && day.WorkDate <= until
-                && submittedDates.Contains(day.WorkDate))
+            .Where(BuildSubmittedPairPredicate(submittedPairs))
             .ToListAsync(cancellationToken);
         var totals = await LoadMonthlyTotalsAsync(employeeIds, from, until, cancellationToken);
         return employeeIds.Select(employeeId => new AttendanceEmployeeSavePatchDto(
@@ -305,6 +306,24 @@ public sealed class AttendanceService(IGermanDbContext db)
                 .Select(ToDayDto)
                 .ToList(),
             totals.GetValueOrDefault(employeeId, AttendanceTotalsDto.Empty))).ToList();
+    }
+
+    private static Expression<Func<AttendanceDay, bool>> BuildSubmittedPairPredicate(
+        IReadOnlyCollection<(Guid EmployeeId, DateOnly WorkDate)> submittedPairs)
+    {
+        var parameter = Expression.Parameter(typeof(AttendanceDay), "day");
+        Expression body = Expression.Constant(false);
+        var employeeProperty = Expression.Property(parameter, nameof(AttendanceDay.EmployeeId));
+        var workDateProperty = Expression.Property(parameter, nameof(AttendanceDay.WorkDate));
+
+        foreach (var pair in submittedPairs)
+        {
+            body = Expression.OrElse(body, Expression.AndAlso(
+                Expression.Equal(employeeProperty, Expression.Constant(pair.EmployeeId)),
+                Expression.Equal(workDateProperty, Expression.Constant(pair.WorkDate))));
+        }
+
+        return Expression.Lambda<Func<AttendanceDay, bool>>(body, parameter);
     }
 
     private static List<AttendanceShiftDto> ResolveCurrentSlots(

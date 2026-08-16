@@ -13,6 +13,7 @@ import {
   emptyAttendanceCache,
   isCurrentAttendanceRequest,
   mergeAttendanceCache,
+  mergeAttendanceSaveDrafts,
   mergeDraftsPreservingDirty,
   patchAttendanceSave,
   setAttendanceBlockStatus,
@@ -45,6 +46,7 @@ export function AttendancePage() {
   const activeBlockIndexRef = useRef(0);
   const requestKeysRef = useRef(new Set());
   const dirtyDayKeysRef = useRef(new Set());
+  const dayRevisionsRef = useRef({});
 
   const yearMonth = monthKey.split("-").map(Number);
   const blocks = attendanceDayBlocks(yearMonth[0], yearMonth[1]);
@@ -56,6 +58,7 @@ export function AttendancePage() {
     requestKeysRef.current = new Set();
     loadingMoreRef.current = false;
     dirtyDayKeysRef.current = new Set();
+    dayRevisionsRef.current = {};
     setActiveBlockIndex(0);
     setRenderedBlockStarts([1]);
     setLoadingMore(false);
@@ -82,10 +85,13 @@ export function AttendancePage() {
 
   const data = useMemo(() => buildAttendanceRenderData(cache, monthKey, renderedBlockStarts), [cache, monthKey, renderedBlockStarts]);
   const saveData = useMemo(() => buildAttendanceSaveData(cache), [cache]);
+  const activeBlock = blocks[activeBlockIndex];
   const visibleData = useMemo(() => ({
     ...data,
+    activeBlockStartDate: activeBlock ? `${monthKey}-${String(activeBlock.dayFrom).padStart(2, "0")}` : null,
+    activeBlockEndDate: activeBlock ? `${monthKey}-${String(activeBlock.dayTo).padStart(2, "0")}` : null,
     employees: employeeId ? data.employees.filter((employee) => employee.employeeId === employeeId) : data.employees,
-  }), [data, employeeId]);
+  }), [activeBlock, data, employeeId, monthKey]);
 
   function updateDirty(key, updater) {
     setDirtyDayKeys((previous) => {
@@ -100,7 +106,7 @@ export function AttendancePage() {
     const existing = cache.blocks[blockKey];
     if (requestKeysRef.current.has(blockKey) || existing?.status === "loaded" || (existing?.status === "error" && !retry)) return;
     requestKeysRef.current.add(blockKey);
-    setCache((current) => setAttendanceBlockStatus(current, blockKey, "loading"));
+    setCache((current) => setAttendanceBlockStatus(current, blockKey, "loading", "", { batchId: batch.id, dayFrom: block.dayFrom }));
     const requestedMonthKey = monthKey;
     const requestedGeneration = cache.generation;
     const [year, month] = monthKey.split("-");
@@ -113,12 +119,24 @@ export function AttendancePage() {
       setDrafts((current) => mergeDraftsPreservingDirty(current, payload, dirtyDayKeysRef.current));
     } catch (requestError) {
       if (isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
-        setCache((current) => setAttendanceBlockStatus(current, blockKey, "error", requestError.message || "Không thể tải block ngày."));
+        setCache((current) => setAttendanceBlockStatus(current, blockKey, "error", requestError.message || "Không thể tải block ngày.", { batchId: batch.id, dayFrom: block.dayFrom }));
       }
     } finally {
       requestKeysRef.current.delete(blockKey);
     }
   }
+
+  useEffect(() => {
+    if (loading) return;
+    const renderedBlocks = blocks.filter((block) => renderedBlockStarts.includes(block.dayFrom));
+    for (const batch of cache.batches) {
+      for (const block of renderedBlocks) {
+        const blockKey = attendanceBlockKey(cache.generation, batch.id, block.dayFrom);
+        const status = cache.blocks[blockKey]?.status ?? "idle";
+        if (status === "idle") loadBlock(batch, block);
+      }
+    }
+  }, [cache.batches.length, cache.generation, loading, renderedBlockStarts.join(",")]);
 
   async function loadMoreEmployees() {
     const activeBlock = blocks[activeBlockIndexRef.current];
@@ -170,7 +188,6 @@ export function AttendancePage() {
     activeBlockIndexRef.current = nextIndex;
     setActiveBlockIndex(nextIndex);
     setRenderedBlockStarts([next.dayFrom, blocks[nextIndex + 1]?.dayFrom].filter(Boolean));
-    scrollLeftRef.current = 0;
     requestBlockForAllBatches(blocks[nextIndex + 1] ?? next);
   }
 
@@ -182,7 +199,6 @@ export function AttendancePage() {
     activeBlockIndexRef.current = currentIndex - 1;
     setActiveBlockIndex(currentIndex - 1);
     setRenderedBlockStarts([previous.dayFrom, current.dayFrom]);
-    scrollLeftRef.current = 0;
     requestBlockForAllBatches(previous);
   }
 
@@ -203,6 +219,7 @@ export function AttendancePage() {
     const key = attendanceDayKey(employee.employeeId, day.workDate);
     const current = ensureDraft(employee, day);
     setDrafts((previous) => ({ ...previous, [key]: { ...current, shifts: { ...current.shifts, [shift.slotNumber]: value } } }));
+    dayRevisionsRef.current = { ...dayRevisionsRef.current, [key]: (dayRevisionsRef.current[key] ?? 0) + 1 };
     updateDirty(key, (previous) => new Set(previous).add(key));
     setError("");
   }
@@ -211,6 +228,7 @@ export function AttendancePage() {
     const key = attendanceDayKey(employee.employeeId, day.workDate);
     const current = ensureDraft(employee, day);
     setDrafts((previous) => ({ ...previous, [key]: { ...current, overtimeHours: value } }));
+    dayRevisionsRef.current = { ...dayRevisionsRef.current, [key]: (dayRevisionsRef.current[key] ?? 0) + 1 };
     updateDirty(key, (previous) => new Set(previous).add(key));
     setError("");
   }
@@ -218,6 +236,7 @@ export function AttendancePage() {
   async function save() {
     const requestedMonthKey = monthKey;
     const requestedGeneration = monthGenerationRef.current;
+    const submittedRevisions = Object.fromEntries([...dirtyDayKeys].map((key) => [key, dayRevisionsRef.current[key] ?? 0]));
     setSaving(true);
     setError("");
     try {
@@ -226,9 +245,13 @@ export function AttendancePage() {
       const result = await api.put("/api/attendance/monthly", payload);
       if (!isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) return;
       setCache((current) => patchAttendanceSave(current, result));
-      setDrafts((current) => ({ ...current, ...buildAttendanceDrafts(result) }));
-      const savedKeys = new Set((result.employees ?? []).flatMap((employee) => (employee.days ?? []).map((day) => attendanceDayKey(employee.employeeId, day.workDate))));
-      updateDirty(savedKeys, (previous) => new Set([...previous].filter((key) => !savedKeys.has(key))));
+      setDrafts((current) => {
+        return mergeAttendanceSaveDrafts(current, result, submittedRevisions, dayRevisionsRef.current).drafts;
+      });
+      const acknowledgedKeys = new Set((result.employees ?? []).flatMap((employee) => (employee.days ?? [])
+        .map((day) => attendanceDayKey(employee.employeeId, day.workDate))
+        .filter((key) => submittedRevisions[key] !== undefined && dayRevisionsRef.current[key] === submittedRevisions[key])));
+      updateDirty(acknowledgedKeys, (previous) => new Set([...previous].filter((key) => !acknowledgedKeys.has(key))));
     } catch (requestError) {
       if (isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) setError(requestError.message || "Không thể lưu chấm công.");
     } finally {
@@ -238,7 +261,6 @@ export function AttendancePage() {
 
   const totalEmployees = cache.batches.reduce((total, batch) => total + batch.employeeIds.length, 0);
   const dirty = dirtyDayKeys.size > 0;
-  const activeBlock = blocks[activeBlockIndex];
 
   return (
     <div className="erp-feature-page erp-attendance-page">

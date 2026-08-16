@@ -93,9 +93,28 @@ export function mergeAttendanceCache(cache, payload, { batchId, inputCursor = nu
   return next;
 }
 
-export function setAttendanceBlockStatus(cache, blockKey, status, error = "") {
-  const block = cache.blocks[blockKey] ?? { key: blockKey, status: "idle", error: "", daysByEmployee: {} };
-  return { ...cache, blocks: { ...cache.blocks, [blockKey]: { ...block, status, error } } };
+export function setAttendanceBlockStatus(cache, blockKey, status, error = "", metadata = {}) {
+  const block = cache.blocks[blockKey] ?? {
+    key: blockKey,
+    batchId: metadata.batchId,
+    dayFrom: metadata.dayFrom,
+    status: "idle",
+    error: "",
+    daysByEmployee: {},
+  };
+  return {
+    ...cache,
+    blocks: {
+      ...cache.blocks,
+      [blockKey]: {
+        ...block,
+        batchId: block.batchId ?? metadata.batchId,
+        dayFrom: block.dayFrom ?? metadata.dayFrom,
+        status,
+        error,
+      },
+    },
+  };
 }
 
 function dateForDay(year, month, day) {
@@ -202,6 +221,21 @@ export function buildAttendanceDrafts(data) {
     }
   }
   return drafts;
+}
+
+export function mergeAttendanceSaveDrafts(drafts, result, submittedRevisions, currentRevisions) {
+  const serverDrafts = buildAttendanceDrafts(result);
+  const next = { ...drafts };
+  const acknowledgedKeys = [];
+  for (const employee of result?.employees ?? []) {
+    for (const day of employee.days ?? []) {
+      const key = attendanceDayKey(employee.employeeId, day.workDate);
+      if (submittedRevisions[key] === undefined || currentRevisions[key] !== submittedRevisions[key]) continue;
+      next[key] = serverDrafts[key];
+      acknowledgedKeys.push(key);
+    }
+  }
+  return { drafts: next, acknowledgedKeys };
 }
 
 export function buildAttendanceSavePayload(data, drafts, year, month, dirtyDayKeys) {

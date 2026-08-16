@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave } from "./attendanceModel.js";
+import { attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
 
 describe("attendance model", () => {
   test("parses hours, leave codes and blank cells without accepting X", () => {
@@ -134,5 +134,28 @@ describe("attendance model", () => {
     expect(patched.employeesById.e1.totals.regularWorkedHours).toBe(8);
     expect(patched.blocks["1|batch-0|11"].daysByEmployee.e1[0].workDate).toBe("2026-08-11");
     expect(patched.blocks["1|batch-0|1"].daysByEmployee.e1[0].overtimeHours).toBe(2);
+  });
+
+  test("preserves batch and day metadata when a block enters error state", () => {
+    const cache = emptyAttendanceCache("2026-08", 1);
+    const updated = setAttendanceBlockStatus(cache, "1|batch-1|11", "error", "failed", { batchId: "batch-1", dayFrom: 11 });
+    expect(updated.blocks["1|batch-1|11"]).toMatchObject({ batchId: "batch-1", dayFrom: 11, status: "error", error: "failed" });
+  });
+
+  test("keeps a newer draft dirty when save response belongs to an older revision", () => {
+    const key = "e1|2026-08-16";
+    const drafts = { [key]: { overtimeHours: "", shifts: { 1: "3" } } };
+    const result = { employees: [{ employeeId: "e1", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, valueKind: "Hours", workedHours: 4 }] }] }] };
+    const merged = mergeAttendanceSaveDrafts(drafts, result, { [key]: 1 }, { [key]: 2 });
+    expect(merged.drafts[key].shifts[1]).toBe("3");
+    expect(merged.acknowledgedKeys).toEqual([]);
+  });
+
+  test("acknowledges a save response when the day revision is unchanged", () => {
+    const key = "e1|2026-08-16";
+    const result = { employees: [{ employeeId: "e1", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, valueKind: "Hours", workedHours: 4 }] }] }] };
+    const merged = mergeAttendanceSaveDrafts({ [key]: { overtimeHours: "", shifts: { 1: "3" } } }, result, { [key]: 1 }, { [key]: 1 });
+    expect(merged.drafts[key].shifts[1]).toBe("4");
+    expect(merged.acknowledgedKeys).toEqual([key]);
   });
 });

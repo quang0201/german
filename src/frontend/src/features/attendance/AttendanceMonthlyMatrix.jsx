@@ -37,8 +37,11 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
         if (scrollLeftRef) scrollLeftRef.current = event.currentTarget.scrollLeft;
         const target = event.currentTarget;
         if (target.scrollTop + target.clientHeight >= target.scrollHeight - 400) onLoadMore?.();
-        if (target.scrollWidth - target.clientWidth - target.scrollLeft <= 300) onHorizontalNearEnd?.();
-        if (target.scrollLeft <= 250) onHorizontalNearStart?.();
+        const scrollerRect = target.getBoundingClientRect();
+        const activeEnd = data.activeBlockEndDate && target.querySelector(`[data-attendance-block-end="${data.activeBlockEndDate}"]`);
+        const activeStart = data.activeBlockStartDate && target.querySelector(`[data-attendance-block-start="${data.activeBlockStartDate}"]`);
+        if (activeEnd && activeEnd.getBoundingClientRect().right - scrollerRect.right <= 300) onHorizontalNearEnd?.();
+        if (data.dayFrom > 1 && activeStart && activeStart.getBoundingClientRect().left - scrollerRect.left <= 300) onHorizontalNearStart?.();
       }}>
         <table className="erp-attendance-matrix-table">
           <thead>
@@ -48,7 +51,9 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
               {data.renderedBeforeDays > 0 && <th colSpan={data.renderedBeforeDays} rowSpan="2" className="erp-attendance-window-spacer" style={{ width: data.renderedBeforeDays * 66, minWidth: data.renderedBeforeDays * 66 }} aria-hidden="true" />}
               {days.map((day) => {
                 const label = dayLabel(day.workDate);
-                return <th key={day.workDate} colSpan="1" className={label.weekday === "CN" ? "erp-attendance-sunday" : ""}><span>{label.weekday}</span><strong>{label.date}</strong></th>;
+                const isActiveStart = day.workDate === data.activeBlockStartDate;
+                const isActiveEnd = day.workDate === data.activeBlockEndDate;
+                return <th key={day.workDate} colSpan="1" className={label.weekday === "CN" ? "erp-attendance-sunday" : ""} data-attendance-day={day.workDate} {...(isActiveStart ? { "data-attendance-block-start": day.workDate } : {})} {...(isActiveEnd ? { "data-attendance-block-end": day.workDate } : {})}><span>{label.weekday}</span><strong>{label.date}</strong></th>;
               })}
               {data.renderedAfterDays > 0 && <th colSpan={data.renderedAfterDays} rowSpan="2" className="erp-attendance-window-spacer" style={{ width: data.renderedAfterDays * 66, minWidth: data.renderedAfterDays * 66 }} aria-hidden="true" />}
               <th rowSpan="2" className="erp-attendance-total">Giờ HC</th>

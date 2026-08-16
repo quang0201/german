@@ -37,4 +37,13 @@ describe("AttendancePage", () => {
     expect(html).not.toContain('aria-label="An Ca 2');
     expect(html).toContain('aria-label="Bình Ca 2');
   });
+
+  test("marks day headers so horizontal loading can stop at the active block boundary", () => {
+    const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
+      data={{ activeBlockEndDate: "2026-08-16", employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] }}
+      drafts={{}}
+      loading={false}
+    />);
+    expect(html).toContain('data-attendance-block-end="2026-08-16"');
+  });
 });
