@@ -9,6 +9,7 @@ describe("AttendancePage", () => {
     const html = renderToStaticMarkup(<AttendancePage />);
     expect(html).toContain("Chấm công");
     expect(html).toContain("Lưu thay đổi");
+    expect(html).toContain("Xuất Excel");
     expect(html).toContain("Tất cả nhân viên");
     expect(html).toContain("Ô trống = chưa nhập");
   });

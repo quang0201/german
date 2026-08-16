@@ -1,5 +1,6 @@
 using German.Application.Abstractions;
 using German.Application.Auth;
+using German.Application.Attendance;
 using German.Application.Reports;
 using German.Infrastructure.Auth;
 using German.Infrastructure.Bootstrap;
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IGermanDbContext>(sp => sp.GetRequiredService<GermanDbContext>());
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddSingleton<IProductionReportExporter, OpenXmlProductionReportExporter>();
+        services.AddScoped<IAttendanceExcelExporter, OpenXmlAttendanceExporter>();
         services.AddScoped<BootstrapAdminSeeder>();
         return services;
     }
