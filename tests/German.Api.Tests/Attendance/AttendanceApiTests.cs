@@ -80,7 +80,8 @@ public sealed class AttendanceApiTests
         using var saveJson = JsonDocument.Parse(await save.Content.ReadAsStringAsync());
         var savedEmployee = saveJson.RootElement.GetProperty("employees").EnumerateArray()
             .Single(x => x.GetProperty("employeeId").GetGuid() == employeeId);
-        var savedDay = savedEmployee.GetProperty("days")[15];
+        var savedDay = savedEmployee.GetProperty("days").EnumerateArray()
+            .Single(day => day.GetProperty("workDate").GetDateTime().Day == 16);
         Assert.AreEqual(2m, savedDay.GetProperty("overtimeHours").GetDecimal());
         Assert.AreEqual("PaidLeave", savedDay.GetProperty("shifts")[1].GetProperty("valueKind").GetString());
     }
@@ -135,6 +136,42 @@ public sealed class AttendanceApiTests
         Assert.AreNotEqual(
             first.GetProperty("employees")[0].GetProperty("employeeId").GetGuid(),
             second.GetProperty("employees")[0].GetProperty("employeeId").GetGuid());
+    }
+
+    [TestMethod]
+    public async Task Manager_CanLoadAttendanceDayWindow()
+    {
+        await using var factory = new GermanApiFactory();
+        var employeeId = await SeedUsersAsync(factory, withShift: true);
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "attendance-manager", "secret");
+
+        var response = await client.GetFromJsonAsync<JsonElement>(
+            $"/api/attendance/monthly?year=2026&month=8&employeeId={employeeId}&dayFrom=11&dayCount=10");
+        var employee = response.GetProperty("employees")[0];
+
+        Assert.AreEqual(10, employee.GetProperty("days").GetArrayLength());
+        Assert.AreEqual(11, employee.GetProperty("days")[0].GetProperty("workDate").GetDateTime().Day);
+        Assert.AreEqual(20, employee.GetProperty("days")[9].GetProperty("workDate").GetDateTime().Day);
+        Assert.AreEqual(11, response.GetProperty("dayFrom").GetInt32());
+        Assert.AreEqual(20, response.GetProperty("dayTo").GetInt32());
+        Assert.AreEqual(21, response.GetProperty("nextDayFrom").GetInt32());
+        Assert.IsTrue(response.GetProperty("hasMoreDays").GetBoolean());
+    }
+
+    [TestMethod]
+    public async Task InvalidAttendanceDayWindowReturnsStableErrorEnvelope()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedUsersAsync(factory);
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "attendance-manager", "secret");
+
+        var response = await client.GetAsync("/api/attendance/monthly?year=2026&month=8&dayFrom=21&dayCount=12");
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual("attendance.invalid_day_window", json.RootElement.GetProperty("code").GetString());
     }
 
     private static async Task<Guid> SeedUsersAsync(GermanApiFactory factory, bool withShift = false)

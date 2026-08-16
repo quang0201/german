@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef } from "react";
-import { calculateDraftTotals, attendanceDayKey } from "./attendanceModel.js";
+import { attendanceDayKey, calculateDisplayTotals } from "./attendanceModel.js";
 
 const weekdayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
@@ -20,7 +20,7 @@ function draftDay(drafts, employee, day) {
   };
 }
 
-export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeftRef, onLoadMore, loadingMore }) {
+export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeftRef, onLoadMore, loadingMore, onHorizontalNearEnd, onHorizontalNearStart, onRetryBlock }) {
   const scrollRef = useRef(null);
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
@@ -37,16 +37,20 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
         if (scrollLeftRef) scrollLeftRef.current = event.currentTarget.scrollLeft;
         const target = event.currentTarget;
         if (target.scrollTop + target.clientHeight >= target.scrollHeight - 400) onLoadMore?.();
+        if (target.scrollWidth - target.clientWidth - target.scrollLeft <= 300) onHorizontalNearEnd?.();
+        if (target.scrollLeft <= 250) onHorizontalNearStart?.();
       }}>
         <table className="erp-attendance-matrix-table">
           <thead>
             <tr>
               <th className="erp-attendance-sticky-employee" rowSpan="2">Nhân viên</th>
               <th className="erp-attendance-sticky-shift" rowSpan="2">Ca</th>
+              {data.renderedBeforeDays > 0 && <th colSpan={data.renderedBeforeDays} rowSpan="2" className="erp-attendance-window-spacer" style={{ width: data.renderedBeforeDays * 66, minWidth: data.renderedBeforeDays * 66 }} aria-hidden="true" />}
               {days.map((day) => {
                 const label = dayLabel(day.workDate);
                 return <th key={day.workDate} colSpan="1" className={label.weekday === "CN" ? "erp-attendance-sunday" : ""}><span>{label.weekday}</span><strong>{label.date}</strong></th>;
               })}
+              {data.renderedAfterDays > 0 && <th colSpan={data.renderedAfterDays} rowSpan="2" className="erp-attendance-window-spacer" style={{ width: data.renderedAfterDays * 66, minWidth: data.renderedAfterDays * 66 }} aria-hidden="true" />}
               <th rowSpan="2" className="erp-attendance-total">Giờ HC</th>
               <th rowSpan="2" className="erp-attendance-total">Giờ TC</th>
               <th rowSpan="2" className="erp-attendance-total">Nghỉ P</th>
@@ -58,7 +62,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
             {employees.map((employee) => {
               const dayMap = new Map((employee.days ?? []).map((day) => [day.workDate, day]));
               const maxSlots = Math.max(0, ...(employee.days ?? []).map((day) => day.shifts?.length ?? 0));
-              const totals = calculateDraftTotals(employee, drafts);
+              const totals = calculateDisplayTotals(employee, drafts);
               const rowCount = maxSlots + 1;
               return Array.from({ length: rowCount }, (_, rowIndex) => {
                 const isTc = rowIndex === maxSlots;
@@ -67,6 +71,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
                   <tr key={`${employee.employeeId}-${isTc ? "tc" : slotNumber}`}>
                     {rowIndex === 0 && <th className="erp-attendance-sticky-employee erp-attendance-employee" rowSpan={rowCount}>{employee.employeeCode}<span>{employee.fullName}</span></th>}
                     <th className="erp-attendance-sticky-shift erp-attendance-shift-name">{isTc ? "TC" : `Ca ${slotNumber}`}</th>
+                    {data.renderedBeforeDays > 0 && <td colSpan={data.renderedBeforeDays} className="erp-attendance-window-spacer" style={{ width: data.renderedBeforeDays * 66, minWidth: data.renderedBeforeDays * 66 }} aria-hidden="true" />}
                     {days.map((headerDay) => {
                       const day = dayMap.get(headerDay.workDate);
                       const shift = day?.shifts?.find((item) => item.slotNumber === slotNumber);
@@ -77,6 +82,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
                       }
                       return <td key={`${key}-${slotNumber}`}><input className="erp-control erp-attendance-cell" aria-label={`${employee.fullName} Ca ${slotNumber} ${headerDay.workDate}`} value={shift ? cellDraft(drafts, employee.employeeId, headerDay, slotNumber) : ""} disabled={!shift} onChange={(event) => onCellChange(employee, headerDay, shift, event.target.value)} /></td>;
                     })}
+                    {data.renderedAfterDays > 0 && <td colSpan={data.renderedAfterDays} className="erp-attendance-window-spacer" style={{ width: data.renderedAfterDays * 66, minWidth: data.renderedAfterDays * 66 }} aria-hidden="true" />}
                     {rowIndex === 0 && <>
                       <td rowSpan={rowCount} className="erp-attendance-total">{totals.regularWorkedHours}</td>
                       <td rowSpan={rowCount} className="erp-attendance-total">{totals.overtimeHours}</td>
@@ -89,6 +95,8 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
             })}
           </tbody>
         </table>
+        {Object.values(data.blockStatus ?? {}).some((status) => status === "loading") && <div className="erp-attendance-block-loading">Đang tải dữ liệu ngày...</div>}
+        {Object.entries(data.blockErrors ?? {}).filter(([, message]) => message).map(([blockKey, message]) => <div key={blockKey} className="erp-attendance-block-error"><span>{message}</span><button type="button" className="erp-button erp-button-secondary" onClick={() => onRetryBlock?.(blockKey)}>Thử lại</button></div>)}
         {data.hasMoreEmployees && <div className="erp-attendance-load-more">{loadingMore ? "Đang tải thêm nhân viên..." : "Cuộn xuống để tải thêm nhân viên"}</div>}
       </div>
     </section>

@@ -6,4 +6,6 @@ public sealed record AttendanceMonthlyQuery(
     Guid? EmployeeId = null,
     string? EmployeeCursor = null,
     int EmployeeLimit = 20,
-    IReadOnlyCollection<Guid>? EmployeeIds = null);
+    IReadOnlyCollection<Guid>? EmployeeIds = null,
+    int DayFrom = 1,
+    int DayCount = 10);

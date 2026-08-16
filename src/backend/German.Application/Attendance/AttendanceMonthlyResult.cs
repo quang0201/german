@@ -12,7 +12,18 @@ public sealed record AttendanceMonthlyResult(
     bool HasMoreEmployees,
     int DayFrom,
     int DayTo,
+    int? NextDayFrom,
     bool HasMoreDays);
+
+public sealed record AttendanceSaveResult(
+    int Year,
+    int Month,
+    IReadOnlyList<AttendanceEmployeeSavePatchDto> Employees);
+
+public sealed record AttendanceEmployeeSavePatchDto(
+    Guid EmployeeId,
+    IReadOnlyList<AttendanceDayDto> Days,
+    AttendanceTotalsDto Totals);
 
 public sealed record AttendanceEmployeeMonthDto(
     Guid EmployeeId,
@@ -42,4 +53,7 @@ public sealed record AttendanceTotalsDto(
     decimal RegularWorkedHours,
     decimal OvertimeHours,
     decimal PaidLeaveHours,
-    decimal SickLeaveHours);
+    decimal SickLeaveHours)
+{
+    public static AttendanceTotalsDto Empty { get; } = new(0m, 0m, 0m, 0m);
+}

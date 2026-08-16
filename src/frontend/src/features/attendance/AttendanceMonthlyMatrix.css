@@ -48,6 +48,9 @@
 .erp-attendance-tc-cell { background: color-mix(in srgb, var(--color-warning, #f4b183) 12%, var(--color-surface)); }
 .erp-attendance-total { min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
 .erp-attendance-load-more { padding: 12px; text-align: center; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
+.erp-attendance-block-error { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; color: var(--color-danger, #b42318); border-top: 1px solid var(--color-border); }
+.erp-attendance-block-loading { padding: 10px; text-align: center; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
+.erp-attendance-window-spacer { width: 66px; min-width: 66px; padding: 0 !important; background: var(--color-surface-soft); }
 .erp-attendance-sunday { background: color-mix(in srgb, var(--color-warning, #f4b183) 10%, var(--color-surface-soft)) !important; }
 
 @media (max-width: 767px) {

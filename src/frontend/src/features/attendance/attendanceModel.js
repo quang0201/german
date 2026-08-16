@@ -35,6 +35,161 @@ export function isCurrentAttendanceRequest(requestedMonthKey, currentMonthKey, r
   return requestedMonthKey === currentMonthKey && requestedGeneration === currentGeneration;
 }
 
+export function attendanceDayBlocks(year, month) {
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return [
+    { dayFrom: 1, dayTo: Math.min(10, lastDay), dayCount: Math.min(10, lastDay) },
+    ...(lastDay > 10 ? [{ dayFrom: 11, dayTo: Math.min(20, lastDay), dayCount: Math.min(10, lastDay - 10) }] : []),
+    ...(lastDay > 20 ? [{ dayFrom: 21, dayTo: lastDay, dayCount: lastDay - 20 }] : []),
+  ];
+}
+
+export function attendanceBlockKey(generation, batchId, dayFrom) {
+  return `${generation}|${batchId}|${dayFrom}`;
+}
+
+export function emptyAttendanceCache(monthKey, generation) {
+  return { monthKey, generation, batches: [], employeesById: {}, blocks: {} };
+}
+
+export function mergeAttendanceCache(cache, payload, { batchId, inputCursor = null }) {
+  const next = {
+    ...cache,
+    employeesById: { ...cache.employeesById },
+    batches: [...cache.batches],
+    blocks: { ...cache.blocks },
+  };
+  const batchIndex = next.batches.findIndex((batch) => batch.id === batchId);
+  const existingBatch = batchIndex >= 0 ? next.batches[batchIndex] : null;
+  const employeeIds = [];
+  for (const employee of payload?.employees ?? []) {
+    employeeIds.push(employee.employeeId);
+    next.employeesById[employee.employeeId] = {
+      employeeId: employee.employeeId,
+      employeeCode: employee.employeeCode,
+      fullName: employee.fullName,
+      totals: employee.totals ?? { regularWorkedHours: 0, overtimeHours: 0, paidLeaveHours: 0, sickLeaveHours: 0 },
+    };
+  }
+  const batch = {
+    ...(existingBatch ?? {}),
+    id: batchId,
+    inputCursor,
+    nextCursor: payload?.nextEmployeeCursor ?? existingBatch?.nextCursor ?? null,
+    employeeIds: existingBatch?.employeeIds?.length ? existingBatch.employeeIds : employeeIds,
+  };
+  if (batchIndex >= 0) next.batches[batchIndex] = batch;
+  else next.batches.push(batch);
+  const blockKey = attendanceBlockKey(next.generation, batchId, payload.dayFrom);
+  next.blocks[blockKey] = {
+    key: blockKey,
+    batchId,
+    dayFrom: payload.dayFrom,
+    dayTo: payload.dayTo,
+    status: "loaded",
+    error: "",
+    daysByEmployee: Object.fromEntries((payload.employees ?? []).map((employee) => [employee.employeeId, employee.days ?? []])),
+  };
+  return next;
+}
+
+export function setAttendanceBlockStatus(cache, blockKey, status, error = "") {
+  const block = cache.blocks[blockKey] ?? { key: blockKey, status: "idle", error: "", daysByEmployee: {} };
+  return { ...cache, blocks: { ...cache.blocks, [blockKey]: { ...block, status, error } } };
+}
+
+function dateForDay(year, month, day) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function placeholderDays(year, month, dayFrom, dayTo) {
+  return Array.from({ length: dayTo - dayFrom + 1 }, (_, index) => ({
+    workDate: dateForDay(year, month, dayFrom + index),
+    hasAttendance: false,
+    hasShiftSetup: false,
+    overtimeHours: 0,
+    shifts: [],
+  }));
+}
+
+export function buildAttendanceRenderData(cache, monthKey, renderedBlockStarts) {
+  const [year, month] = monthKey.split("-").map(Number);
+  const selectedBlocks = attendanceDayBlocks(year, month).filter((block) => renderedBlockStarts.includes(block.dayFrom));
+  const employees = cache.batches.flatMap((batch) => batch.employeeIds.map((employeeId) => {
+    const identity = cache.employeesById[employeeId];
+    const allDays = [];
+    const renderedDays = [];
+    for (const block of attendanceDayBlocks(year, month)) {
+      const cached = cache.blocks[attendanceBlockKey(cache.generation, batch.id, block.dayFrom)];
+      allDays.push(...(cached?.daysByEmployee?.[employeeId] ?? []));
+    }
+    for (const block of selectedBlocks) {
+      const cached = cache.blocks[attendanceBlockKey(cache.generation, batch.id, block.dayFrom)];
+      renderedDays.push(...(cached?.daysByEmployee?.[employeeId] ?? placeholderDays(year, month, block.dayFrom, block.dayTo)));
+    }
+    return { ...identity, days: renderedDays, loadedDays: allDays };
+  }));
+  const lastBatch = cache.batches.at(-1);
+  const lastBlock = selectedBlocks.at(-1);
+  const firstBlock = selectedBlocks[0];
+  const renderedBeforeDays = firstBlock
+    ? attendanceDayBlocks(year, month).filter((block) => block.dayTo < firstBlock.dayFrom).reduce((total, block) => total + block.dayCount, 0)
+    : 0;
+  const renderedAfterDays = lastBlock
+    ? attendanceDayBlocks(year, month).filter((block) => block.dayFrom > lastBlock.dayFrom).reduce((total, block) => total + block.dayCount, 0)
+    : 0;
+  return {
+    year,
+    month,
+    employees,
+    dayFrom: selectedBlocks[0]?.dayFrom ?? 1,
+    dayTo: lastBlock?.dayTo ?? 10,
+    renderedBeforeDays,
+    renderedAfterDays,
+    hasMoreEmployees: Boolean(lastBatch?.nextCursor),
+    nextEmployeeCursor: lastBatch?.nextCursor ?? null,
+    blockStatus: Object.fromEntries(selectedBlocks.flatMap((block) => cache.batches.map((batch) => {
+      const key = attendanceBlockKey(cache.generation, batch.id, block.dayFrom);
+      return [key, cache.blocks[key]?.status ?? "idle"];
+    }))),
+    blockErrors: Object.fromEntries(selectedBlocks.flatMap((block) => cache.batches.map((batch) => {
+      const key = attendanceBlockKey(cache.generation, batch.id, block.dayFrom);
+      return [key, cache.blocks[key]?.error ?? ""];
+    }))),
+  };
+}
+
+export function buildAttendanceSaveData(cache) {
+  const daysByEmployee = {};
+  for (const block of Object.values(cache.blocks)) {
+    for (const [employeeId, days] of Object.entries(block.daysByEmployee ?? {})) {
+      daysByEmployee[employeeId] = [...(daysByEmployee[employeeId] ?? []), ...days];
+    }
+  }
+  return {
+    employees: cache.batches.flatMap((batch) => batch.employeeIds.map((employeeId) => ({
+      ...cache.employeesById[employeeId],
+      days: daysByEmployee[employeeId] ?? [],
+    }))),
+  };
+}
+
+export function mergeDraftsPreservingDirty(drafts, payload, dirtyDayKeys) {
+  const next = { ...drafts };
+  for (const employee of payload?.employees ?? []) {
+    for (const day of employee.days ?? []) {
+      const key = attendanceDayKey(employee.employeeId, day.workDate);
+      if (!dirtyDayKeys.has(key)) {
+        next[key] = {
+          overtimeHours: day.overtimeHours ? String(day.overtimeHours) : "",
+          shifts: Object.fromEntries((day.shifts ?? []).map((shift) => [shift.slotNumber, formatAttendanceCell(shift)])),
+        };
+      }
+    }
+  }
+  return next;
+}
+
 export function buildAttendanceDrafts(data) {
   const drafts = {};
   for (const employee of data?.employees ?? []) {
@@ -52,7 +207,7 @@ export function buildAttendanceDrafts(data) {
 export function buildAttendanceSavePayload(data, drafts, year, month, dirtyDayKeys) {
   const days = [];
   for (const employee of data?.employees ?? []) {
-    for (const day of employee.days ?? []) {
+    for (const day of employee.loadedDays ?? employee.days ?? []) {
       const key = attendanceDayKey(employee.employeeId, day.workDate);
       const draft = drafts[key];
       if (!draft || !day.hasShiftSetup) continue;
@@ -73,6 +228,30 @@ export function buildAttendanceSavePayload(data, drafts, year, month, dirtyDayKe
     }
   }
   return { year, month, days };
+}
+
+export function patchAttendanceSave(cache, result) {
+  const next = { ...cache, employeesById: { ...cache.employeesById }, blocks: { ...cache.blocks } };
+  for (const employee of result?.employees ?? []) {
+    if (next.employeesById[employee.employeeId]) {
+      next.employeesById[employee.employeeId] = { ...next.employeesById[employee.employeeId], totals: employee.totals };
+    }
+    for (const day of employee.days ?? []) {
+      for (const [key, block] of Object.entries(next.blocks)) {
+        if (!block.daysByEmployee?.[employee.employeeId]) continue;
+        const existing = block.daysByEmployee[employee.employeeId];
+        if (!existing.some((item) => item.workDate === day.workDate)) continue;
+        next.blocks[key] = {
+          ...block,
+          daysByEmployee: {
+            ...block.daysByEmployee,
+            [employee.employeeId]: existing.map((item) => item.workDate === day.workDate ? day : item),
+          },
+        };
+      }
+    }
+  }
+  return next;
 }
 
 export function shiftAttendanceMonth(monthKey, offset) {
@@ -108,4 +287,37 @@ export function calculateDraftTotals(employee, drafts) {
     }
   }
   return { regularWorkedHours, overtimeHours, paidLeaveHours, sickLeaveHours };
+}
+
+function dayTotals(day, draft) {
+  let regularWorkedHours = 0;
+  let paidLeaveHours = 0;
+  let sickLeaveHours = 0;
+  const overtimeHours = draft ? Number(String(draft.overtimeHours ?? "").replace(",", ".")) || 0 : day.overtimeHours ?? 0;
+  for (const shift of day.shifts ?? []) {
+    const value = draft ? draft.shifts?.[shift.slotNumber] ?? "" : formatAttendanceCell(shift);
+    try {
+      const parsed = parseAttendanceCell(value);
+      if (parsed.kind === "Hours") regularWorkedHours += parsed.workedHours ?? 0;
+      if (parsed.kind === "PaidLeave") paidLeaveHours += shift.scheduledHours;
+      if (parsed.kind === "SickLeave") sickLeaveHours += shift.scheduledHours;
+    } catch {
+      // Invalid drafts are reported on save and excluded from the live delta.
+    }
+  }
+  return { regularWorkedHours, overtimeHours, paidLeaveHours, sickLeaveHours };
+}
+
+export function calculateDisplayTotals(employee, drafts) {
+  const persisted = employee.totals ?? { regularWorkedHours: 0, overtimeHours: 0, paidLeaveHours: 0, sickLeaveHours: 0 };
+  const delta = { regularWorkedHours: 0, overtimeHours: 0, paidLeaveHours: 0, sickLeaveHours: 0 };
+  for (const day of employee.loadedDays ?? employee.days ?? []) {
+    const key = attendanceDayKey(employee.employeeId, day.workDate);
+    const draft = drafts[key];
+    if (!draft) continue;
+    const current = dayTotals(day, draft);
+    const persistedDay = dayTotals(day);
+    for (const field of Object.keys(delta)) delta[field] += current[field] - persistedDay[field];
+  }
+  return Object.fromEntries(Object.keys(delta).map((field) => [field, persisted[field] + delta[field]]));
 }

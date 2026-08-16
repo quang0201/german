@@ -16,12 +16,15 @@ public sealed class AttendanceService(IGermanDbContext db)
         CancellationToken cancellationToken)
     {
         ValidateMonth(query.Year, query.Month);
+        var monthFrom = new DateOnly(query.Year, query.Month, 1);
+        var monthUntil = monthFrom.AddMonths(1).AddDays(-1);
+        var (dayFrom, dayTo) = ValidateDayWindow(query.DayFrom, query.DayCount, monthUntil.Day);
         var employeeCursor = query.EmployeeIds is null ? ParseEmployeeCursor(query.EmployeeCursor) : null;
         var employeeLimit = query.EmployeeIds is null
             ? ValidateEmployeeLimit(query.EmployeeLimit)
             : Math.Max(query.EmployeeIds.Count, 1);
-        var from = new DateOnly(query.Year, query.Month, 1);
-        var until = from.AddMonths(1).AddDays(-1);
+        var windowFrom = new DateOnly(query.Year, query.Month, dayFrom);
+        var windowUntil = new DateOnly(query.Year, query.Month, dayTo);
 
         var employeesQuery = db.Employees.AsNoTracking();
         if (query.EmployeeIds is not null)
@@ -32,8 +35,8 @@ public sealed class AttendanceService(IGermanDbContext db)
         {
             employeesQuery = employeesQuery.Where(x => x.IsActive || db.AttendanceDays.Any(attendance =>
                 attendance.EmployeeId == x.Id
-                && attendance.WorkDate >= from
-                && attendance.WorkDate <= until));
+                && attendance.WorkDate >= monthFrom
+                && attendance.WorkDate <= monthUntil));
             if (query.EmployeeId.HasValue)
             {
                 employeesQuery = employeesQuery.Where(x => x.Id == query.EmployeeId.Value);
@@ -57,17 +60,18 @@ public sealed class AttendanceService(IGermanDbContext db)
         var employeeIds = employees.Select(x => x.Id).ToArray();
         var savedDays = await db.AttendanceDays.AsNoTracking()
             .Include(x => x.Shifts)
-            .Where(x => employeeIds.Contains(x.EmployeeId) && x.WorkDate >= from && x.WorkDate <= until)
+            .Where(x => employeeIds.Contains(x.EmployeeId) && x.WorkDate >= windowFrom && x.WorkDate <= windowUntil)
             .ToListAsync(cancellationToken);
-        var scheduleContext = await LoadScheduleContextAsync(employeeIds, from, until, cancellationToken);
+        var scheduleContext = await LoadScheduleContextAsync(employeeIds, windowFrom, windowUntil, cancellationToken);
+        var monthlyTotals = await LoadMonthlyTotalsAsync(employeeIds, monthFrom, monthUntil, cancellationToken);
 
         var resultEmployees = new List<AttendanceEmployeeMonthDto>(employees.Count);
         foreach (var employee in employees)
         {
             var employeeDays = savedDays.Where(x => x.EmployeeId == employee.Id)
                 .ToDictionary(x => x.WorkDate);
-            var days = new List<AttendanceDayDto>(until.Day);
-            for (var date = from; date <= until; date = date.AddDays(1))
+            var days = new List<AttendanceDayDto>(dayTo - dayFrom + 1);
+            for (var date = windowFrom; date <= windowUntil; date = date.AddDays(1))
             {
                 if (employeeDays.TryGetValue(date, out var savedDay))
                 {
@@ -84,7 +88,7 @@ public sealed class AttendanceService(IGermanDbContext db)
                 employee.EmployeeCode,
                 employee.FullName,
                 days,
-                CalculateTotals(days)));
+                monthlyTotals.GetValueOrDefault(employee.Id, AttendanceTotalsDto.Empty)));
         }
 
         var nextEmployeeCursor = hasMoreEmployees && employees.Count > 0
@@ -98,18 +102,19 @@ public sealed class AttendanceService(IGermanDbContext db)
             employeeLimit,
             nextEmployeeCursor,
             hasMoreEmployees,
-            1,
-            until.Day,
-            false);
+            dayFrom,
+            dayTo,
+            dayTo < monthUntil.Day ? dayTo + 1 : null,
+            dayTo < monthUntil.Day);
     }
 
-    public async Task<AppResult<AttendanceMonthlyResult>> SaveMonthAsync(
+    public async Task<AppResult<AttendanceSaveResult>> SaveMonthAsync(
         SaveAttendanceMonthCommand command,
         CancellationToken cancellationToken)
     {
         if (!IsValidMonth(command.Year, command.Month))
         {
-            return AppResult<AttendanceMonthlyResult>.Failure("attendance.invalid_month", "Tháng chấm công không hợp lệ.");
+            return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_month", "Tháng chấm công không hợp lệ.");
         }
 
         var from = new DateOnly(command.Year, command.Month, 1);
@@ -117,7 +122,7 @@ public sealed class AttendanceService(IGermanDbContext db)
         var duplicateDays = command.Days.GroupBy(x => new { x.EmployeeId, x.WorkDate }).FirstOrDefault(x => x.Count() > 1);
         if (duplicateDays is not null)
         {
-            return AppResult<AttendanceMonthlyResult>.Failure("attendance.duplicate_day", "Một ngày chấm công chỉ được xuất hiện một lần.");
+            return AppResult<AttendanceSaveResult>.Failure("attendance.duplicate_day", "Một ngày chấm công chỉ được xuất hiện một lần.");
         }
 
         var employeeIds = command.Days.Select(x => x.EmployeeId).Distinct().ToArray();
@@ -133,22 +138,22 @@ public sealed class AttendanceService(IGermanDbContext db)
         {
             if (inputDay.WorkDate < from || inputDay.WorkDate > until)
             {
-                return AppResult<AttendanceMonthlyResult>.Failure("attendance.invalid_date", "Ngày chấm công không thuộc tháng đã chọn.");
+                return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_date", "Ngày chấm công không thuộc tháng đã chọn.");
             }
 
             if (!employees.ContainsKey(inputDay.EmployeeId))
             {
-                return AppResult<AttendanceMonthlyResult>.Failure("attendance.employee_not_found", "Không tìm thấy nhân viên.");
+                return AppResult<AttendanceSaveResult>.Failure("attendance.employee_not_found", "Không tìm thấy nhân viên.");
             }
 
             if (inputDay.OvertimeHours < 0 || inputDay.OvertimeHours > 24)
             {
-                return AppResult<AttendanceMonthlyResult>.Failure("attendance.invalid_value", "Giờ TC phải nằm trong khoảng từ 0 đến 24.");
+                return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_value", "Giờ TC phải nằm trong khoảng từ 0 đến 24.");
             }
 
             if (inputDay.Shifts.GroupBy(x => x.SlotNumber).Any(x => x.Count() > 1))
             {
-                return AppResult<AttendanceMonthlyResult>.Failure("attendance.invalid_shift", "Công đoạn ca bị trùng.");
+                return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_shift", "Công đoạn ca bị trùng.");
             }
 
             var key = (inputDay.EmployeeId, inputDay.WorkDate);
@@ -157,7 +162,7 @@ public sealed class AttendanceService(IGermanDbContext db)
                 var snapshots = ResolveCurrentSlots(inputDay.EmployeeId, inputDay.WorkDate, scheduleContext);
                 if (snapshots.Count == 0)
                 {
-                    return AppResult<AttendanceMonthlyResult>.Failure("attendance.shift_not_setup", "Nhân viên chưa được cấu hình ca cho ngày này.");
+                    return AppResult<AttendanceSaveResult>.Failure("attendance.shift_not_setup", "Nhân viên chưa được cấu hình ca cho ngày này.");
                 }
 
                 day = new AttendanceDay
@@ -178,23 +183,19 @@ public sealed class AttendanceService(IGermanDbContext db)
                 var validation = ApplyValue(shift, input);
                 if (!validation.IsSuccess)
                 {
-                    return AppResult<AttendanceMonthlyResult>.Failure(validation.Error!.Code, validation.Error.Message);
+                    return AppResult<AttendanceSaveResult>.Failure(validation.Error!.Code, validation.Error.Message);
                 }
             }
 
             if (inputs.Keys.Any(slot => day.Shifts.All(x => x.SlotNumber != slot)))
             {
-                return AppResult<AttendanceMonthlyResult>.Failure("attendance.invalid_shift", "Công đoạn ca không thuộc lịch của ngày này.");
+                return AppResult<AttendanceSaveResult>.Failure("attendance.invalid_shift", "Công đoạn ca không thuộc lịch của ngày này.");
             }
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        return AppResult<AttendanceMonthlyResult>.Success(await GetMonthAsync(
-            new AttendanceMonthlyQuery(
-                command.Year,
-                command.Month,
-                EmployeeLimit: Math.Max(employeeIds.Length, 1),
-                EmployeeIds: employeeIds), cancellationToken));
+        var savedEmployeeData = await LoadSavedEmployeePatchesAsync(employeeIds, command.Days, from, until, cancellationToken);
+        return AppResult<AttendanceSaveResult>.Success(new AttendanceSaveResult(command.Year, command.Month, savedEmployeeData));
     }
 
     private async Task<ShiftScheduleContext> LoadScheduleContextAsync(
@@ -221,6 +222,89 @@ public sealed class AttendanceService(IGermanDbContext db)
             .ThenBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
         return new ShiftScheduleContext(assignments, periods);
+    }
+
+    private async Task<Dictionary<Guid, AttendanceTotalsDto>> LoadMonthlyTotalsAsync(
+        IReadOnlyCollection<Guid> employeeIds,
+        DateOnly from,
+        DateOnly until,
+        CancellationToken cancellationToken)
+    {
+        if (employeeIds.Count == 0)
+        {
+            return [];
+        }
+
+        var totals = await db.AttendanceDays.AsNoTracking()
+            .Where(day => employeeIds.Contains(day.EmployeeId) && day.WorkDate >= from && day.WorkDate <= until)
+            .SelectMany(day => day.Shifts.Select(shift => new
+            {
+                day.EmployeeId,
+                shift.ValueKind,
+                shift.WorkedHours,
+                shift.ScheduledHours
+            }))
+            .GroupBy(row => row.EmployeeId)
+            .Select(group => new
+            {
+                EmployeeId = group.Key,
+                RegularWorkedHours = group.Where(row => row.ValueKind == AttendanceShiftValueKind.Hours)
+                    .Sum(row => row.WorkedHours ?? 0m),
+                PaidLeaveHours = group.Where(row => row.ValueKind == AttendanceShiftValueKind.PaidLeave)
+                    .Sum(row => row.ScheduledHours),
+                SickLeaveHours = group.Where(row => row.ValueKind == AttendanceShiftValueKind.SickLeave)
+                    .Sum(row => row.ScheduledHours)
+            })
+            .ToListAsync(cancellationToken);
+
+        var overtime = await db.AttendanceDays.AsNoTracking()
+            .Where(day => employeeIds.Contains(day.EmployeeId) && day.WorkDate >= from && day.WorkDate <= until)
+            .GroupBy(day => day.EmployeeId)
+            .Select(group => new { EmployeeId = group.Key, OvertimeHours = group.Sum(day => day.OvertimeHours) })
+            .ToDictionaryAsync(row => row.EmployeeId, row => row.OvertimeHours, cancellationToken);
+
+        var result = totals.ToDictionary(
+            row => row.EmployeeId,
+            row => new AttendanceTotalsDto(
+                row.RegularWorkedHours,
+                overtime.GetValueOrDefault(row.EmployeeId),
+                row.PaidLeaveHours,
+                row.SickLeaveHours));
+        foreach (var row in overtime)
+        {
+            if (!result.ContainsKey(row.Key)) result[row.Key] = new AttendanceTotalsDto(0m, row.Value, 0m, 0m);
+        }
+        return result;
+    }
+
+    private async Task<IReadOnlyList<AttendanceEmployeeSavePatchDto>> LoadSavedEmployeePatchesAsync(
+        IReadOnlyCollection<Guid> employeeIds,
+        IReadOnlyCollection<AttendanceDayInput> submittedDays,
+        DateOnly from,
+        DateOnly until,
+        CancellationToken cancellationToken)
+    {
+        if (employeeIds.Count == 0)
+        {
+            return [];
+        }
+
+        var submittedDates = submittedDays.Select(day => day.WorkDate).Distinct().ToArray();
+        var savedDays = await db.AttendanceDays.AsNoTracking()
+            .Include(day => day.Shifts)
+            .Where(day => employeeIds.Contains(day.EmployeeId)
+                && day.WorkDate >= from
+                && day.WorkDate <= until
+                && submittedDates.Contains(day.WorkDate))
+            .ToListAsync(cancellationToken);
+        var totals = await LoadMonthlyTotalsAsync(employeeIds, from, until, cancellationToken);
+        return employeeIds.Select(employeeId => new AttendanceEmployeeSavePatchDto(
+            employeeId,
+            savedDays.Where(day => day.EmployeeId == employeeId)
+                .OrderBy(day => day.WorkDate)
+                .Select(ToDayDto)
+                .ToList(),
+            totals.GetValueOrDefault(employeeId, AttendanceTotalsDto.Empty))).ToList();
     }
 
     private static List<AttendanceShiftDto> ResolveCurrentSlots(
@@ -318,19 +402,6 @@ public sealed class AttendanceService(IGermanDbContext db)
         return AppResult.Success();
     }
 
-    private static AttendanceTotalsDto CalculateTotals(IEnumerable<AttendanceDayDto> days)
-    {
-        var dayList = days.ToList();
-        return new AttendanceTotalsDto(
-            dayList.SelectMany(x => x.Shifts).Where(x => x.ValueKind == AttendanceShiftValueKind.Hours)
-                .Sum(x => x.WorkedHours ?? 0m),
-            dayList.Sum(x => x.OvertimeHours),
-            dayList.SelectMany(x => x.Shifts).Where(x => x.ValueKind == AttendanceShiftValueKind.PaidLeave)
-                .Sum(x => x.ScheduledHours),
-            dayList.SelectMany(x => x.Shifts).Where(x => x.ValueKind == AttendanceShiftValueKind.SickLeave)
-                .Sum(x => x.ScheduledHours));
-    }
-
     private static void ValidateMonth(int year, int month)
     {
         if (!IsValidMonth(year, month))
@@ -340,6 +411,27 @@ public sealed class AttendanceService(IGermanDbContext db)
     }
 
     private static bool IsValidMonth(int year, int month) => year is >= 2000 and <= 2100 && month is >= 1 and <= 12;
+
+    private static (int DayFrom, int DayTo) ValidateDayWindow(int dayFrom, int dayCount, int lastDay)
+    {
+        if (dayFrom < 1 || dayFrom > lastDay)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dayFrom), "Ngày bắt đầu không hợp lệ.");
+        }
+
+        if (dayCount is < 1 or > 11)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dayCount), "Số ngày mỗi block phải từ 1 đến 11.");
+        }
+
+        var dayTo = dayFrom + dayCount - 1;
+        if (dayTo > lastDay)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dayCount), "Block ngày vượt quá tháng đã chọn.");
+        }
+
+        return (dayFrom, dayTo);
+    }
 
     private static EmployeeCursor? ParseEmployeeCursor(string? cursor)
     {

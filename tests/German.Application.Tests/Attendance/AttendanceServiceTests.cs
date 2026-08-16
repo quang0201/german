@@ -35,7 +35,7 @@ public sealed class AttendanceServiceTests
         await db.SaveChangesAsync();
 
         var result = await new AttendanceService(db).GetMonthAsync(
-            new AttendanceMonthlyQuery(2026, 8, employee.Id), CancellationToken.None);
+            new AttendanceMonthlyQuery(2026, 8, employee.Id, DayFrom: 15, DayCount: 2), CancellationToken.None);
 
         var days = result.Employees.Single().Days;
         Assert.AreEqual("Chiều", days.Single(x => x.WorkDate.Day == 15).Shifts[0].ShiftName);
@@ -179,7 +179,7 @@ public sealed class AttendanceServiceTests
         await db.SaveChangesAsync();
 
         var result = await new AttendanceService(db).GetMonthAsync(
-            new AttendanceMonthlyQuery(2026, 8), CancellationToken.None);
+            new AttendanceMonthlyQuery(2026, 8, DayFrom: 17, DayCount: 1), CancellationToken.None);
 
         var historical = result.Employees.Single(x => x.EmployeeId == employee.Id);
         Assert.AreEqual("Nghỉ việc", historical.FullName);
@@ -233,8 +233,61 @@ public sealed class AttendanceServiceTests
         CollectionAssert.AreEqual(new[] { "A203" }, second.Employees.Select(x => x.EmployeeCode).ToArray());
         Assert.IsFalse(second.HasMoreEmployees);
         Assert.AreEqual(1, second.DayFrom);
-        Assert.AreEqual(31, second.DayTo);
-        Assert.IsFalse(second.HasMoreDays);
+        Assert.AreEqual(10, second.DayTo);
+        Assert.IsTrue(second.HasMoreDays);
+    }
+
+    [TestMethod]
+    public async Task GetMonth_LoadsOnlyRequestedDayWindowButKeepsFullMonthTotals()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "A204", FullName = "Ngoài block" };
+        var day = new AttendanceDay { EmployeeId = employee.Id, WorkDate = new DateOnly(2026, 8, 31) };
+        day.Shifts.Add(new AttendanceShiftEntry
+        {
+            AttendanceDayId = day.Id,
+            SlotNumber = 1,
+            ShiftName = "Ca lịch sử",
+            ScheduledStartTime = new TimeOnly(7, 0),
+            ScheduledEndTime = new TimeOnly(11, 0),
+            ScheduledHours = 4m,
+            ValueKind = AttendanceShiftValueKind.Hours,
+            WorkedHours = 4m
+        });
+        db.AddRange(employee, day);
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 8, DayFrom: 1, DayCount: 10), CancellationToken.None);
+
+        var loaded = result.Employees.Single();
+        Assert.AreEqual(10, loaded.Days.Count);
+        Assert.AreEqual(1, loaded.Days[0].WorkDate.Day);
+        Assert.AreEqual(10, loaded.Days[^1].WorkDate.Day);
+        Assert.AreEqual(4m, loaded.Totals.RegularWorkedHours);
+        Assert.AreEqual(11, result.NextDayFrom);
+        Assert.IsTrue(result.HasMoreDays);
+    }
+
+    [DataTestMethod]
+    [DataRow(2026, 2, 28)]
+    [DataRow(2028, 2, 29)]
+    [DataRow(2026, 4, 30)]
+    [DataRow(2026, 8, 31)]
+    public async Task GetMonth_FinalDayBlockMatchesMonthLength(int year, int month, int lastDay)
+    {
+        await using var db = CreateDbContext();
+        db.Employees.Add(new Employee { EmployeeCode = $"A{month}{lastDay}", FullName = "Block cuối" });
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(year, month, DayFrom: 21, DayCount: lastDay - 20), CancellationToken.None);
+
+        Assert.AreEqual(lastDay - 20, result.Employees.Single().Days.Count);
+        Assert.AreEqual(21, result.DayFrom);
+        Assert.AreEqual(lastDay, result.DayTo);
+        Assert.IsNull(result.NextDayFrom);
+        Assert.IsFalse(result.HasMoreDays);
     }
 
     [TestMethod]

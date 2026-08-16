@@ -15,20 +15,34 @@ public static class AttendanceEndpoints
             Guid? employeeId,
             string? employeeCursor,
             int? employeeLimit,
+            int? dayFrom,
+            int? dayCount,
             AttendanceService service,
             CancellationToken ct) =>
         {
             try
             {
-                return Results.Ok(await service.GetMonthAsync(new AttendanceMonthlyQuery(year, month, employeeId, employeeCursor, employeeLimit ?? 20), ct));
+                return Results.Ok(await service.GetMonthAsync(new AttendanceMonthlyQuery(
+                    year,
+                    month,
+                    employeeId,
+                    employeeCursor,
+                    employeeLimit ?? 20,
+                    DayFrom: dayFrom ?? 1,
+                    DayCount: dayCount ?? 10), ct));
             }
             catch (ArgumentOutOfRangeException exception)
             {
                 var isLimit = exception.ParamName == "limit";
+                var isDayWindow = exception.ParamName is "dayFrom" or "dayCount";
                 return Results.BadRequest(new
                 {
-                    code = isLimit ? "attendance.invalid_employee_limit" : "attendance.invalid_month",
-                    message = isLimit ? "Số nhân viên mỗi lần tải phải từ 1 đến 100." : "Tháng chấm công không hợp lệ."
+                    code = isLimit
+                        ? "attendance.invalid_employee_limit"
+                        : isDayWindow ? "attendance.invalid_day_window" : "attendance.invalid_month",
+                    message = isLimit
+                        ? "Số nhân viên mỗi lần tải phải từ 1 đến 100."
+                        : isDayWindow ? "Cửa sổ ngày chấm công không hợp lệ." : "Tháng chấm công không hợp lệ."
                 });
             }
             catch (ArgumentException)
