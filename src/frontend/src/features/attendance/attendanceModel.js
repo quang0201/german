@@ -48,6 +48,12 @@ export function attendanceBlockKey(generation, batchId, dayFrom) {
   return `${generation}|${batchId}|${dayFrom}`;
 }
 
+export function resolveAttendanceHorizontalScrollIntent(previousScrollLeft, currentScrollLeft, startDistance, endDistance, threshold = 300) {
+  if (currentScrollLeft > previousScrollLeft && Number.isFinite(endDistance) && endDistance <= threshold) return "next";
+  if (currentScrollLeft < previousScrollLeft && Number.isFinite(startDistance) && startDistance <= threshold) return "previous";
+  return null;
+}
+
 export function emptyAttendanceCache(monthKey, generation) {
   return { monthKey, generation, batches: [], employeesById: {}, blocks: {} };
 }

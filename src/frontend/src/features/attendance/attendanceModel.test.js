@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
+import { attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts, resolveAttendanceHorizontalScrollIntent } from "./attendanceModel.js";
 
 describe("attendance model", () => {
   test("parses hours, leave codes and blank cells without accepting X", () => {
@@ -157,5 +157,17 @@ describe("attendance model", () => {
     const merged = mergeAttendanceSaveDrafts({ [key]: { overtimeHours: "", shifts: { 1: "3" } } }, result, { [key]: 1 }, { [key]: 1 });
     expect(merged.drafts[key].shifts[1]).toBe("4");
     expect(merged.acknowledgedKeys).toEqual([key]);
+  });
+
+  test("only resolves next block while scrolling right", () => {
+    expect(resolveAttendanceHorizontalScrollIntent(400, 520, 120, 280)).toBe("next");
+    expect(resolveAttendanceHorizontalScrollIntent(520, 400, 120, 280)).toBe("previous");
+    expect(resolveAttendanceHorizontalScrollIntent(400, 400, 120, 280)).toBeNull();
+  });
+
+  test("does not resolve a block when scrolling vertically", () => {
+    expect(resolveAttendanceHorizontalScrollIntent(400, 450, 120, 280)).toBe("next");
+    expect(resolveAttendanceHorizontalScrollIntent(450, 400, 120, 280)).toBe("previous");
+    expect(resolveAttendanceHorizontalScrollIntent(400, 400, -50, -50)).toBeNull();
   });
 });

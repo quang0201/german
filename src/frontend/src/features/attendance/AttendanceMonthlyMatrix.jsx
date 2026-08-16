@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef } from "react";
-import { attendanceDayKey, calculateDisplayTotals } from "./attendanceModel.js";
+import { attendanceDayKey, calculateDisplayTotals, resolveAttendanceHorizontalScrollIntent } from "./attendanceModel.js";
 
 const weekdayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
@@ -22,10 +22,15 @@ function draftDay(drafts, employee, day) {
 
 export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, scrollLeftRef, onLoadMore, loadingMore, onHorizontalNearEnd, onHorizontalNearStart, onRetryBlock }) {
   const scrollRef = useRef(null);
+  const lastScrollLeftRef = useRef(0);
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
   useLayoutEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeftRef?.current ?? 0;
+    if (scrollRef.current) {
+      const restoredScrollLeft = scrollLeftRef?.current ?? 0;
+      scrollRef.current.scrollLeft = restoredScrollLeft;
+      lastScrollLeftRef.current = restoredScrollLeft;
+    }
   }, [data, scrollLeftRef]);
 
   if (loading) return <div className="erp-empty-state">Đang tải dữ liệu chấm công...</div>;
@@ -40,8 +45,17 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
         const scrollerRect = target.getBoundingClientRect();
         const activeEnd = data.activeBlockEndDate && target.querySelector(`[data-attendance-block-end="${data.activeBlockEndDate}"]`);
         const activeStart = data.activeBlockStartDate && target.querySelector(`[data-attendance-block-start="${data.activeBlockStartDate}"]`);
-        if (activeEnd && activeEnd.getBoundingClientRect().right - scrollerRect.right <= 300) onHorizontalNearEnd?.();
-        if (data.dayFrom > 1 && activeStart && activeStart.getBoundingClientRect().left - scrollerRect.left <= 300) onHorizontalNearStart?.();
+        const currentScrollLeft = target.scrollLeft;
+        const startDistance = data.dayFrom > 1 && activeStart
+          ? activeStart.getBoundingClientRect().left - scrollerRect.left
+          : null;
+        const endDistance = activeEnd
+          ? activeEnd.getBoundingClientRect().right - scrollerRect.right
+          : null;
+        const intent = resolveAttendanceHorizontalScrollIntent(lastScrollLeftRef.current, currentScrollLeft, startDistance, endDistance);
+        if (intent === "next") onHorizontalNearEnd?.();
+        if (intent === "previous") onHorizontalNearStart?.();
+        lastScrollLeftRef.current = currentScrollLeft;
       }}>
         <table className="erp-attendance-matrix-table">
           <thead>
