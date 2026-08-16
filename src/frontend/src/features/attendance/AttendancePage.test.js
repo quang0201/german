@@ -10,6 +10,8 @@ describe("AttendancePage", () => {
     expect(html).toContain("Chấm công");
     expect(html).toContain("Lưu thay đổi");
     expect(html).toContain("Xuất Excel");
+    expect(html).toContain("10 ngày tiếp ›");
+    expect(html).toContain("‹ 10 ngày trước");
     expect(html).toContain("Tất cả nhân viên");
     expect(html).toContain("Ô trống = chưa nhập");
   });
@@ -39,12 +41,13 @@ describe("AttendancePage", () => {
     expect(html).toContain('aria-label="Bình Ca 2');
   });
 
-  test("marks day headers so horizontal loading can stop at the active block boundary", () => {
+  test("renders one selected day block without horizontal auto-navigation markers", () => {
     const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
-      data={{ activeBlockEndDate: "2026-08-16", employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] }}
+      data={{ employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] }}
       drafts={{}}
       loading={false}
     />);
-    expect(html).toContain('data-attendance-block-end="2026-08-16"');
+    expect(html).not.toContain("data-attendance-block-end");
+    expect(html).not.toContain("erp-attendance-window-spacer");
   });
 });

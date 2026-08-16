@@ -48,12 +48,6 @@ export function attendanceBlockKey(generation, batchId, dayFrom) {
   return `${generation}|${batchId}|${dayFrom}`;
 }
 
-export function resolveAttendanceHorizontalScrollIntent(previousScrollLeft, currentScrollLeft, startDistance, endDistance, threshold = 300) {
-  if (currentScrollLeft > previousScrollLeft && Number.isFinite(endDistance) && endDistance <= threshold) return "next";
-  if (currentScrollLeft < previousScrollLeft && Number.isFinite(startDistance) && startDistance >= -threshold) return "previous";
-  return null;
-}
-
 export function emptyAttendanceCache(monthKey, generation) {
   return { monthKey, generation, batches: [], employeesById: {}, blocks: {} };
 }
@@ -156,21 +150,12 @@ export function buildAttendanceRenderData(cache, monthKey, renderedBlockStarts) 
   }));
   const lastBatch = cache.batches.at(-1);
   const lastBlock = selectedBlocks.at(-1);
-  const firstBlock = selectedBlocks[0];
-  const renderedBeforeDays = firstBlock
-    ? attendanceDayBlocks(year, month).filter((block) => block.dayTo < firstBlock.dayFrom).reduce((total, block) => total + block.dayCount, 0)
-    : 0;
-  const renderedAfterDays = lastBlock
-    ? attendanceDayBlocks(year, month).filter((block) => block.dayFrom > lastBlock.dayFrom).reduce((total, block) => total + block.dayCount, 0)
-    : 0;
   return {
     year,
     month,
     employees,
     dayFrom: selectedBlocks[0]?.dayFrom ?? 1,
     dayTo: lastBlock?.dayTo ?? 10,
-    renderedBeforeDays,
-    renderedAfterDays,
     hasMoreEmployees: Boolean(lastBatch?.nextCursor),
     nextEmployeeCursor: lastBatch?.nextCursor ?? null,
     blockStatus: Object.fromEntries(selectedBlocks.flatMap((block) => cache.batches.map((batch) => {
