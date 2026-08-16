@@ -31,7 +31,7 @@ export function mergeAttendanceEmployees(existing, incoming) {
   return merged.concat((incoming ?? []).filter((employee) => !existingIds.has(employee.employeeId)));
 }
 
-export function isCurrentAttendanceBatch(requestedMonthKey, currentMonthKey, requestedGeneration, currentGeneration) {
+export function isCurrentAttendanceRequest(requestedMonthKey, currentMonthKey, requestedGeneration, currentGeneration) {
   return requestedMonthKey === currentMonthKey && requestedGeneration === currentGeneration;
 }
 

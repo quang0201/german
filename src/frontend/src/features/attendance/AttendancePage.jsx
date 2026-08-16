@@ -3,7 +3,7 @@ import { Alert } from "../../components/erp/Alert.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
 import { AttendanceMonthlyMatrix } from "./AttendanceMonthlyMatrix.jsx";
-import { attendanceDayKey, buildAttendanceDrafts, buildAttendanceSavePayload, currentAttendanceMonth, isCurrentAttendanceBatch, mergeAttendanceEmployees, shiftAttendanceMonth } from "./attendanceModel.js";
+import { attendanceDayKey, buildAttendanceDrafts, buildAttendanceSavePayload, currentAttendanceMonth, isCurrentAttendanceRequest, mergeAttendanceEmployees, shiftAttendanceMonth } from "./attendanceModel.js";
 import "./AttendanceMonthlyMatrix.css";
 
 function monthLabel(monthKey) {
@@ -30,6 +30,7 @@ export function AttendancePage() {
     monthGenerationRef.current = generation;
     loadingMoreRef.current = false;
     setLoadingMore(false);
+    setSaving(false);
     let active = true;
     setLoading(true);
     setError("");
@@ -56,7 +57,7 @@ export function AttendancePage() {
     const [year, month] = monthKey.split("-");
     try {
       const payload = await api.get(`/api/attendance/monthly?year=${year}&month=${month}&employeeCursor=${encodeURIComponent(data.nextEmployeeCursor)}&employeeLimit=20`);
-      if (!isCurrentAttendanceBatch(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) return;
+      if (!isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) return;
       setData((current) => ({
         ...current,
         employees: mergeAttendanceEmployees(current.employees, payload.employees),
@@ -65,11 +66,11 @@ export function AttendancePage() {
       }));
       setDrafts((current) => ({ ...current, ...buildAttendanceDrafts(payload) }));
     } catch (requestError) {
-      if (isCurrentAttendanceBatch(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
+      if (isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
         setError(requestError.message || "Không thể tải thêm nhân viên.");
       }
     } finally {
-      if (isCurrentAttendanceBatch(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
+      if (isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
         loadingMoreRef.current = false;
         setLoadingMore(false);
       }
@@ -107,19 +108,26 @@ export function AttendancePage() {
   }
 
   async function save() {
+    const requestedMonthKey = monthKey;
+    const requestedGeneration = monthGenerationRef.current;
     setSaving(true);
     setError("");
     try {
       const [year, month] = monthKey.split("-").map(Number);
       const payload = buildAttendanceSavePayload(data, drafts, year, month, dirtyDayKeys);
       const result = await api.put("/api/attendance/monthly", payload);
+      if (!isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) return;
       setData((current) => ({ ...current, employees: mergeAttendanceEmployees(current.employees, result.employees) }));
       setDrafts((current) => ({ ...current, ...buildAttendanceDrafts(result) }));
       setDirtyDayKeys(new Set());
     } catch (requestError) {
-      setError(requestError.message || "Không thể lưu chấm công.");
+      if (isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
+        setError(requestError.message || "Không thể lưu chấm công.");
+      }
     } finally {
-      setSaving(false);
+      if (isCurrentAttendanceRequest(requestedMonthKey, monthKey, requestedGeneration, monthGenerationRef.current)) {
+        setSaving(false);
+      }
     }
   }
 

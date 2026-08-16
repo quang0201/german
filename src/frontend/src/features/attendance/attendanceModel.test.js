@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAttendanceSavePayload, calculateDraftTotals, isCurrentAttendanceBatch, mergeAttendanceEmployees, parseAttendanceCell } from "./attendanceModel.js";
+import { buildAttendanceSavePayload, calculateDraftTotals, isCurrentAttendanceRequest, mergeAttendanceEmployees, parseAttendanceCell } from "./attendanceModel.js";
 
 describe("attendance model", () => {
   test("parses hours, leave codes and blank cells without accepting X", () => {
@@ -92,9 +92,9 @@ describe("attendance model", () => {
     ]);
   });
 
-  test("rejects a stale employee batch after the month generation changes", () => {
-    expect(isCurrentAttendanceBatch("2026-08", "2026-09", 1, 2)).toBe(false);
-    expect(isCurrentAttendanceBatch("2026-08", "2026-08", 1, 2)).toBe(false);
-    expect(isCurrentAttendanceBatch("2026-08", "2026-08", 2, 2)).toBe(true);
+  test("rejects stale batch and save responses after the month generation changes", () => {
+    expect(isCurrentAttendanceRequest("2026-08", "2026-09", 1, 2)).toBe(false);
+    expect(isCurrentAttendanceRequest("2026-08", "2026-08", 1, 2)).toBe(false);
+    expect(isCurrentAttendanceRequest("2026-08", "2026-08", 2, 2)).toBe(true);
   });
 });
