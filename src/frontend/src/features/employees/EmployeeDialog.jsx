@@ -5,7 +5,7 @@ import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate
 import { buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
 import "./EmployeeDialog.css";
 
-export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], loading = false, error = "", onClose, onSubmit, onChange }) {
+export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], shiftLoading = false, loading = false, error = "", onClose, onSubmit, onChange }) {
   const [draft, setDraft] = useState(() => mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));
 
   useEffect(() => {
@@ -51,8 +51,8 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
             </Field>
             {mode === "create" ? <>
               <Field label="Bộ ca HC" required>
-                <select className="erp-control" required value={draft.shiftTemplateId} onChange={(event) => update("shiftTemplateId", event.target.value)}>
-                  <option value="">Chọn bộ ca</option>
+                <select className="erp-control" required disabled={shiftLoading} value={draft.shiftTemplateId} onChange={(event) => update("shiftTemplateId", event.target.value)}>
+                  <option value="">{shiftLoading ? "Đang tải bộ ca..." : "Chọn bộ ca"}</option>
                   {shifts.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </Field>

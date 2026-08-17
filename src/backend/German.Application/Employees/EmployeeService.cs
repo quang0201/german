@@ -24,9 +24,9 @@ public sealed class EmployeeService(IGermanDbContext db)
             return AppResult<EmployeeDto>.Failure("employee.invalid_input", "Mã nhân viên và họ tên là bắt buộc.");
         }
 
-        if (command.ShiftTemplateId.HasValue != command.EffectiveFrom.HasValue)
+        if (!command.ShiftTemplateId.HasValue || !command.EffectiveFrom.HasValue)
         {
-            return AppResult<EmployeeDto>.Failure("shift.effective_from_required", "Khi chọn bộ ca phải chọn ngày hiệu lực.");
+            return AppResult<EmployeeDto>.Failure("shift.effective_from_required", "Bộ ca HC và ngày hiệu lực là bắt buộc.");
         }
 
         if (await db.Employees.AnyAsync(x => x.EmployeeCode.ToUpper() == normalized, cancellationToken))
