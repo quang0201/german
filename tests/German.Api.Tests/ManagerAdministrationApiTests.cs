@@ -119,6 +119,35 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Manager_CanDeleteEmployeeWithoutDeletingTheEmployeeRecord()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid employeeId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-delete", "M013", UserRole.Manager, "secret");
+            var employee = new Employee { EmployeeCode = "E013", FullName = "Nhân viên cần xóa" };
+            db.Employees.Add(employee);
+            employeeId = employee.Id;
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-employee-delete", "secret");
+
+        var response = await client.DeleteAsync($"/api/employees/{employeeId}");
+
+        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var employee = await db.Employees.SingleAsync(x => x.Id == employeeId);
+            Assert.IsFalse(employee.IsActive);
+        });
+    }
+
+    [TestMethod]
     public async Task Manager_CanCreateProductionOrderByCloningOperations()
     {
         await using var factory = new GermanApiFactory();
