@@ -44,6 +44,20 @@ public sealed class EmployeeServiceTests
         Assert.AreEqual(0, await db.Employees.CountAsync());
     }
 
+    [TestMethod]
+    public async Task CreateAsyncRejectsMissingShiftAssignment()
+    {
+        await using var db = CreateDb();
+
+        var result = await new EmployeeService(db).CreateAsync(
+            new CreateEmployeeCommand("E003", "Nguyễn Văn C"),
+            CancellationToken.None);
+
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual("shift.effective_from_required", result.Error?.Code);
+        Assert.AreEqual(0, await db.Employees.CountAsync());
+    }
+
     private static GermanDbContext CreateDb() => new(
         new DbContextOptionsBuilder<GermanDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
