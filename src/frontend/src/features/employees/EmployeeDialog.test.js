@@ -20,6 +20,15 @@ describe("EmployeeDialog", () => {
     expect(html).toContain("Lưu thay đổi");
   });
 
+  test("renders shift selection when creating an employee", () => {
+    const html = renderToStaticMarkup(<EmployeeDialog mode="create" open shifts={[{ id: "shift-1", name: "Ca hành chính", isActive: true }]} onClose={() => {}} onSubmit={() => {}} />);
+
+    expect(html).toContain("Thêm nhân viên");
+    expect(html).toContain("Bộ ca HC");
+    expect(html).toContain("Ca hành chính");
+    expect(html).toContain("Ngày hiệu lực");
+  });
+
   test("builds update payload with trimmed employee fields", () => {
     expect(buildEmployeeUpdatePayload({ ...employeeForm(employee), employeeCode: " E002 ", fullName: " Trần Thị B ", isActive: false })).toEqual({
       employeeCode: "E002",

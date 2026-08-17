@@ -6,6 +6,10 @@ public sealed record EmployeeDto(
     string FullName,
     bool IsActive);
 
-public sealed record CreateEmployeeCommand(string EmployeeCode, string FullName);
+public sealed record CreateEmployeeCommand(
+    string EmployeeCode,
+    string FullName,
+    Guid? ShiftTemplateId = null,
+    DateOnly? EffectiveFrom = null);
 public sealed record UpdateEmployeeCommand(string EmployeeCode, string FullName, bool IsActive);
 public sealed record AssignShiftCommand(Guid ShiftTemplateId, DateOnly EffectiveFrom);
