@@ -29,7 +29,6 @@ describe("frontend runtime safety", () => {
 
   test("create-form controls participate in native validation", () => {
     const cases = [
-      ["src/features/employees/EmployeeListPage.jsx", "employee-create", 3],
       ["src/features/production-orders/ProductionOrderListPage.jsx", "order-create", 5],
       ["src/features/shifts/ShiftListPage.jsx", "shift-create", 2],
       ["src/features/admin/UserAccountPage.jsx", "account-create", 5],
@@ -42,5 +41,8 @@ describe("frontend runtime safety", () => {
       expect(source).toContain(`<form id="${formId}"`);
       expect(associations).toHaveLength(expectedAssociations);
     }
+
+    const employeeSource = read("src/features/employees/EmployeeListPage.jsx");
+    expect(employeeSource).toContain('<EmployeeDialog mode="create"');
   });
 });
