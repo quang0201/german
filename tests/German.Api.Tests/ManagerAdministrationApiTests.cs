@@ -5,6 +5,7 @@ using German.Application.Auth;
 using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
+using German.Domain.Shifts;
 using German.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,108 @@ namespace German.Api.Tests;
 [TestClass]
 public sealed class ManagerAdministrationApiTests
 {
+    [TestMethod]
+    public async Task Manager_CanCreateEmployeeWithRequiredShiftAssignment()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-create", "M010", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-employee-create", "secret");
+        var shiftResponse = await client.PostAsJsonAsync("/api/shift-templates", new
+        {
+            name = "Ca tạo nhân viên",
+            periods = new[]
+            {
+                new { name = "Ca 1", startTime = "07:00:00", endTime = "11:30:00", sortOrder = 1 }
+            }
+        });
+        Assert.AreEqual(HttpStatusCode.Created, shiftResponse.StatusCode);
+        var shift = await shiftResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        var response = await client.PostAsJsonAsync("/api/employees", new
+        {
+            employeeCode = "E010",
+            fullName = "Công nhân có ca",
+            shiftTemplateId = shift.GetProperty("id").GetGuid(),
+            effectiveFrom = "2026-08-17"
+        });
+
+        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var employee = await db.Employees.SingleAsync(x => x.EmployeeCode == "E010");
+            var assignment = await db.EmployeeShiftAssignments.SingleAsync(x => x.EmployeeId == employee.Id);
+            Assert.AreEqual(new DateOnly(2026, 8, 17), assignment.EffectiveFrom);
+        });
+    }
+
+    [TestMethod]
+    public async Task Manager_CannotCreateEmployeeWithoutShiftAssignment()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-missing", "M011", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-employee-missing", "secret");
+        var response = await client.PostAsJsonAsync("/api/employees", new
+        {
+            employeeCode = "E011",
+            fullName = "Thiếu bộ ca"
+        });
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            Assert.IsFalse(await db.Employees.AnyAsync(x => x.EmployeeCode == "E011"));
+        });
+    }
+
+    [TestMethod]
+    public async Task Manager_CannotCreateEmployeeWithInactiveShift()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid shiftId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-inactive", "M012", UserRole.Manager, "secret");
+            var shift = new ShiftTemplate { Name = "Ca đã tắt", IsActive = false };
+            db.ShiftTemplates.Add(shift);
+            shiftId = shift.Id;
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-employee-inactive", "secret");
+        var response = await client.PostAsJsonAsync("/api/employees", new
+        {
+            employeeCode = "E012",
+            fullName = "Ca đã tắt",
+            shiftTemplateId = shiftId,
+            effectiveFrom = "2026-08-17"
+        });
+
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            Assert.IsFalse(await db.Employees.AnyAsync(x => x.EmployeeCode == "E012"));
+        });
+    }
+
     [TestMethod]
     public async Task Manager_CanCreateProductionOrderByCloningOperations()
     {

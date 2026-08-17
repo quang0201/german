@@ -12,7 +12,7 @@ public static class EmployeeEndpoints
         group.MapGet("/", async (EmployeeService service, CancellationToken ct) => Results.Ok(await service.ListAsync(ct)));
         group.MapPost("/", async (CreateEmployeeRequest request, EmployeeService service, CancellationToken ct) =>
         {
-            var result = await service.CreateAsync(new CreateEmployeeCommand(request.EmployeeCode, request.FullName), ct);
+            var result = await service.CreateAsync(new CreateEmployeeCommand(request.EmployeeCode, request.FullName, request.ShiftTemplateId, request.EffectiveFrom), ct);
             return result.IsSuccess ? Results.Created($"/api/employees/{result.Value!.Id}", result.Value) : ApiResultMapper.Error(result.Error!);
         });
         group.MapPut("/{id:guid}", async (Guid id, UpdateEmployeeRequest request, EmployeeService service, CancellationToken ct) =>

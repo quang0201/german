@@ -1,0 +1,5 @@
+.erp-employee-dialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; }
+.erp-employee-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.erp-employee-dialog-header h2 { margin: 0; }
+.erp-employee-dialog-fields { display: grid; gap: 14px; margin-top: 16px; }
+.erp-employee-active { display: flex; align-items: center; gap: 8px; font-weight: 700; }

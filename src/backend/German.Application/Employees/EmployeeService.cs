@@ -24,9 +24,20 @@ public sealed class EmployeeService(IGermanDbContext db)
             return AppResult<EmployeeDto>.Failure("employee.invalid_input", "Mã nhân viên và họ tên là bắt buộc.");
         }
 
+        if (!command.ShiftTemplateId.HasValue || !command.EffectiveFrom.HasValue)
+        {
+            return AppResult<EmployeeDto>.Failure("shift.effective_from_required", "Bộ ca HC và ngày hiệu lực là bắt buộc.");
+        }
+
         if (await db.Employees.AnyAsync(x => x.EmployeeCode.ToUpper() == normalized, cancellationToken))
         {
             return AppResult<EmployeeDto>.Failure("employee.duplicate_code", "Mã nhân viên đã tồn tại.");
+        }
+
+        if (command.ShiftTemplateId.HasValue
+            && !await db.ShiftTemplates.AnyAsync(x => x.Id == command.ShiftTemplateId.Value && x.IsActive, cancellationToken))
+        {
+            return AppResult<EmployeeDto>.Failure("shift.not_found", "Không tìm thấy bộ ca đang hoạt động.");
         }
 
         var employee = new Employee
@@ -35,6 +46,17 @@ public sealed class EmployeeService(IGermanDbContext db)
             FullName = command.FullName.Trim()
         };
         db.Employees.Add(employee);
+
+        if (command.ShiftTemplateId.HasValue)
+        {
+            db.EmployeeShiftAssignments.Add(new EmployeeShiftAssignment
+            {
+                EmployeeId = employee.Id,
+                ShiftTemplateId = command.ShiftTemplateId.Value,
+                EffectiveFrom = command.EffectiveFrom!.Value
+            });
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return AppResult<EmployeeDto>.Success(ToDto(employee));
     }
