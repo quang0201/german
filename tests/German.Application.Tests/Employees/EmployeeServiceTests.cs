@@ -1,4 +1,5 @@
 using German.Application.Employees;
+using German.Domain.Employees;
 using German.Domain.Shifts;
 using German.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

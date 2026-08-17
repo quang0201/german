@@ -28,5 +28,7 @@ describe("EmployeeListPage", () => {
     expect(source).toContain('api.delete(`/api/employees/${row.id}`)');
     expect(source).toContain("Xóa");
     expect(source).toContain("Xác nhận xóa nhân viên");
+    expect(source).toContain("<ConfirmDialog");
+    expect(source).not.toContain("window.confirm");
   });
 });

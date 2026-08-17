@@ -20,6 +20,11 @@ public static class EmployeeEndpoints
             var result = await service.UpdateAsync(id, new UpdateEmployeeCommand(request.EmployeeCode, request.FullName, request.IsActive), ct);
             return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
         });
+        group.MapDelete("/{id:guid}", async (Guid id, EmployeeService service, CancellationToken ct) =>
+        {
+            var result = await service.DeleteAsync(id, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResultMapper.Error(result.Error!);
+        });
         group.MapPost("/{id:guid}/shift-assignments", async (Guid id, AssignShiftRequest request, EmployeeService service, CancellationToken ct) =>
         {
             var result = await service.AssignShiftAsync(id, new AssignShiftCommand(request.ShiftTemplateId, request.EffectiveFrom), ct);
