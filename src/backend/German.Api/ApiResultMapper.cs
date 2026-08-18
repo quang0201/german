@@ -21,6 +21,7 @@ public static class ApiResultMapper
             "production_entry.employee_not_found" => StatusCodes.Status404NotFound,
             "production_entry.order_not_found" => StatusCodes.Status404NotFound,
             "user_account.employee_not_found" => StatusCodes.Status404NotFound,
+            "employee.not_found" => StatusCodes.Status404NotFound,
             "shift.not_found" => StatusCodes.Status404NotFound,
             "production_entry.version_conflict" => StatusCodes.Status409Conflict,
             "production_entry.cell_conflict" => StatusCodes.Status409Conflict,
