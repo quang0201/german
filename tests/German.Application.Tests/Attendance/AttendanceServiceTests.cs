@@ -187,6 +187,76 @@ public sealed class AttendanceServiceTests
     }
 
     [TestMethod]
+    public async Task GetMonth_DoesNotCreateEditableSlotsForUnsavedDaysOfInactiveEmployee()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "A105B", FullName = "Đã nghỉ", IsActive = false };
+        var shift = CreateShift("Ca lịch sử", ("Ca 1", 1, 7, 11));
+        var day = new AttendanceDay { EmployeeId = employee.Id, WorkDate = new DateOnly(2026, 8, 17) };
+        day.Shifts.Add(new AttendanceShiftEntry
+        {
+            AttendanceDayId = day.Id,
+            SlotNumber = 1,
+            ShiftName = "Ca 1",
+            ScheduledStartTime = new TimeOnly(7, 0),
+            ScheduledEndTime = new TimeOnly(11, 0),
+            ScheduledHours = 4m,
+            ValueKind = AttendanceShiftValueKind.Hours,
+            WorkedHours = 4m
+        });
+        db.AddRange(employee, shift, day, new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 8, employee.Id, DayFrom: 17, DayCount: 2), CancellationToken.None);
+
+        var days = result.Employees.Single().Days;
+        Assert.IsTrue(days.Single(x => x.WorkDate.Day == 17).HasAttendance);
+        Assert.IsFalse(days.Single(x => x.WorkDate.Day == 18).HasShiftSetup);
+        Assert.AreEqual(0, days.Single(x => x.WorkDate.Day == 18).Shifts.Count);
+    }
+
+    [TestMethod]
+    public async Task SaveMonth_AllowsEditingExistingInactiveDayButRejectsNewDay()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "A105C", FullName = "Đã nghỉ", IsActive = false };
+        var day = new AttendanceDay { EmployeeId = employee.Id, WorkDate = new DateOnly(2026, 8, 17) };
+        day.Shifts.Add(new AttendanceShiftEntry
+        {
+            AttendanceDayId = day.Id,
+            SlotNumber = 1,
+            ShiftName = "Ca lịch sử",
+            ScheduledStartTime = new TimeOnly(7, 0),
+            ScheduledEndTime = new TimeOnly(11, 0),
+            ScheduledHours = 4m,
+            ValueKind = AttendanceShiftValueKind.Empty
+        });
+        db.AddRange(employee, day);
+        await db.SaveChangesAsync();
+        var service = new AttendanceService(db);
+
+        var edit = await service.SaveMonthAsync(new SaveAttendanceMonthCommand(
+            2026, 8, [new AttendanceDayInput(employee.Id, new DateOnly(2026, 8, 17), 0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.Hours, 3m)])]), CancellationToken.None);
+
+        Assert.IsTrue(edit.IsSuccess, edit.Error?.Message);
+        Assert.AreEqual(3m, (await db.AttendanceDays.Include(x => x.Shifts).SingleAsync()).Shifts.Single().WorkedHours);
+
+        var create = await service.SaveMonthAsync(new SaveAttendanceMonthCommand(
+            2026, 8, [new AttendanceDayInput(employee.Id, new DateOnly(2026, 8, 18), 0m, [])]), CancellationToken.None);
+
+        Assert.IsFalse(create.IsSuccess);
+        Assert.AreEqual("attendance.inactive_employee", create.Error?.Code);
+        Assert.AreEqual(1, await db.AttendanceDays.CountAsync());
+    }
+
+    [TestMethod]
     public async Task SaveMonth_PersistsOnlySubmittedDays()
     {
         await using var db = CreateDbContext();

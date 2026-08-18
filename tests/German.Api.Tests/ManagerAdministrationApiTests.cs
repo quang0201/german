@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using German.Application.Auth;
+using German.Domain.Attendance;
 using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
@@ -128,7 +129,47 @@ public sealed class ManagerAdministrationApiTests
             var db = services.GetRequiredService<GermanDbContext>();
             await AddAccountAsync(services, db, "manager-employee-delete", "M013", UserRole.Manager, "secret");
             var employee = new Employee { EmployeeCode = "E013", FullName = "Nhân viên cần xóa" };
-            db.Employees.Add(employee);
+            var passwordService = services.GetRequiredService<IPasswordService>();
+            var account = new UserAccount
+            {
+                Username = "employee-delete-history",
+                NormalizedUsername = "EMPLOYEE-DELETE-HISTORY",
+                Role = UserRole.Worker,
+                EmployeeId = employee.Id
+            };
+            account.PasswordHash = passwordService.HashPassword(account, "worker-secret");
+            var attendanceDay = new AttendanceDay
+            {
+                EmployeeId = employee.Id,
+                WorkDate = new DateOnly(2026, 8, 17),
+                OvertimeHours = 1m
+            };
+            attendanceDay.Shifts.Add(new AttendanceShiftEntry
+            {
+                AttendanceDayId = attendanceDay.Id,
+                SlotNumber = 1,
+                ShiftName = "Ca 1",
+                ScheduledStartTime = new TimeOnly(7, 0),
+                ScheduledEndTime = new TimeOnly(11, 0),
+                ScheduledHours = 4m,
+                ValueKind = AttendanceShiftValueKind.Hours,
+                WorkedHours = 4m
+            });
+            var order = new ProductionOrder { Code = "DEL-013", ProductName = "Sản phẩm lịch sử", PlannedQuantity = 100m };
+            var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 1, Name = "Công đoạn lịch sử", Unit = "cái", SortOrder = 1 };
+            var productionEntry = new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 8, 17),
+                EmployeeId = employee.Id,
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EntryMode = ProductionEntryMode.Direct,
+                DirectHcQuantity = 10m,
+                HcQuantity = 10m,
+                TotalQuantity = 10m,
+                SubmittedByUserId = account.Id
+            };
+            db.AddRange(employee, account, attendanceDay, order, operation, productionEntry);
             employeeId = employee.Id;
             await db.SaveChangesAsync();
         });
@@ -144,7 +185,66 @@ public sealed class ManagerAdministrationApiTests
             var db = services.GetRequiredService<GermanDbContext>();
             var employee = await db.Employees.SingleAsync(x => x.Id == employeeId);
             Assert.IsFalse(employee.IsActive);
+            Assert.IsTrue(await db.UserAccounts.AnyAsync(x => x.EmployeeId == employeeId && x.IsActive));
+            Assert.IsTrue(await db.AttendanceDays.AnyAsync(x => x.EmployeeId == employeeId));
+            Assert.IsTrue(await db.ProductionEntries.AnyAsync(x => x.EmployeeId == employeeId && !x.IsDeleted));
         });
+    }
+
+    [TestMethod]
+    public async Task Manager_DeleteUnknownEmployeeReturnsNotFound()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-delete-missing", "M014", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-employee-delete-missing", "secret");
+
+        var response = await client.DeleteAsync($"/api/employees/{Guid.NewGuid()}");
+
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task DeletingEmployeeRejectsAnAlreadyIssuedWorkerSession()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid employeeId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-session", "M015", UserRole.Manager, "secret");
+            var passwordService = services.GetRequiredService<IPasswordService>();
+            var employee = new Employee { EmployeeCode = "E015", FullName = "Session cần thu hồi" };
+            var account = new UserAccount
+            {
+                Username = "worker-session-delete",
+                NormalizedUsername = "WORKER-SESSION-DELETE",
+                Role = UserRole.Worker,
+                EmployeeId = employee.Id
+            };
+            account.PasswordHash = passwordService.HashPassword(account, "worker-secret");
+            db.AddRange(employee, account);
+            employeeId = employee.Id;
+            await db.SaveChangesAsync();
+        });
+
+        using var manager = factory.CreateClient(new() { HandleCookies = true });
+        using var worker = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(manager, "manager-employee-session", "secret");
+        await LoginAsync(worker, "worker-session-delete", "worker-secret");
+
+        var delete = await manager.DeleteAsync($"/api/employees/{employeeId}");
+        Assert.AreEqual(HttpStatusCode.NoContent, delete.StatusCode);
+
+        var me = await worker.GetAsync("/api/auth/me");
+
+        Assert.AreEqual(HttpStatusCode.Unauthorized, me.StatusCode);
     }
 
     [TestMethod]
