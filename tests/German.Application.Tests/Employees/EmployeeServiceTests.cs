@@ -1,4 +1,5 @@
 using German.Application.Employees;
+using German.Domain.Employees;
 using German.Domain.Shifts;
 using German.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -56,6 +57,20 @@ public sealed class EmployeeServiceTests
         Assert.IsFalse(result.IsSuccess);
         Assert.AreEqual("shift.effective_from_required", result.Error?.Code);
         Assert.AreEqual(0, await db.Employees.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task DeleteAsyncDeactivatesEmployeeAndKeepsHistory()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E004", FullName = "Nguyễn Văn D" };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).DeleteAsync(employee.Id, CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsFalse((await db.Employees.SingleAsync()).IsActive);
     }
 
     private static GermanDbContext CreateDb() => new(

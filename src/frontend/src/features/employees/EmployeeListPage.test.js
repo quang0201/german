@@ -21,4 +21,14 @@ describe("EmployeeListPage", () => {
     expect(source).toContain('api.get("/api/shift-templates")');
     expect(source).not.toContain("Promise.all([api.get(\"/api/employees\")");
   });
+
+  test("offers a delete action backed by the employee delete endpoint", () => {
+    const source = readFileSync(resolve(import.meta.dir, "EmployeeListPage.jsx"), "utf8");
+
+    expect(source).toContain('api.delete(`/api/employees/${row.id}`)');
+    expect(source).toContain("Xóa");
+    expect(source).toContain("Xác nhận xóa nhân viên");
+    expect(source).toContain("<ConfirmDialog");
+    expect(source).not.toContain("window.confirm");
+  });
 });

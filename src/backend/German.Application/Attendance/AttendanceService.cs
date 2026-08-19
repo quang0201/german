@@ -80,6 +80,12 @@ public sealed class AttendanceService(IGermanDbContext db)
                     continue;
                 }
 
+                if (!employee.IsActive)
+                {
+                    days.Add(new AttendanceDayDto(date, false, false, 0m, []));
+                    continue;
+                }
+
                 var slots = ResolveCurrentSlots(employee.Id, date, scheduleContext);
                 days.Add(new AttendanceDayDto(date, false, slots.Count > 0, 0m, slots));
             }
@@ -158,6 +164,13 @@ public sealed class AttendanceService(IGermanDbContext db)
             }
 
             var key = (inputDay.EmployeeId, inputDay.WorkDate);
+            if (!employees[inputDay.EmployeeId].IsActive && !existingByKey.ContainsKey(key))
+            {
+                return AppResult<AttendanceSaveResult>.Failure(
+                    "attendance.inactive_employee",
+                    "Nhân viên đã được tắt và không thể tạo ngày chấm công mới.");
+            }
+
             if (!existingByKey.TryGetValue(key, out var day))
             {
                 var snapshots = ResolveCurrentSlots(inputDay.EmployeeId, inputDay.WorkDate, scheduleContext);

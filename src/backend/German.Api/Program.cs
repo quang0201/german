@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using German.Api.Endpoints;
 using German.Api.Startup;
@@ -59,6 +60,40 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return Task.CompletedTask;
+        };
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var principal = context.Principal;
+            var userIdText = principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var roleText = principal?.FindFirstValue(ClaimTypes.Role);
+            var employeeIdText = principal?.FindFirstValue("employee_id");
+            if (!Guid.TryParse(userIdText, out var userId)
+                || !Enum.TryParse<UserRole>(roleText, out var role)
+                || (employeeIdText is not null && !Guid.TryParse(employeeIdText, out _)))
+            {
+                context.RejectPrincipal();
+                return;
+            }
+
+            var db = context.HttpContext.RequestServices.GetRequiredService<GermanDbContext>();
+            var account = await db.UserAccounts.AsNoTracking()
+                .Where(x => x.Id == userId)
+                .Select(x => new { x.IsActive, x.Role, x.EmployeeId })
+                .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+            var claimedEmployeeId = Guid.TryParse(employeeIdText, out var parsedEmployeeId)
+                ? parsedEmployeeId
+                : (Guid?)null;
+            var employeeIsActive = !claimedEmployeeId.HasValue || await db.Employees.AsNoTracking()
+                .AnyAsync(x => x.Id == claimedEmployeeId.Value && x.IsActive, context.HttpContext.RequestAborted);
+
+            if (account is null
+                || !account.IsActive
+                || account.Role != role
+                || account.EmployeeId != claimedEmployeeId
+                || !employeeIsActive)
+            {
+                context.RejectPrincipal();
+            }
         };
     });
 

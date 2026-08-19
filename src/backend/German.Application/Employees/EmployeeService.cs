@@ -88,6 +88,20 @@ public sealed class EmployeeService(IGermanDbContext db)
         return AppResult<EmployeeDto>.Success(ToDto(employee));
     }
 
+    public async Task<AppResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var employee = await db.Employees.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (employee is null)
+        {
+            return AppResult.Failure("employee.not_found", "Không tìm thấy nhân viên.");
+        }
+
+        employee.IsActive = false;
+        employee.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult.Success();
+    }
+
     public async Task<AppResult<EmployeeShiftAssignment>> AssignShiftAsync(
         Guid employeeId,
         AssignShiftCommand command,
