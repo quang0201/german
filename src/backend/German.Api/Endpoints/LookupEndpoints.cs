@@ -1,5 +1,7 @@
 using German.Api.Auth;
+using German.Application.Attendance;
 using German.Application.Lookups;
+using German.Domain.Auth;
 
 namespace German.Api.Endpoints;
 
@@ -36,6 +38,22 @@ public static class LookupEndpoints
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : ApiResultMapper.Error(result.Error!);
+        }).RequireAuthorization();
+
+        endpoints.MapGet("/api/lookups/attendance-hours", async (
+            Guid employeeId,
+            DateOnly date,
+            HttpContext context,
+            AttendanceHoursQueryService service,
+            CancellationToken ct) =>
+        {
+            var actor = context.User.ToCurrentActor();
+            if (actor.Role == UserRole.Worker && actor.EmployeeId != employeeId)
+            {
+                return Results.Forbid();
+            }
+
+            return Results.Ok(await service.GetAsync(employeeId, date, ct));
         }).RequireAuthorization();
 
         return endpoints;

@@ -58,6 +58,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             command.OvertimeQuantity,
             command.WorkStart,
             command.WorkEnd,
+            command.HcHours,
             cancellationToken);
 
         if (!calculation.IsSuccess)
@@ -80,6 +81,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             TotalInputQuantity = command.TotalInputQuantity,
             OvertimeHours = command.OvertimeHours,
             OvertimeQuantity = command.OvertimeQuantity,
+            HcHours = command.HcHours,
             WorkStart = command.WorkStart,
             WorkEnd = command.WorkEnd,
             HcQuantity = calculation.Value!.Hc,
@@ -144,6 +146,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             command.OvertimeQuantity,
             command.WorkStart,
             command.WorkEnd,
+            command.HcHours,
             cancellationToken);
 
         if (!calculation.IsSuccess)
@@ -165,6 +168,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         entry.TotalInputQuantity = command.TotalInputQuantity;
         entry.OvertimeHours = command.OvertimeHours;
         entry.OvertimeQuantity = command.OvertimeQuantity;
+        entry.HcHours = command.HcHours;
         entry.WorkStart = command.WorkStart;
         entry.WorkEnd = command.WorkEnd;
         entry.HcQuantity = calculation.Value!.Hc;
@@ -307,6 +311,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         decimal? overtimeQuantity,
         TimeOnly? workStart,
         TimeOnly? workEnd,
+        decimal? hcHoursOverride,
         CancellationToken cancellationToken)
     {
         if (workStart.HasValue && workEnd.HasValue && workEnd.Value <= workStart.Value)
@@ -316,16 +321,28 @@ public sealed class ProductionEntryService(IGermanDbContext db)
                 "Giờ kết thúc phải sau giờ bắt đầu.");
         }
 
-        var hcHours = 0m;
+        var hcHours = hcHoursOverride ?? 0m;
         if (NeedsConfiguredHcHours(entryMode, overtimeHours, overtimeQuantity))
         {
-            var hoursResult = await ResolveHcHoursAsync(employeeId, workDate, cancellationToken);
-            if (!hoursResult.IsSuccess)
+            if (hcHoursOverride.HasValue)
             {
-                return AppResult<ProductionCalculationResult>.Failure(hoursResult.Error!.Code, hoursResult.Error.Message);
+                if (hcHours <= 0m)
+                {
+                    return AppResult<ProductionCalculationResult>.Failure(
+                        "production_entry.invalid_shift",
+                        "Giờ HC phải lớn hơn 0 khi có giờ TC.");
+                }
             }
+            else
+            {
+                var hoursResult = await ResolveHcHoursAsync(employeeId, workDate, cancellationToken);
+                if (!hoursResult.IsSuccess)
+                {
+                    return AppResult<ProductionCalculationResult>.Failure(hoursResult.Error!.Code, hoursResult.Error.Message);
+                }
 
-            hcHours = hoursResult.Value;
+                hcHours = hoursResult.Value;
+            }
         }
 
         try
@@ -431,5 +448,6 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             entry.TotalQuantity,
             entry.Note,
             entry.CreatedAt,
-            entry.UpdatedAt);
+            entry.UpdatedAt,
+            entry.HcHours);
 }

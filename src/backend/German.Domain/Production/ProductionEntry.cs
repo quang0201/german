@@ -17,6 +17,7 @@ public sealed class ProductionEntry : Entity
     public decimal? TotalInputQuantity { get; set; }
     public decimal? OvertimeHours { get; set; }
     public decimal? OvertimeQuantity { get; set; }
+    public decimal? HcHours { get; set; }
 
     public TimeOnly? WorkStart { get; set; }
     public TimeOnly? WorkEnd { get; set; }

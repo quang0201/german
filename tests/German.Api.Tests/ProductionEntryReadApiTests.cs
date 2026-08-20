@@ -76,6 +76,7 @@ public sealed class ProductionEntryReadApiTests
             var entry = await AddEntryAsync(db, manager.Employee.Id, manager.Account.Id, "M001");
             entry.DirectHcQuantity = 35m;
             entry.DirectTcQuantity = 5m;
+            entry.HcHours = 8m;
             entry.HcQuantity = 35m;
             entry.TcQuantity = 5m;
             entry.TotalQuantity = 40m;
@@ -91,6 +92,7 @@ public sealed class ProductionEntryReadApiTests
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.AreEqual("M001", json.RootElement.GetProperty("employeeCode").GetString());
         Assert.AreEqual(35m, json.RootElement.GetProperty("directHcQuantity").GetDecimal());
+        Assert.AreEqual(8m, json.RootElement.GetProperty("hcHours").GetDecimal());
         Assert.AreEqual("manager", json.RootElement.GetProperty("submittedByUsername").GetString());
     }
 

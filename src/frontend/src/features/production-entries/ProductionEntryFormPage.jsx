@@ -8,6 +8,7 @@ import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { calculatePreview } from "./productionCalculation.js";
 import { ProductionEntryPreview } from "./ProductionEntryPreview.jsx";
+import { attendanceHoursDefaults } from "./productionAttendanceHours.js";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
 import { productionOrderLookupPath } from "./productionOrderLookup.js";
 
@@ -47,7 +48,7 @@ function initialState(entry, session) {
   };
 }
 
-function toPayload(form) {
+function toPayload(form, hcHours) {
   return {
     workDate: form.workDate,
     employeeId: form.employeeId,
@@ -61,6 +62,7 @@ function toPayload(form) {
     totalInputQuantity: form.mode === "TotalWithOvertime" ? numberOrNull(form.totalQuantity) : null,
     overtimeHours: form.mode !== "Direct" ? numberOrNull(form.overtimeHours) : null,
     overtimeQuantity: form.mode === "ByShift" ? numberOrNull(form.overtimeQuantity) : null,
+    hcHours: form.mode !== "Direct" ? numberOrNull(hcHours) : null,
     workStart: form.workStart || null,
     workEnd: form.workEnd || null,
     note: form.note.trim() || null,
@@ -79,7 +81,9 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [serverResult, setServerResult] = useState(null);
+  const [attendanceLookupVersion, setAttendanceLookupVersion] = useState(0);
   const intentRef = useRef("save");
+  const attendanceHoursEditedRef = useRef(false);
   const toast = useToast();
   const canChooseEmployee = session?.role === "Manager" || session?.role === "Admin";
 
@@ -127,15 +131,42 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
 
   useEffect(() => {
     if (!form.employeeId || !form.workDate) {
-      setHcHours(null);
+      setHcHours("");
       return undefined;
     }
     let active = true;
-    api.get(`/api/lookups/hc-hours?employeeId=${encodeURIComponent(form.employeeId)}&date=${encodeURIComponent(form.workDate)}`)
-      .then((result) => active && setHcHours(result.hcHours))
-      .catch(() => active && setHcHours(null));
+    attendanceHoursEditedRef.current = false;
+    if (editing) {
+      if (entry?.hcHours !== null && entry?.hcHours !== undefined) {
+        setHcHours(String(entry.hcHours));
+        return () => { active = false; };
+      }
+      api.get(`/api/lookups/hc-hours?employeeId=${encodeURIComponent(form.employeeId)}&date=${encodeURIComponent(form.workDate)}`)
+        .then((result) => active && setHcHours(result.hcHours))
+        .catch(() => active && setHcHours(""));
+      return () => { active = false; };
+    }
+
+    setHcHours("");
+    api.get(`/api/lookups/attendance-hours?employeeId=${encodeURIComponent(form.employeeId)}&date=${encodeURIComponent(form.workDate)}`)
+      .then((result) => {
+        if (!active || attendanceHoursEditedRef.current) return;
+        const defaults = attendanceHoursDefaults({
+          hasAttendance: result.hasAttendance,
+          regularHours: result.regularHours,
+          overtimeHours: result.overtimeHours,
+        });
+        setHcHours(defaults.hcHours);
+        setForm((current) => ({ ...current, overtimeHours: defaults.tcHours }));
+      })
+      .catch(() => {
+        if (!active || attendanceHoursEditedRef.current) return;
+        const defaults = attendanceHoursDefaults(null);
+        setHcHours(defaults.hcHours);
+        setForm((current) => ({ ...current, overtimeHours: defaults.tcHours }));
+      });
     return () => { active = false; };
-  }, [form.employeeId, form.workDate]);
+  }, [editing, form.employeeId, form.workDate, attendanceLookupVersion]);
 
   const preview = useMemo(() => {
     try {
@@ -146,7 +177,16 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
   }, [form, hcHours]);
 
   function update(key, value) {
+    if (key === "overtimeHours") attendanceHoursEditedRef.current = true;
     setForm((current) => ({ ...current, [key]: value }));
+    setError("");
+    setConflict(false);
+    setServerResult(null);
+  }
+
+  function updateHcHours(value) {
+    attendanceHoursEditedRef.current = true;
+    setHcHours(value);
     setError("");
     setConflict(false);
     setServerResult(null);
@@ -162,9 +202,12 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
     setError("");
     if (!form.employeeId) return setError("Hãy chọn nhân viên.");
     if (!form.orderId || !form.operationId) return setError("Hãy chọn mã sản xuất và công đoạn.");
+    if (form.mode !== "Direct" && Number(form.overtimeHours || 0) > 0 && Number(hcHours || 0) <= 0) {
+      return setError("Hãy nhập Giờ HC lớn hơn 0 khi có Giờ TC.");
+    }
     setSubmitting(true);
     try {
-      const payload = toPayload(form);
+      const payload = toPayload(form, hcHours);
       const result = editing
         ? await api.put(`/api/production-entries/${entry.id}`, { ...payload, version: entry.version })
         : await api.post("/api/production-entries", payload);
@@ -172,6 +215,9 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
       toast.success(editing ? "Đã cập nhật sản lượng." : "Đã lưu sản lượng.");
       if (intentRef.current === "continue" && !editing) {
         setForm((current) => ({ ...initialState(null, session), workDate: current.workDate, employeeId: current.employeeId, orderId: current.orderId, operationId: current.operationId }));
+        setHcHours("");
+        setAttendanceLookupVersion((current) => current + 1);
+        attendanceHoursEditedRef.current = false;
         setServerResult(null);
       } else if (onSaved) onSaved(result);
       else if (!editing) navigate("/production");
@@ -195,11 +241,11 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
         <Field label="Mã sản xuất" required><select className="erp-control" required value={form.orderId} onChange={(event) => { update("orderId", event.target.value); update("operationId", ""); }}><option value="">Chọn mã sản xuất</option>{orders.map((item) => <option key={item.id} value={item.id}>{item.code} — {item.productName}</option>)}</select></Field>
         <Field label="Công đoạn" required><select className="erp-control" required value={form.operationId} onChange={(event) => update("operationId", event.target.value)}><option value="">Chọn công đoạn</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name} ({item.unit})</option>)}</select></Field>
       </FormSection>
-      <FormSection title="Sản lượng" description={hcHours !== null ? `HC chuẩn: ${hcHours} giờ` : "Kết quả hiển thị là dự tính; backend là dữ liệu chính thức."}>
+      <FormSection title="Sản lượng" description={hcHours !== "" && hcHours !== null ? `Giờ HC mặc định: ${hcHours} giờ; có thể chỉnh trước khi lưu.` : "Chưa có chấm công; hãy nhập giờ nếu cần tính TC."}>
         <div className="erp-field-wide"><div className="erp-field-label">Chế độ nhập</div><div className="erp-mode-grid">{MODES.map((item) => <button key={item.value} className={`erp-mode-option ${form.mode === item.value ? "is-selected" : ""}`} type="button" onClick={() => update("mode", item.value)}><strong>{item.label}</strong><span>{item.description}</span></button>)}</div></div>
-        {form.mode === "ByShift" && <><NumberField label="Sản lượng Ca 1" value={form.shift1Quantity} onChange={(value) => update("shift1Quantity", value)} /><NumberField label="Sản lượng Ca 2" value={form.shift2Quantity} onChange={(value) => update("shift2Quantity", value)} /><NumberField label="Giờ tăng ca" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /><NumberField label="Sản lượng TC thực tế" value={form.overtimeQuantity} onChange={(value) => update("overtimeQuantity", value)} optional /></>}
+        {form.mode === "ByShift" && <><NumberField label="Sản lượng Ca 1" value={form.shift1Quantity} onChange={(value) => update("shift1Quantity", value)} /><NumberField label="Sản lượng Ca 2" value={form.shift2Quantity} onChange={(value) => update("shift2Quantity", value)} /><NumberField label="Giờ HC" value={hcHours} onChange={updateHcHours} optional step="any" /><NumberField label="Giờ TC" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /><NumberField label="Sản lượng TC thực tế" value={form.overtimeQuantity} onChange={(value) => update("overtimeQuantity", value)} optional /></>}
         {form.mode === "Direct" && <><NumberField label="HC thực tế" value={form.directHcQuantity} onChange={(value) => update("directHcQuantity", value)} /><NumberField label="TC thực tế" value={form.directTcQuantity} onChange={(value) => update("directTcQuantity", value)} /></>}
-        {form.mode === "TotalWithOvertime" && <><NumberField label="Tổng sản lượng" value={form.totalQuantity} onChange={(value) => update("totalQuantity", value)} /><NumberField label="Giờ tăng ca" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /></>}
+        {form.mode === "TotalWithOvertime" && <><NumberField label="Tổng sản lượng" value={form.totalQuantity} onChange={(value) => update("totalQuantity", value)} /><NumberField label="Giờ HC" value={hcHours} onChange={updateHcHours} optional step="any" /><NumberField label="Giờ TC" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /></>}
         <div className="erp-field-wide"><ProductionEntryPreview preview={preview} serverResult={serverResult} /></div>
       </FormSection>
       <FormSection title="Thời gian & ghi chú">

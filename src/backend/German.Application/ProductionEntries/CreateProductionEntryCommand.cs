@@ -18,4 +18,5 @@ public sealed record CreateProductionEntryCommand(
     TimeOnly? WorkStart = null,
     TimeOnly? WorkEnd = null,
     string? Note = null,
-    bool ExpectedEmpty = false);
+    bool ExpectedEmpty = false,
+    decimal? HcHours = null);

@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
 import { buildQuickEntryPayload, canWriteQuickEntry, createQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion, quickEntryFeedbackMessage, shouldShowQuickEntryReload } from "./productionMatrixQuickEntry.js";
 import { calculateHourSplitPreview, resolveQuickEntryQuantities } from "./productionMatrixHourSplit.js";
+import { attendanceHoursDefaults } from "./productionAttendanceHours.js";
 import "./ProductionMatrixDialogs.css";
 
 const DIRECT_MODE = "direct";
@@ -27,6 +28,7 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
   const [detailLoaded, setDetailLoaded] = useState(!editing);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const attendanceHoursEditedRef = useRef(false);
 
   useEffect(() => {
     if (!context) return undefined;
@@ -44,7 +46,23 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     setConflict(false);
     setDetailLoaded(!editing);
     setConfirmDelete(false);
-    if (!editing) return () => { active = false; };
+    attendanceHoursEditedRef.current = false;
+    if (!editing) {
+      api.get(`/api/lookups/attendance-hours?employeeId=${encodeURIComponent(context.employee.employeeId)}&date=${encodeURIComponent(context.workDate)}`)
+        .then((attendance) => {
+          if (!active || attendanceHoursEditedRef.current) return;
+          const defaults = attendanceHoursDefaults(attendance);
+          setHcHours(defaults.hcHours);
+          setTcHours(defaults.tcHours);
+        })
+        .catch(() => {
+          if (!active || attendanceHoursEditedRef.current) return;
+          const defaults = attendanceHoursDefaults(null);
+          setHcHours(defaults.hcHours);
+          setTcHours(defaults.tcHours);
+        });
+      return () => { active = false; };
+    }
 
     setLoadingEntry(true);
     api.get(`/api/production-entries/${record.id}`)
@@ -157,8 +175,8 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
             <label className="erp-matrix-field-wide"><span>Ghi chú</span><input className="erp-control" value={note} onChange={(event) => setNote(event.target.value)} /></label>
           </div> : <>
             <div className="erp-matrix-input-grid">
-              <label><span>Giờ HC</span><input className="erp-control" type="number" min="0" step="any" value={hcHours} onChange={(event) => { setHcHours(event.target.value); setError(""); }} /></label>
-              <label><span>Giờ TC</span><input className="erp-control" type="number" min="0" step="any" value={tcHours} onChange={(event) => { setTcHours(event.target.value); setError(""); }} /></label>
+              <label><span>Giờ HC</span><input className="erp-control" type="number" min="0" step="any" value={hcHours} onChange={(event) => { attendanceHoursEditedRef.current = true; setHcHours(event.target.value); setError(""); }} /></label>
+              <label><span>Giờ TC</span><input className="erp-control" type="number" min="0" step="any" value={tcHours} onChange={(event) => { attendanceHoursEditedRef.current = true; setTcHours(event.target.value); setError(""); }} /></label>
               <label className="erp-matrix-field-wide"><span>Tổng sản lượng</span><input className="erp-control" inputMode="decimal" placeholder="Ví dụ: 300+100" value={totalExpression} onChange={(event) => { setTotalExpression(event.target.value); setError(""); }} /></label>
               <label className="erp-matrix-field-wide"><span>Ghi chú</span><input className="erp-control" value={note} onChange={(event) => setNote(event.target.value)} /></label>
             </div>

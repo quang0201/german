@@ -24,4 +24,5 @@ public sealed record ProductionEntryDto(
     decimal TotalQuantity,
     string? Note,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    decimal? HcHours);

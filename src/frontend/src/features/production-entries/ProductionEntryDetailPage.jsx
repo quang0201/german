@@ -81,6 +81,7 @@ export function ProductionEntryDetailPage({ session, params, entryId, onChanged,
         <ReadField label="Tổng" value={entry.totalQuantity} />
         <ReadField label="Ca 1" value={entry.shift1Quantity ?? "—"} />
         <ReadField label="Ca 2" value={entry.shift2Quantity ?? "—"} />
+        <ReadField label="Giờ HC" value={entry.hcHours ?? "—"} />
         <ReadField label="Giờ tăng ca" value={entry.overtimeHours ?? "—"} />
         <ReadField label="Sản lượng TC thực tế" value={entry.overtimeQuantity ?? "—"} />
       </FormSection>

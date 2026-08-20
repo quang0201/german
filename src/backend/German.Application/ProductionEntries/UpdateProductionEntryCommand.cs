@@ -17,4 +17,5 @@ public sealed record UpdateProductionEntryCommand(
     decimal? OvertimeQuantity = null,
     TimeOnly? WorkStart = null,
     TimeOnly? WorkEnd = null,
-    string? Note = null);
+    string? Note = null,
+    decimal? HcHours = null);

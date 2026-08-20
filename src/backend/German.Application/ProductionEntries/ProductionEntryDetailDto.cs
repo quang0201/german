@@ -35,4 +35,5 @@ public sealed record ProductionEntryDetailDto(
     string? SubmittedByEmployeeCode,
     string? SubmittedByEmployeeName,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    decimal? HcHours);

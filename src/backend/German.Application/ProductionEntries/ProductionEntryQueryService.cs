@@ -204,7 +204,8 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
                 submittedEmployee == null ? null : submittedEmployee.EmployeeCode,
                 submittedEmployee == null ? null : submittedEmployee.FullName,
                 current.CreatedAt,
-                current.UpdatedAt))
+                current.UpdatedAt,
+                current.HcHours))
             .SingleOrDefaultAsync(cancellationToken);
 
         return result is null
