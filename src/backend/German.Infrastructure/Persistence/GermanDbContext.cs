@@ -128,6 +128,7 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.Property(x => x.TotalInputQuantity).HasPrecision(18, 2);
             builder.Property(x => x.OvertimeHours).HasPrecision(8, 2);
             builder.Property(x => x.OvertimeQuantity).HasPrecision(18, 2);
+            builder.Property(x => x.HcHours).HasPrecision(8, 2);
             builder.Property(x => x.HcQuantity).HasPrecision(18, 2);
             builder.Property(x => x.TcQuantity).HasPrecision(18, 2);
             builder.Property(x => x.TotalQuantity).HasPrecision(18, 2);

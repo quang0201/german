@@ -154,5 +154,6 @@ public sealed class ProductionEntryBatchDirectService(IGermanDbContext db)
         entry.TotalQuantity,
         entry.Note,
         entry.CreatedAt,
-        entry.UpdatedAt);
+        entry.UpdatedAt,
+        entry.HcHours);
 }

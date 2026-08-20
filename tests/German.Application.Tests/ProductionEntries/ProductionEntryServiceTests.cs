@@ -85,6 +85,28 @@ public sealed class ProductionEntryServiceTests
     }
 
     [TestMethod]
+    public async Task Create_PersistsSubmittedHcHoursForFutureEdits()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee { EmployeeCode = "E001C", FullName = "Quỳnh" };
+        var order = new ProductionOrder { Code = "0417C", ProductName = "Túi", PlannedQuantity = 10000m, Status = ProductionOrderStatus.InProduction };
+        var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 15, Name = "Viền hoàn thiện", Unit = "cái", SortOrder = 15 };
+        db.AddRange(employee, order, operation);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionEntryService(db).CreateAsync(
+            new CurrentActor(Guid.NewGuid(), UserRole.Manager, employee.Id),
+            new CreateProductionEntryCommand(
+                new DateOnly(2026, 8, 11), employee.Id, order.Id, operation.Id,
+                ProductionEntryMode.TotalWithOvertime, TotalInputQuantity: 430m,
+                OvertimeHours: 2m, HcHours: 8m), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(8m, result.Value?.HcHours);
+        Assert.AreEqual(8m, (await db.ProductionEntries.SingleAsync()).HcHours);
+    }
+
+    [TestMethod]
     public async Task Worker_CannotSubmitToDraftOrder()
     {
         await using var db = CreateDbContext();

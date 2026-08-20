@@ -33,6 +33,13 @@ The implementation adds:
 - attendance defaults in the standard production form and matrix quick-entry popup;
 - edit-mode protection so saved production edits continue using their existing edit flow.
 
+### Review follow-up
+
+- `ProductionEntry.HcHours` is now nullable-persisted in migration `20260820072106_PersistProductionEntryHcHours`.
+- Create/update DTOs and detail responses expose the saved HC hours.
+- Editing a saved record uses its persisted HC hours; legacy rows with `NULL` retain the shift-template fallback.
+- `Lưu & nhập tiếp` resets HC and TC together, then reloads attendance defaults for the next entry.
+
 ## Verification
 
 Commands run locally:
@@ -48,6 +55,6 @@ bun run build
 
 Results:
 
-- Frontend: 178 tests, 0 failures, 521 assertions.
-- Backend: 9 Domain + 83 Application + 17 Infrastructure + 55 API tests passed.
+- Frontend: 179 tests, 0 failures, 525 assertions.
+- Backend: 9 Domain + 84 Application + 17 Infrastructure + 55 API tests passed.
 - Frontend production build passed.

@@ -17,5 +17,14 @@ describe("ProductionEntryFormPage attendance defaults", () => {
 
     expect(source).toContain("if (editing)");
     expect(source).toContain("attendanceHoursDefaults");
+    expect(source).toContain("entry?.hcHours");
+  });
+
+  test("resets both hour fields when saving and entering the next record", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryFormPage.jsx"), "utf8");
+
+    expect(source).toContain("setHcHours(\"\")");
+    expect(source).toContain("overtimeHours: entry?.overtimeHours ?? \"\"");
+    expect(source).toContain("setAttendanceLookupVersion");
   });
 });

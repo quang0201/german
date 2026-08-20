@@ -81,6 +81,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [serverResult, setServerResult] = useState(null);
+  const [attendanceLookupVersion, setAttendanceLookupVersion] = useState(0);
   const intentRef = useRef("save");
   const attendanceHoursEditedRef = useRef(false);
   const toast = useToast();
@@ -136,6 +137,10 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
     let active = true;
     attendanceHoursEditedRef.current = false;
     if (editing) {
+      if (entry?.hcHours !== null && entry?.hcHours !== undefined) {
+        setHcHours(String(entry.hcHours));
+        return () => { active = false; };
+      }
       api.get(`/api/lookups/hc-hours?employeeId=${encodeURIComponent(form.employeeId)}&date=${encodeURIComponent(form.workDate)}`)
         .then((result) => active && setHcHours(result.hcHours))
         .catch(() => active && setHcHours(""));
@@ -161,7 +166,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
         setForm((current) => ({ ...current, overtimeHours: defaults.tcHours }));
       });
     return () => { active = false; };
-  }, [editing, form.employeeId, form.workDate]);
+  }, [editing, form.employeeId, form.workDate, attendanceLookupVersion]);
 
   const preview = useMemo(() => {
     try {
@@ -210,6 +215,9 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
       toast.success(editing ? "Đã cập nhật sản lượng." : "Đã lưu sản lượng.");
       if (intentRef.current === "continue" && !editing) {
         setForm((current) => ({ ...initialState(null, session), workDate: current.workDate, employeeId: current.employeeId, orderId: current.orderId, operationId: current.operationId }));
+        setHcHours("");
+        setAttendanceLookupVersion((current) => current + 1);
+        attendanceHoursEditedRef.current = false;
         setServerResult(null);
       } else if (onSaved) onSaved(result);
       else if (!editing) navigate("/production");

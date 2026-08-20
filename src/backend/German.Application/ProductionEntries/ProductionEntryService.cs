@@ -80,6 +80,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             TotalInputQuantity = command.TotalInputQuantity,
             OvertimeHours = command.OvertimeHours,
             OvertimeQuantity = command.OvertimeQuantity,
+            HcHours = command.HcHours,
             WorkStart = command.WorkStart,
             WorkEnd = command.WorkEnd,
             HcQuantity = calculation.Value!.Hc,
@@ -166,6 +167,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         entry.TotalInputQuantity = command.TotalInputQuantity;
         entry.OvertimeHours = command.OvertimeHours;
         entry.OvertimeQuantity = command.OvertimeQuantity;
+        entry.HcHours = command.HcHours;
         entry.WorkStart = command.WorkStart;
         entry.WorkEnd = command.WorkEnd;
         entry.HcQuantity = calculation.Value!.Hc;
@@ -445,5 +447,6 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             entry.TotalQuantity,
             entry.Note,
             entry.CreatedAt,
-            entry.UpdatedAt);
+            entry.UpdatedAt,
+            entry.HcHours);
 }
