@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
@@ -33,6 +35,14 @@ const detail = {
 };
 
 describe("production matrix quick entry guards", () => {
+  test("loads attendance hours for a new hour-split entry without changing edit mode", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionMatrixQuickEntryDialog.jsx"), "utf8");
+
+    expect(source).toContain("/api/lookups/attendance-hours");
+    expect(source).toContain("attendanceHoursDefaults");
+    expect(source).toContain("attendanceHoursEditedRef");
+  });
+
   test("accepts detail only when snapshot version, mode, and matrix key still match", () => {
     expect(isQuickEntryDetailCompatible({ record, context, detail })).toBe(true);
     expect(isQuickEntryDetailCompatible({ record, context, detail: { ...detail, version: 4 } })).toBe(false);

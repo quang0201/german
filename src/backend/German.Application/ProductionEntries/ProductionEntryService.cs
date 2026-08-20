@@ -57,6 +57,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             command.OvertimeQuantity,
             command.WorkStart,
             command.WorkEnd,
+            command.HcHours,
             cancellationToken);
 
         if (!calculation.IsSuccess)
@@ -143,6 +144,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
             command.OvertimeQuantity,
             command.WorkStart,
             command.WorkEnd,
+            command.HcHours,
             cancellationToken);
 
         if (!calculation.IsSuccess)
@@ -306,6 +308,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         decimal? overtimeQuantity,
         TimeOnly? workStart,
         TimeOnly? workEnd,
+        decimal? hcHoursOverride,
         CancellationToken cancellationToken)
     {
         if (workStart.HasValue && workEnd.HasValue && workEnd.Value <= workStart.Value)
@@ -315,16 +318,28 @@ public sealed class ProductionEntryService(IGermanDbContext db)
                 "Giờ kết thúc phải sau giờ bắt đầu.");
         }
 
-        var hcHours = 0m;
+        var hcHours = hcHoursOverride ?? 0m;
         if (NeedsConfiguredHcHours(entryMode, overtimeHours, overtimeQuantity))
         {
-            var hoursResult = await ResolveHcHoursAsync(employeeId, workDate, cancellationToken);
-            if (!hoursResult.IsSuccess)
+            if (hcHoursOverride.HasValue)
             {
-                return AppResult<ProductionCalculationResult>.Failure(hoursResult.Error!.Code, hoursResult.Error.Message);
+                if (hcHours <= 0m)
+                {
+                    return AppResult<ProductionCalculationResult>.Failure(
+                        "production_entry.invalid_shift",
+                        "Giờ HC phải lớn hơn 0 khi có giờ TC.");
+                }
             }
+            else
+            {
+                var hoursResult = await ResolveHcHoursAsync(employeeId, workDate, cancellationToken);
+                if (!hoursResult.IsSuccess)
+                {
+                    return AppResult<ProductionCalculationResult>.Failure(hoursResult.Error!.Code, hoursResult.Error.Message);
+                }
 
-            hcHours = hoursResult.Value;
+                hcHours = hoursResult.Value;
+            }
         }
 
         try
