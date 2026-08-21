@@ -17,8 +17,14 @@ public sealed class AttendanceHoursQueryService(IGermanDbContext db)
 
         if (day is null)
         {
-            return new AttendanceHoursDto(employeeId, workDate, false, 0m, 0m, 0m, 0m);
+            return new AttendanceHoursDto(employeeId, workDate, false, 0m, 0m, 0m, 0m, []);
         }
+
+        var workedShifts = day.Shifts
+            .Where(x => x.ValueKind == AttendanceShiftValueKind.Hours)
+            .OrderBy(x => x.SlotNumber)
+            .Select(x => new AttendanceShiftHoursDto(x.SlotNumber, x.ShiftName, x.WorkedHours ?? 0m))
+            .ToList();
 
         return new AttendanceHoursDto(
             employeeId,
@@ -27,6 +33,7 @@ public sealed class AttendanceHoursQueryService(IGermanDbContext db)
             day.Shifts.Where(x => x.ValueKind == AttendanceShiftValueKind.Hours).Sum(x => x.WorkedHours ?? 0m),
             day.OvertimeHours,
             day.Shifts.Where(x => x.ValueKind == AttendanceShiftValueKind.PaidLeave).Sum(x => x.ScheduledHours),
-            day.Shifts.Where(x => x.ValueKind == AttendanceShiftValueKind.SickLeave).Sum(x => x.ScheduledHours));
+            day.Shifts.Where(x => x.ValueKind == AttendanceShiftValueKind.SickLeave).Sum(x => x.ScheduledHours),
+            workedShifts);
     }
 }
