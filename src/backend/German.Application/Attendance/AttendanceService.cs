@@ -94,6 +94,7 @@ public sealed class AttendanceService(IGermanDbContext db)
                 employee.Id,
                 employee.EmployeeCode,
                 employee.FullName,
+                employee.IsActive,
                 days,
                 monthlyTotals.GetValueOrDefault(employee.Id, AttendanceTotalsDto.Empty)));
         }
