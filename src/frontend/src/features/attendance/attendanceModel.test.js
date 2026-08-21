@@ -1,7 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
+import { activeAttendanceEmployees, attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
 
 describe("attendance model", () => {
+  test("excludes inactive employees from the attendance selector", () => {
+    expect(activeAttendanceEmployees([
+      { employeeId: "active", isActive: true },
+      { employeeId: "inactive", isActive: false },
+      { employeeId: "legacy", isActive: undefined },
+    ]).map((employee) => employee.employeeId)).toEqual(["active", "legacy"]);
+  });
+
   test("parses hours, leave codes and blank cells without accepting X", () => {
     expect(parseAttendanceCell("4")).toEqual({ kind: "Hours", workedHours: 4 });
     expect(parseAttendanceCell("3,5")).toEqual({ kind: "Hours", workedHours: 3.5 });

@@ -275,6 +275,7 @@ public sealed class AttendanceApiTests
             $"/api/attendance/monthly?year=2026&month=8&employeeId={employeeId}&dayFrom=11&dayCount=10");
         var employee = response.GetProperty("employees")[0];
 
+        Assert.IsTrue(employee.GetProperty("isActive").GetBoolean());
         Assert.AreEqual(10, employee.GetProperty("days").GetArrayLength());
         Assert.AreEqual(11, employee.GetProperty("days")[0].GetProperty("workDate").GetDateTime().Day);
         Assert.AreEqual(20, employee.GetProperty("days")[9].GetProperty("workDate").GetDateTime().Day);
