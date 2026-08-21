@@ -2,14 +2,20 @@ import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate.js";
-import { buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
+import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
 import "./EmployeeDialog.css";
 
-export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], shiftLoading = false, loading = false, error = "", onClose, onSubmit, onChange }) {
+export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], shiftLoading = false, loading = false, assignmentLoading = false, error = "", assignmentError = "", onClose, onSubmit, onAssignShift, onChange }) {
   const [draft, setDraft] = useState(() => mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));
+  const [assignmentDraft, setAssignmentDraft] = useState({ shiftTemplateId: "", effectiveFrom: "" });
+  const [assignmentValidationError, setAssignmentValidationError] = useState("");
 
   useEffect(() => {
-    if (open) setDraft(mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));
+    if (open) {
+      setDraft(mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));
+      setAssignmentDraft({ shiftTemplateId: "", effectiveFrom: "" });
+      setAssignmentValidationError("");
+    }
   }, [open, employee, mode]);
 
   useEffect(() => {
@@ -31,6 +37,16 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
   function submit(event) {
     event.preventDefault();
     onSubmit?.(mode === "create" ? buildEmployeeCreatePayload(draft) : buildEmployeeUpdatePayload(draft));
+  }
+
+  async function assignShift() {
+    if (!assignmentDraft.shiftTemplateId || !assignmentDraft.effectiveFrom) {
+      setAssignmentValidationError("Hãy chọn bộ ca và ngày hiệu lực.");
+      return;
+    }
+    setAssignmentValidationError("");
+    const succeeded = await onAssignShift?.(buildEmployeeShiftAssignmentPayload(assignmentDraft));
+    if (succeeded !== false) setAssignmentDraft({ shiftTemplateId: "", effectiveFrom: "" });
   }
 
   return (
@@ -59,7 +75,32 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
               <Field label="Ngày hiệu lực" required>
                 <input className="erp-control" type="date" required value={draft.effectiveFrom} onChange={(event) => update("effectiveFrom", event.target.value)} />
               </Field>
-            </> : <label className="erp-employee-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>}
+            </> : <>
+              <label className="erp-employee-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>
+              {onAssignShift && <div className="erp-employee-shift-section">
+                <div className="erp-employee-shift-section-heading">
+                  <div>
+                    <h3>Điều chỉnh bộ ca</h3>
+                    <p>Lịch sử ca cũ được giữ nguyên. Bộ ca mới áp dụng từ ngày bạn chọn.</p>
+                  </div>
+                </div>
+                {assignmentError && <Alert variant="error" title="Không thể gán bộ ca.">{assignmentError}</Alert>}
+                {assignmentValidationError && <Alert variant="error" title="Thiếu thông tin bộ ca.">{assignmentValidationError}</Alert>}
+                <div className="erp-employee-shift-fields">
+                  <Field label="Bộ ca mới" required>
+                    <select className="erp-control" value={assignmentDraft.shiftTemplateId} disabled={shiftLoading || assignmentLoading || !draft.isActive} onChange={(event) => { setAssignmentDraft((current) => ({ ...current, shiftTemplateId: event.target.value })); setAssignmentValidationError(""); }}>
+                      <option value="">{shiftLoading ? "Đang tải bộ ca..." : "Chọn bộ ca"}</option>
+                      {shifts.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Ngày hiệu lực" required>
+                    <input className="erp-control" type="date" value={assignmentDraft.effectiveFrom} disabled={!assignmentDraft.shiftTemplateId || assignmentLoading || !draft.isActive} onChange={(event) => { setAssignmentDraft((current) => ({ ...current, effectiveFrom: event.target.value })); setAssignmentValidationError(""); }} />
+                  </Field>
+                </div>
+                <button type="button" className="erp-button erp-button-secondary" disabled={assignmentLoading || shiftLoading || !draft.isActive} onClick={assignShift}>{assignmentLoading ? "Đang gán ca..." : "Gán bộ ca mới"}</button>
+                {!draft.isActive && <p className="erp-field-hint">Nhân viên đã tắt không thể gán ca mới.</p>}
+              </div>}
+            </>}
           </div>
           <div className="erp-dialog-actions">
             <button type="button" className="erp-button erp-button-secondary" onClick={onClose} disabled={loading}>Hủy</button>

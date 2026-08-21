@@ -73,6 +73,25 @@ public sealed class EmployeeServiceTests
         Assert.IsFalse((await db.Employees.SingleAsync()).IsActive);
     }
 
+    [TestMethod]
+    public async Task AssignShiftRejectsInactiveEmployee()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E005", FullName = "Đã nghỉ", IsActive = false };
+        var shift = new ShiftTemplate { Name = "Ca hành chính", IsActive = true };
+        db.AddRange(employee, shift);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).AssignShiftAsync(
+            employee.Id,
+            new AssignShiftCommand(shift.Id, new DateOnly(2026, 8, 21)),
+            CancellationToken.None);
+
+        Assert.IsFalse(result.IsSuccess);
+        Assert.AreEqual("employee.inactive", result.Error?.Code);
+        Assert.AreEqual(0, await db.EmployeeShiftAssignments.CountAsync());
+    }
+
     private static GermanDbContext CreateDb() => new(
         new DbContextOptionsBuilder<GermanDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
