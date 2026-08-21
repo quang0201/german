@@ -66,6 +66,7 @@ public sealed class ProductionEntryBatchDirectService(IGermanDbContext db)
             .Where(item => item.WorkDate == command.WorkDate
                 && item.EmployeeId == command.EmployeeId
                 && item.ProductionOrderId == command.ProductionOrderId
+                && (item.HcQuantity != 0m || item.TcQuantity != 0m || item.TotalQuantity != 0m)
                 && operationIds.Contains(item.ProductionOperationId))
             .Select(item => item.ProductionOperationId)
             .Distinct()

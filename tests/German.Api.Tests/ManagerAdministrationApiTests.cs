@@ -323,6 +323,48 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Manager_CanDeleteOperationAndItsProductionEntries()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid orderId = Guid.Empty;
+        Guid operationId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-delete-operation", "M005", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+            var account = await db.UserAccounts.SingleAsync(x => x.Username == "manager-delete-operation");
+            var order = new ProductionOrder { Code = "0417", ProductName = "Áo xóa", PlannedQuantity = 100m };
+            var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 567, Name = "CĐ567", Unit = "cái", SortOrder = 567 };
+            db.AddRange(order, operation, new ProductionEntry
+            {
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EmployeeId = account.EmployeeId!.Value,
+                SubmittedByUserId = account.Id,
+                WorkDate = new DateOnly(2026, 8, 15),
+            });
+            await db.SaveChangesAsync();
+            orderId = order.Id;
+            operationId = operation.Id;
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-delete-operation", "secret");
+
+        var response = await client.PostAsync("/api/production-orders/0417/operations/567/cleanup", null);
+
+        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            Assert.IsNotNull(await db.ProductionOrders.FindAsync(orderId));
+            Assert.IsNull(await db.ProductionOperations.FindAsync(operationId));
+            Assert.AreEqual(0, await db.ProductionEntries.IgnoreQueryFilters().CountAsync(x => x.ProductionOperationId == operationId));
+        });
+    }
+
+    [TestMethod]
     public async Task Manager_CanCreateShiftAndAssignEmployee()
     {
         await using var factory = new GermanApiFactory();

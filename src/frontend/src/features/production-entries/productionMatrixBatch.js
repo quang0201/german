@@ -20,6 +20,33 @@ export function isCurrentAttendanceRequest(
     && requestedDate === currentDate;
 }
 
+export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
+  const hasAttendance = Boolean(attendance?.hasAttendance);
+  const incomingShifts = hasAttendance ? (attendance.shifts ?? []) : [];
+  const dirtyShifts = dirty.shifts ?? {};
+
+  return {
+    hcHours: dirty.hcHours
+      ? current.hcHours
+      : (hasAttendance ? String(attendance.regularHours ?? "") : ""),
+    tcHours: dirty.tcHours
+      ? current.tcHours
+      : (hasAttendance ? String(attendance.overtimeHours ?? "") : ""),
+    shifts: incomingShifts.map((shift) => {
+      const slotKey = String(shift.slotNumber);
+      const currentShift = (current.shifts ?? []).find(
+        (item) => String(item.slotNumber) === slotKey,
+      );
+      return {
+        ...shift,
+        workedHours: dirtyShifts[slotKey]
+          ? currentShift?.workedHours ?? ""
+          : String(shift.workedHours ?? ""),
+      };
+    }),
+  };
+}
+
 export function resolveBatchEntryQuantities({ mode, draft, hourDraft }) {
   if (mode === "direct") {
     return {

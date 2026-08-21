@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
-import { isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 const INPUT_MODES = [
   { value: "direct", label: "Nhập trực tiếp" },
@@ -15,6 +15,13 @@ const emptyOperationDraft = () => ({ hc: "", tc: "", total: "", note: "" });
 export function firstActiveEmployeeId(employees = []) {
   const employee = employees.find((item) => item.isActive !== false);
   return employee?.id ? String(employee.id) : "";
+}
+
+export function initialBatchEmployeeId(employees = [], preferredEmployeeId = "") {
+  if (employees.some((item) => item.isActive !== false && String(item.id) === String(preferredEmployeeId))) {
+    return String(preferredEmployeeId);
+  }
+  return firstActiveEmployeeId(employees);
 }
 
 export function initialBatchOrderId(orders = [], preferredOrderId = "") {
@@ -36,7 +43,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const orderIdRef = useRef(orderId);
   const dayRef = useRef(day);
   const employeeIdRef = useRef(employeeId);
-  const attendanceEditedRef = useRef(false);
+  const attendanceDirtyRef = useRef({ hcHours: false, tcHours: false, shifts: {} });
   orderIdRef.current = orderId;
   dayRef.current = day;
   employeeIdRef.current = employeeId;
@@ -46,7 +53,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     if (!day) return undefined;
     let active = true;
     const requestedDay = day;
-    setEmployeeId(firstActiveEmployeeId(employees));
+    setEmployeeId(initialBatchEmployeeId(employees, requestedDay.preferredEmployeeId));
     setOrderId("");
     setOrders([]);
     setOperations([]);
@@ -56,10 +63,10 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setError("");
     api.get("/api/lookups/production-orders/active")
       .then((items) => {
-        if (!isCurrentBatchOrdersRequest(active, requestedDay, dayRef.current)) return;
-        setOrders(items);
-        setOrderId(initialBatchOrderId(items, requestedDay.preferredOrderId));
-      })
+      if (!isCurrentBatchOrdersRequest(active, requestedDay, dayRef.current)) return;
+      setOrders(items);
+      setOrderId(initialBatchOrderId(items, requestedDay.preferredOrderId));
+    })
       .catch((requestError) => {
         if (isCurrentBatchOrdersRequest(active, requestedDay, dayRef.current)) setError(requestError.message || "Không thể tải Mã SX.");
       });
@@ -96,24 +103,16 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     let active = true;
     const requestedEmployeeId = employeeId;
     const requestedDate = day.isoDate;
-    attendanceEditedRef.current = false;
+    attendanceDirtyRef.current = { hcHours: false, tcHours: false, shifts: {} };
     setHourDraft(emptyHourDraft());
     setAttendanceLoading(true);
     api.get(`/api/lookups/attendance-hours?employeeId=${encodeURIComponent(requestedEmployeeId)}&date=${encodeURIComponent(requestedDate)}`)
       .then((attendance) => {
         if (!isCurrentAttendanceRequest(active, requestedEmployeeId, requestedDate, employeeIdRef.current, dayRef.current?.isoDate)) return;
-        if (attendanceEditedRef.current) return;
-        setHourDraft({
-          hcHours: attendance.hasAttendance ? String(attendance.regularHours ?? "") : "",
-          tcHours: attendance.hasAttendance ? String(attendance.overtimeHours ?? "") : "",
-          shifts: attendance.hasAttendance
-            ? (attendance.shifts ?? []).map((shift) => ({ ...shift, workedHours: String(shift.workedHours ?? "") }))
-            : [],
-        });
+        setHourDraft((current) => mergeAttendanceHourDraft(current, attendance, attendanceDirtyRef.current));
       })
       .catch((requestError) => {
         if (isCurrentAttendanceRequest(active, requestedEmployeeId, requestedDate, employeeIdRef.current, dayRef.current?.isoDate)) {
-          if (!attendanceEditedRef.current) setHourDraft(emptyHourDraft());
           setError(requestError.message || "Không thể tải giờ chấm công.");
         }
       })
@@ -138,13 +137,13 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   }
 
   function changeHour(key, value) {
-    attendanceEditedRef.current = true;
+    attendanceDirtyRef.current[key] = true;
     setHourDraft((current) => ({ ...current, [key]: value }));
     setError("");
   }
 
   function changeShiftHour(slotNumber, value) {
-    attendanceEditedRef.current = true;
+    attendanceDirtyRef.current.shifts[String(slotNumber)] = true;
     setHourDraft((current) => ({
       ...current,
       shifts: current.shifts.map((shift) => String(shift.slotNumber) === String(slotNumber) ? { ...shift, workedHours: value } : shift),

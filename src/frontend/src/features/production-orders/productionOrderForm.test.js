@@ -1,5 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
+import { resolve } from "node:path";
 import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
+
+const orderPageSource = readFileSync(resolve(import.meta.dir, "ProductionOrderListPage.jsx"), "utf8");
 
 describe("production order form", () => {
   test("builds a create payload with operations and fixed prices", () => {
@@ -59,5 +63,12 @@ describe("production order form", () => {
     expect(shouldResetProductionOrderCreateDraft("detail", "create")).toBe(true);
     expect(shouldResetProductionOrderCreateDraft("create", "create")).toBe(false);
     expect(shouldResetProductionOrderCreateDraft("create", "list")).toBe(false);
+  });
+
+  test("offers confirmed deletion for an operation and its related production data", () => {
+    expect(orderPageSource).toContain("api.post(\"/api/production-orders/0417/operations/567/cleanup\")");
+    expect(orderPageSource).toContain('selected.code === "0417" && item.operationNumber === 567');
+    expect(orderPageSource).toContain("Xóa dữ liệu CĐ567 của Mã SX 0417");
+    expect(orderPageSource).toContain("Xác nhận xóa");
   });
 });

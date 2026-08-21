@@ -31,6 +31,7 @@ public sealed class ProductionEntryQueryService(IGermanDbContext db, TimeProvide
             join operation in db.ProductionOperations.AsNoTracking() on entry.ProductionOperationId equals operation.Id
             where entry.WorkDate >= normalizedQuery.FromDate
                 && entry.WorkDate <= normalizedQuery.UntilDate
+                && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (!request.EmployeeId.HasValue || entry.EmployeeId == request.EmployeeId.Value)
                 && (!request.OrderId.HasValue || entry.ProductionOrderId == request.OrderId.Value)
                 && (!request.OperationId.HasValue || entry.ProductionOperationId == request.OperationId.Value)

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { isCurrentAttendanceRequest, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { isCurrentAttendanceRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("production matrix batch attendance", () => {
   test("ignores attendance responses for an obsolete employee or day", () => {
@@ -34,5 +34,52 @@ describe("production matrix batch attendance", () => {
       .toMatchObject({ hc: 800, tc: 200 });
     expect(resolveBatchEntryQuantities({ mode: "attendance-shifts", draft: { total: "1000" }, hourDraft }))
       .toMatchObject({ hc: 800, tc: 200 });
+  });
+
+  test("keeps edited attendance fields while applying returned shift structure", () => {
+    const merged = mergeAttendanceHourDraft(
+      {
+        hcHours: "",
+        tcHours: "2",
+        shifts: [],
+      },
+      {
+        hasAttendance: true,
+        regularHours: 8,
+        overtimeHours: 1,
+        shifts: [
+          { slotNumber: 1, shiftName: "Ca 1", workedHours: 4 },
+          { slotNumber: 2, shiftName: "Ca 2", workedHours: 4 },
+        ],
+      },
+      { hcHours: false, tcHours: true, shifts: {} },
+    );
+
+    expect(merged.hcHours).toBe("8");
+    expect(merged.tcHours).toBe("2");
+    expect(merged.shifts).toHaveLength(2);
+    expect(merged.shifts.map((shift) => shift.workedHours)).toEqual(["4", "4"]);
+  });
+
+  test("keeps an edited shift value while loading untouched shifts", () => {
+    const merged = mergeAttendanceHourDraft(
+      {
+        hcHours: "8",
+        tcHours: "1",
+        shifts: [{ slotNumber: 1, workedHours: "6" }],
+      },
+      {
+        hasAttendance: true,
+        regularHours: 8,
+        overtimeHours: 1,
+        shifts: [
+          { slotNumber: 1, shiftName: "Ca 1", workedHours: 4 },
+          { slotNumber: 2, shiftName: "Ca 2", workedHours: 4 },
+        ],
+      },
+      { hcHours: false, tcHours: false, shifts: { "1": true } },
+    );
+
+    expect(merged.shifts.map((shift) => shift.workedHours)).toEqual(["6", "4"]);
   });
 });

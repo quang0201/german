@@ -111,6 +111,22 @@ public sealed class ProductionReportServiceTests
     }
 
     [TestMethod]
+    public async Task BuildAsync_ExcludesEntriesWithNoProduction()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        await AddEntryAsync(db, seed.Employee, seed.Order, seed.Operation, new DateOnly(2026, 8, 13), 0m, 0m);
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 13), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(1, result.Value!.Rows.Count);
+        Assert.AreEqual(new DateOnly(2026, 8, 12), result.Value.Rows[0].WorkDate);
+    }
+
+    [TestMethod]
     public async Task BuildAsync_AppliesEmployeeOrderAndOperationFilters()
     {
         await using var db = CreateDb();

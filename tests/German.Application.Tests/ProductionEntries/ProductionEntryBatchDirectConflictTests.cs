@@ -31,4 +31,38 @@ public sealed class ProductionEntryBatchDirectConflictTests
         Assert.AreEqual("production_entry.batch_conflict", result.Error?.Code);
         Assert.AreEqual(1, await db.ProductionEntries.CountAsync());
     }
+
+    [TestMethod]
+    public async Task ZeroEntryDoesNotConflictWithWholeBatch()
+    {
+        await using var db = new GermanDbContext(new DbContextOptionsBuilder<GermanDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var employee = new Employee { EmployeeCode = "E902", FullName = "Manager" };
+        var order = new ProductionOrder { Code = "O902", ProductName = "SP", PlannedQuantity = 100m, Status = ProductionOrderStatus.InProduction };
+        var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 6, Name = "CĐ6", Unit = "cái", SortOrder = 6 };
+        db.AddRange(employee, order, operation);
+        db.ProductionEntries.Add(new ProductionEntry
+        {
+            WorkDate = new DateOnly(2026, 8, 27),
+            EmployeeId = employee.Id,
+            ProductionOrderId = order.Id,
+            ProductionOperationId = operation.Id,
+            EntryMode = ProductionEntryMode.Direct,
+            DirectHcQuantity = 0m,
+            DirectTcQuantity = 0m,
+            HcQuantity = 0m,
+            TcQuantity = 0m,
+            TotalQuantity = 0m,
+            SubmittedByUserId = Guid.NewGuid()
+        });
+        await db.SaveChangesAsync();
+
+        var command = new CreateProductionEntryBatchDirectCommand(
+            new DateOnly(2026, 8, 27), employee.Id, order.Id,
+            new[] { new CreateProductionEntryBatchDirectItem(operation.Id, 100m, 10m, null) });
+        var result = await new ProductionEntryBatchDirectService(db).CreateAsync(
+            new CurrentActor(Guid.NewGuid(), UserRole.Manager, employee.Id), command, CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(2, await db.ProductionEntries.CountAsync());
+    }
 }

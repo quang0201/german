@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
 
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
@@ -7,9 +7,22 @@ const cellsByDate = (operation) => new Map((operation.cells ?? []).map((cell) =>
 
 export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", excludeSundays = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick }) {
   const axis = useMemo(() => monthDateAxis(monthKey, excludeSundays), [monthKey, excludeSundays]);
+  const scrollRef = useRef(null);
+  const scrollLeftRef = useRef(0);
   const orders = data?.orders ?? [];
   const availableOrders = data?.availableOrders ?? [];
   const totalColumns = 2 + axis.length * 2 + 3;
+
+  useEffect(() => {
+    scrollLeftRef.current = 0;
+  }, [monthKey, selectedOrderId]);
+
+  useLayoutEffect(() => {
+    if (!loading && !error && scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollLeftRef.current;
+    }
+  }, [loading, error, monthKey, selectedOrderId, excludeSundays]);
+
   return (
     <section className="erp-month-matrix-section" aria-label={`Sản lượng ${monthLabel(monthKey)}`}>
       <div className="erp-month-matrix-toolbar">
@@ -20,7 +33,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
       </div>
       {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
       {loading && <div className="erp-table-state">Đang tải sản lượng tháng...</div>}
-      {!loading && !error && <div className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => <th key={day.isoDate} className="erp-month-day-head" colSpan="2"><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>)}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
+      {!loading && !error && <div ref={scrollRef} onScroll={(event) => { scrollLeftRef.current = event.currentTarget.scrollLeft; }} className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => <th key={day.isoDate} className="erp-month-day-head" colSpan="2"><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>)}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
         {orders.length === 0 && <tr><td colSpan={totalColumns} className="erp-table-state">Chưa có sản lượng. Bấm vào ngày phía trên để nhập nhanh nhiều công đoạn.</td></tr>}
         {orders.flatMap((order) => {
           const rows = [<tr className="erp-month-order-row" key={`order-${order.orderId}`}><th colSpan={totalColumns}><strong>Mã SX: {order.orderCode}</strong><span>{order.productName}</span></th></tr>];

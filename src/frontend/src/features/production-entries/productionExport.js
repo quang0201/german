@@ -68,3 +68,16 @@ export function createProductionExportPayload(draft) {
     excludeSundays: Boolean(draft.excludeSundays),
   };
 }
+
+function monthYear(isoDate) {
+  const [year, month] = String(isoDate).split("-");
+  return /^\d{4}$/.test(year) && /^\d{2}$/.test(month) ? `${month}-${year}` : "";
+}
+
+export function productionExportFileName(fromDate, untilDate, prefix = "san-luong") {
+  const from = monthYear(fromDate);
+  const until = monthYear(untilDate);
+  if (!from || !until) return `${prefix}.xlsx`;
+  const period = from === until ? from : `${from}_${until}`;
+  return `${prefix}_${period}.xlsx`;
+}

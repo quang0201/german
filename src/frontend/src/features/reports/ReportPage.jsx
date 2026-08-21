@@ -4,6 +4,7 @@ import { Field } from "../../components/erp/Field.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
+import { productionExportFileName } from "../production-entries/productionExport.js";
 
 function localToday() { return new Date().toISOString().slice(0, 10); }
 
@@ -31,7 +32,7 @@ export function ReportPage() {
     }
     setExporting(true);
     try {
-      await api.download(buildProductionReportExportUrl(fromDate, untilDate), "bao-cao-san-luong.xlsx");
+      await api.download(buildProductionReportExportUrl(fromDate, untilDate), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
       toast.success("Đã tải báo cáo sản lượng.");
     } catch (requestError) {
       setError(requestError.message || "Không thể xuất báo cáo.");
