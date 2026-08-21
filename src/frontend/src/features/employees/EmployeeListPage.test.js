@@ -31,4 +31,12 @@ describe("EmployeeListPage", () => {
     expect(source).toContain("<ConfirmDialog");
     expect(source).not.toContain("window.confirm");
   });
+
+  test("offers shift reassignment from the employee edit flow", () => {
+    const source = readFileSync(resolve(import.meta.dir, "EmployeeListPage.jsx"), "utf8");
+
+    expect(source).toContain('api.post(`/api/employees/${editingEmployee.id}/shift-assignments`');
+    expect(source).toContain("onAssignShift");
+    expect(source).toContain("assignmentSaving");
+  });
 });
