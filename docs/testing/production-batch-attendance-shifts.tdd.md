@@ -28,6 +28,12 @@ Implemented:
 - Shared multi-bucket allocation based on the existing parser and rounding helper.
 - Direct batch payload conversion with `HC + TC = Total` preservation.
 
+### Review follow-up after syncing `dev`
+
+- Batch dialogs preserve the employee selected by the active matrix filter through `preferredEmployeeId`.
+- Attendance responses apply the returned dynamic shift structure even when loading overlaps with user input.
+- HC, TC, and each shift have independent dirty markers, so only untouched fields are autofilled.
+
 ## Verification
 
 Relevant tests run:
@@ -39,7 +45,7 @@ dotnet test tests/German.Api.Tests/German.Api.Tests.csproj --filter "FullyQualif
 
 Targeted results:
 
-- Frontend targeted batch/hour tests: 19 pass, 0 failures, 61 assertions.
+- Frontend targeted batch/hour tests: 22 pass, 0 failures, 69 assertions.
 - Backend targeted attendance API tests: 2 pass, 0 failures.
 
 Full verification after implementation:
@@ -53,7 +59,7 @@ dotnet test tests/German.Api.Tests/German.Api.Tests.csproj --no-restore
 bun run build
 ```
 
-- Frontend: 185 tests, 0 failures, 545 assertions.
-- Backend: 9 Domain + 84 Application + 17 Infrastructure + 56 API tests passed.
+- Frontend: 192 tests, 0 failures, 563 assertions.
+- Backend: 9 Domain + 89 Application + 17 Infrastructure + 57 API tests passed.
 - Frontend production build passed.
 - Docker remains covered by the PR CI workflow.
