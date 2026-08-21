@@ -107,9 +107,15 @@ public sealed class EmployeeService(IGermanDbContext db)
         AssignShiftCommand command,
         CancellationToken cancellationToken)
     {
-        if (!await db.Employees.AnyAsync(x => x.Id == employeeId, cancellationToken))
+        var employee = await db.Employees.FirstOrDefaultAsync(x => x.Id == employeeId, cancellationToken);
+        if (employee is null)
         {
             return AppResult<EmployeeShiftAssignment>.Failure("employee.not_found", "Không tìm thấy nhân viên.");
+        }
+
+        if (!employee.IsActive)
+        {
+            return AppResult<EmployeeShiftAssignment>.Failure("employee.inactive", "Nhân viên đã được tắt và không thể gán bộ ca mới.");
         }
 
         if (!await db.ShiftTemplates.AnyAsync(x => x.Id == command.ShiftTemplateId && x.IsActive, cancellationToken))
