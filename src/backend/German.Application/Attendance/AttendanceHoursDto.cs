@@ -1,5 +1,10 @@
 namespace German.Application.Attendance;
 
+public sealed record AttendanceShiftHoursDto(
+    int SlotNumber,
+    string ShiftName,
+    decimal WorkedHours);
+
 public sealed record AttendanceHoursDto(
     Guid EmployeeId,
     DateOnly WorkDate,
@@ -7,4 +12,5 @@ public sealed record AttendanceHoursDto(
     decimal RegularHours,
     decimal OvertimeHours,
     decimal PaidLeaveHours,
-    decimal SickLeaveHours);
+    decimal SickLeaveHours,
+    IReadOnlyList<AttendanceShiftHoursDto> Shifts);

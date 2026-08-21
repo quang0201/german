@@ -134,6 +134,67 @@ public sealed class AttendanceApiTests
     }
 
     [TestMethod]
+    public async Task AttendanceHoursLookup_ReturnsOrderedWorkedShifts()
+    {
+        await using var factory = new GermanApiFactory();
+        var employeeId = await SeedUsersAsync(factory);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var day = new AttendanceDay
+            {
+                EmployeeId = employeeId,
+                WorkDate = new DateOnly(2026, 8, 17),
+                OvertimeHours = 2m
+            };
+            day.Shifts.AddRange(
+                new AttendanceShiftEntry
+                {
+                    AttendanceDayId = day.Id,
+                    SlotNumber = 2,
+                    ShiftName = "Ca 2",
+                    ScheduledHours = 4m,
+                    ValueKind = AttendanceShiftValueKind.Hours,
+                    WorkedHours = 3.5m
+                },
+                new AttendanceShiftEntry
+                {
+                    AttendanceDayId = day.Id,
+                    SlotNumber = 1,
+                    ShiftName = "Ca 1",
+                    ScheduledHours = 4m,
+                    ValueKind = AttendanceShiftValueKind.Hours,
+                    WorkedHours = 4m
+                },
+                new AttendanceShiftEntry
+                {
+                    AttendanceDayId = day.Id,
+                    SlotNumber = 3,
+                    ShiftName = "Nghỉ phép",
+                    ScheduledHours = 4m,
+                    ValueKind = AttendanceShiftValueKind.PaidLeave,
+                    WorkedHours = null
+                });
+            db.AttendanceDays.Add(day);
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "attendance-manager", "secret");
+
+        var response = await client.GetFromJsonAsync<JsonElement>(
+            $"/api/lookups/attendance-hours?employeeId={employeeId}&date=2026-08-17");
+        var shifts = response.GetProperty("shifts");
+
+        Assert.AreEqual(2, shifts.GetArrayLength());
+        Assert.AreEqual(1, shifts[0].GetProperty("slotNumber").GetInt32());
+        Assert.AreEqual("Ca 1", shifts[0].GetProperty("shiftName").GetString());
+        Assert.AreEqual(4m, shifts[0].GetProperty("workedHours").GetDecimal());
+        Assert.AreEqual(2, shifts[1].GetProperty("slotNumber").GetInt32());
+        Assert.AreEqual(3.5m, shifts[1].GetProperty("workedHours").GetDecimal());
+    }
+
+    [TestMethod]
     public async Task AuthorizedUser_ReadsEmptyAttendanceHoursWhenDayWasNotSaved()
     {
         await using var factory = new GermanApiFactory();
@@ -147,6 +208,7 @@ public sealed class AttendanceApiTests
         Assert.IsFalse(response.GetProperty("hasAttendance").GetBoolean());
         Assert.AreEqual(0m, response.GetProperty("regularHours").GetDecimal());
         Assert.AreEqual(0m, response.GetProperty("overtimeHours").GetDecimal());
+        Assert.AreEqual(0, response.GetProperty("shifts").GetArrayLength());
     }
 
     [TestMethod]
