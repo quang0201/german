@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using German.Application.Auth;
 using German.Domain.Auth;
 using German.Domain.Employees;
@@ -14,6 +15,53 @@ namespace German.Api.Tests;
 [TestClass]
 public sealed class ShiftAssignmentApiTests
 {
+    [TestMethod]
+    public async Task AssignShift_InactiveEmployeeReturnsBadRequest()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid employeeId = Guid.Empty;
+        Guid shiftId = Guid.Empty;
+
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var passwordService = services.GetRequiredService<IPasswordService>();
+            var managerEmployee = new Employee { EmployeeCode = "M011", FullName = "Manager" };
+            var manager = new UserAccount
+            {
+                Username = "manager-inactive-shift",
+                NormalizedUsername = "MANAGER-INACTIVE-SHIFT",
+                Role = UserRole.Manager,
+                EmployeeId = managerEmployee.Id
+            };
+            manager.PasswordHash = passwordService.HashPassword(manager, "manager-secret");
+            var employee = new Employee { EmployeeCode = "E501", FullName = "Đã nghỉ", IsActive = false };
+            var shift = new ShiftTemplate { Name = "Ca A", IsActive = true };
+            db.AddRange(managerEmployee, manager, employee, shift);
+            employeeId = employee.Id;
+            shiftId = shift.Id;
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            identifier = "manager-inactive-shift",
+            password = "manager-secret"
+        });
+        Assert.AreEqual(HttpStatusCode.OK, login.StatusCode);
+
+        var response = await client.PostAsJsonAsync($"/api/employees/{employeeId}/shift-assignments", new
+        {
+            shiftTemplateId = shiftId,
+            effectiveFrom = "2026-08-21"
+        });
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual("employee.inactive", json.RootElement.GetProperty("code").GetString());
+    }
+
     [TestMethod]
     public async Task AssignShift_BeforeFutureAssignment_EndsNewAssignmentBeforeFutureStart()
     {
