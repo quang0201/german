@@ -4,17 +4,17 @@ import { navigate } from "./navigation.js";
 import { routes } from "./routes.js";
 
 function navItems(role) {
+  const preferredOrder = ["/reports", "/employees", "/orders", "/attendance", "/production", "/shifts", "/admin/accounts", "/admin/audit"];
   const seen = new Set();
   return routes.filter((route) => {
     if (!route.roles.includes(role) || route.path.includes(":id") || route.path.endsWith("/new")) return false;
     if (seen.has(route.path)) return false;
     seen.add(route.path);
     return true;
-  });
+  }).sort((left, right) => preferredOrder.indexOf(left.path) - preferredOrder.indexOf(right.path));
 }
 
 const icons = {
-  "/overview": "overview",
   "/production": "production",
   "/employees": "employees",
   "/orders": "orders",
