@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { activeAttendanceEmployees, attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
+import { activeAttendanceEmployees, attendanceBlockIndexForMonth, attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
 
 describe("attendance model", () => {
   test("excludes inactive employees from the attendance selector", () => {
@@ -8,6 +8,11 @@ describe("attendance model", () => {
       { employeeId: "inactive", isActive: false },
       { employeeId: "legacy", isActive: undefined },
     ]).map((employee) => employee.employeeId)).toEqual(["active", "legacy"]);
+  });
+
+  test("selects the week containing today for the current month and the first week otherwise", () => {
+    expect(attendanceBlockIndexForMonth("2026-08", new Date("2026-08-22T08:00:00"))).toBe(3);
+    expect(attendanceBlockIndexForMonth("2026-07", new Date("2026-08-22T08:00:00"))).toBe(0);
   });
 
   test("parses hours, leave codes and blank cells without accepting X", () => {

@@ -50,4 +50,15 @@ describe("AttendancePage", () => {
     expect(html).not.toContain("data-attendance-block-end");
     expect(html).not.toContain("erp-attendance-window-spacer");
   });
+
+  test("marks today's attendance column with a dedicated style", () => {
+    const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
+      data={{ employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-22", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] }}
+      drafts={{}}
+      loading={false}
+      today={new Date("2026-08-22T08:00:00")}
+    />);
+    expect(html).toContain("erp-attendance-today");
+    expect(html).toContain('aria-current="date"');
+  });
 });
