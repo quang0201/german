@@ -55,6 +55,10 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         if (!authorization.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(authorization.Error!.Code, authorization.Error.Message);
         var validation = ValidateQuantity(command.Quantity);
         if (!validation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(validation.Error!.Code, validation.Error.Message);
+        var textValidation = ValidateText(command.SourceName, "source_name", 200);
+        if (!textValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(textValidation.Error!.Code, textValidation.Error.Message);
+        textValidation = ValidateText(command.Note, "note", 1000);
+        if (!textValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(textValidation.Error!.Code, textValidation.Error.Message);
         var referenceValidation = await ValidateReferencesAsync(command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
         if (!referenceValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(referenceValidation.Error!.Code, referenceValidation.Error.Message);
 
@@ -84,6 +88,10 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         if (item is null) return AppResult<ProductionExternalQuantityDto>.Failure("production_external_quantity.not_found", "Không tìm thấy sản lượng nhận ngoài.");
         var validation = ValidateQuantity(command.Quantity);
         if (!validation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(validation.Error!.Code, validation.Error.Message);
+        var textValidation = ValidateText(command.SourceName, "source_name", 200);
+        if (!textValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(textValidation.Error!.Code, textValidation.Error.Message);
+        textValidation = ValidateText(command.Note, "note", 1000);
+        if (!textValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(textValidation.Error!.Code, textValidation.Error.Message);
 
         item.ReceivedDate = command.ReceivedDate;
         item.Quantity = command.Quantity;
@@ -123,6 +131,11 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
     private static AppResult ValidateQuantity(decimal quantity) => quantity > 0m
         ? AppResult.Success()
         : AppResult.Failure("production_external_quantity.invalid_quantity", "Số lượng phải lớn hơn 0.");
+
+    private static AppResult ValidateText(string? value, string field, int maxLength) =>
+        value is not null && value.Trim().Length > maxLength
+            ? AppResult.Failure($"production_external_quantity.invalid_{field}", $"{field} không được dài quá {maxLength} ký tự.")
+            : AppResult.Success();
 
     private static string? Normalize(string? value)
     {

@@ -1,0 +1,10 @@
+.erp-production-external-dialog { width:min(520px,calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; }
+.erp-production-external-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.erp-production-external-dialog-header h2 { margin:0; }
+.erp-production-external-summary { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:14px; padding:10px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface-soft); color:var(--color-text-muted); font-size:13px; }
+.erp-production-external-fields { display:grid; gap:14px; margin-top:16px; }
+.erp-production-external-history { display:grid; gap:8px; padding:10px 12px; background:var(--color-surface-soft); border-top:1px solid var(--color-border); }
+.erp-production-external-history-title { font-size:13px; font-weight:700; color:var(--color-text); }
+.erp-production-external-history-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:13px; }
+.erp-production-external-history-meta { display:flex; flex-wrap:wrap; gap:6px 14px; color:var(--color-text-muted); }
+.erp-production-external-history-actions { display:flex; gap:6px; }
