@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { ReportPage, buildProductionReportExportUrl } from "./ReportPage.jsx";
+import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl } from "./ReportPage.jsx";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ReportPage", () => {
@@ -44,5 +44,11 @@ describe("ReportPage", () => {
     expect(chartHtml).toContain("Tổng:");
     expect(chartHtml).toContain("cái");
     expect(chartHtml).toContain("thùng");
+  });
+
+  test("builds a summary URL scoped to the selected order and date range", () => {
+    expect(buildProductionReportSummaryUrl("order-1", "2026-08-01", "2026-08-10")).toBe(
+      "/api/reports/production/summary?orderId=order-1&fromDate=2026-08-01&untilDate=2026-08-10",
+    );
   });
 });

@@ -27,6 +27,7 @@ export function ReportPage() {
   const [orders, setOrders] = useState([]);
   const [orderId, setOrderId] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [orderError, setOrderError] = useState("");
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
@@ -35,13 +36,13 @@ export function ReportPage() {
   useEffect(() => {
     let active = true;
     setOrdersLoading(true);
-    api.get("/api/lookups/production-orders/active")
+    api.get("/api/production-orders")
       .then((items) => {
         if (!active) return;
         setOrders(items);
       })
       .catch((requestError) => {
-        if (active) setSummaryError(requestError.message || "Không thể tải danh sách Mã SX.");
+        if (active) setOrderError(requestError.message || "Không thể tải danh sách Mã SX.");
       })
       .finally(() => {
         if (active) setOrdersLoading(false);
@@ -107,6 +108,7 @@ export function ReportPage() {
     <div className="erp-feature-page">
       <PageHeader title="Báo cáo" description="Xuất báo cáo sản lượng theo khoảng thời gian." />
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
+      {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
       <div className="erp-report-toolbar">
         <Field label="Mã SX">
           <select className="erp-control" value={orderId} onChange={(event) => setOrderId(event.target.value)} disabled={ordersLoading}>
