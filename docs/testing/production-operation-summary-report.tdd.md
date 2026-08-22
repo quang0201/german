@@ -16,6 +16,8 @@
 - `b1cc225` — added frontend rendering and URL contract tests.
 - GREEN: `538729c` adds the dropdown-driven report view and HC/TC stacked bars; targeted frontend tests passed.
 - `513f967` — loads the full production-order list so historical orders remain available in the report selector.
+- `a9142f0` — added the mixed-unit chart regression test.
+- `e38b35d` — groups bars by unit and calculates an independent scale per unit.
 
 ## Guarantees
 
@@ -27,6 +29,7 @@
 | JSON endpoint returns order metadata and operation summaries to Manager | `ReportExportApiTests.Summary_Manager_ReturnsAllOrderOperationsIncludingZeroAndFiltersByDate` | PASS |
 | Report page exposes Mã SX/date controls and summary URL | `ReportPage.test.js` | PASS |
 | Mixed units and HC/TC/total detail render beside operation bars | `ReportPage.test.js` and `ProductionOperationSummaryChart.jsx` | PASS |
+| Different units are never compared on one bar scale | `ReportPage.test.js:groups operation bars by unit and scales each unit independently` | PASS |
 | Loading, empty, and error states are present in the report view | `ReportPage.jsx` state branches | PASS |
 
 ## Verification
