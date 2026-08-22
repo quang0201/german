@@ -28,7 +28,6 @@ export function ProductionOperationSummaryChart({ summary }) {
           const maxTotal = Math.max(...unitOperations.map((operation) => Number(operation.totalQuantity || 0)), 0);
           return (
             <section className="erp-report-operation-unit-group" key={unit} aria-label={`Đơn vị: ${unit}`}>
-              <h3>Đơn vị: {unit}</h3>
               <div role="list">
                 {unitOperations.map((operation) => {
                   const total = Number(operation.totalQuantity || 0);
