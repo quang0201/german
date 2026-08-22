@@ -70,4 +70,17 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(matrixSource).toContain("scrollLeft = scrollLeftRef.current");
     expect(matrixSource).toContain("onScroll");
   });
+
+  test("marks today and contains logic to jump to its column", () => {
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={dataWithOneOrder()}
+      monthKey="2026-08"
+      excludeSundays
+      today={new Date("2026-08-20T08:00:00")}
+    />);
+
+    expect(html).toContain("erp-month-today");
+    expect(matrixSource).toContain("todayIso");
+    expect(matrixSource).toContain("offsetLeft");
+  });
 });

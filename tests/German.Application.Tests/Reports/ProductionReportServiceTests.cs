@@ -230,6 +230,91 @@ public sealed class ProductionReportServiceTests
             result.Value.ByEmployee.ToArray());
     }
 
+    [TestMethod]
+    public async Task BuildOperationSummaryAsync_AggregatesByOrderAndOperationIncludingZeroAndMixedUnits()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var secondOperation = new ProductionOperation
+        {
+            ProductionOrderId = seed.Order.Id,
+            OperationNumber = 12,
+            Name = "Đóng gói",
+            Unit = "thùng",
+            SortOrder = 2
+        };
+        var zeroOperation = new ProductionOperation
+        {
+            ProductionOrderId = seed.Order.Id,
+            OperationNumber = 13,
+            Name = "Kiểm hàng",
+            Unit = "kiện",
+            SortOrder = 3
+        };
+        db.AddRange(secondOperation, zeroOperation);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, seed.Employee, seed.Order, secondOperation, new DateOnly(2026, 8, 13), 30m, 5m);
+        await AddEntryAsync(db, seed.Employee, seed.Order, secondOperation, new DateOnly(2026, 8, 14), 10m, 2m);
+        db.ChangeTracker.Clear();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildOperationSummaryAsync(
+            seed.Order.Id,
+            new DateOnly(2026, 8, 12),
+            new DateOnly(2026, 8, 13),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(seed.Order.Id, result.Value!.OrderId);
+        Assert.AreEqual("0417", result.Value.OrderCode);
+        Assert.AreEqual("Túi 0417", result.Value.ProductName);
+        Assert.AreEqual(3, result.Value.OperationCount);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new ProductionOperationSummary(seed.Operation.Id, 11, "May thân", "cái", 100m, 20m, 120m),
+                new ProductionOperationSummary(secondOperation.Id, 12, "Đóng gói", "thùng", 30m, 5m, 35m),
+                new ProductionOperationSummary(zeroOperation.Id, 13, "Kiểm hàng", "kiện", 0m, 0m, 0m)
+            },
+            result.Value.Operations.ToArray());
+    }
+
+    [TestMethod]
+    public async Task BuildOperationSummaryAsync_FiltersOrderAndDateRange()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var otherOrder = new ProductionOrder
+        {
+            Code = "0521",
+            ProductName = "Túi 0521",
+            PlannedQuantity = 500m,
+            Status = ProductionOrderStatus.InProduction
+        };
+        var otherOperation = new ProductionOperation
+        {
+            ProductionOrderId = otherOrder.Id,
+            OperationNumber = 1,
+            Name = "May",
+            Unit = "cái",
+            SortOrder = 1
+        };
+        db.AddRange(otherOrder, otherOperation);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, seed.Employee, seed.Order, seed.Operation, new DateOnly(2026, 8, 14), 9m, 1m);
+        await AddEntryAsync(db, seed.Employee, otherOrder, otherOperation, new DateOnly(2026, 8, 12), 999m, 1m);
+        db.ChangeTracker.Clear();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildOperationSummaryAsync(
+            seed.Order.Id,
+            new DateOnly(2026, 8, 13),
+            new DateOnly(2026, 8, 13),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(1, result.Value!.Operations.Count);
+        Assert.AreEqual(0m, result.Value.Operations[0].TotalQuantity);
+    }
+
     private static GermanDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<GermanDbContext>()

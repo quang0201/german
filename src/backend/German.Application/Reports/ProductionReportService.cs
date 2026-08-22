@@ -6,6 +6,94 @@ namespace German.Application.Reports;
 
 public sealed class ProductionReportService(IGermanDbContext db, TimeProvider timeProvider)
 {
+    public async Task<AppResult<ProductionOperationSummaryReport>> BuildOperationSummaryAsync(
+        Guid orderId,
+        DateOnly? fromDate,
+        DateOnly? untilDate,
+        CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var rangeFrom = fromDate ?? untilDate ?? today;
+        var rangeUntil = untilDate ?? fromDate ?? today;
+
+        if (rangeFrom > rangeUntil)
+        {
+            return AppResult<ProductionOperationSummaryReport>.Failure(
+                "reports.invalid_date_range",
+                "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+        }
+
+        if (rangeUntil.DayNumber - rangeFrom.DayNumber > 365)
+        {
+            return AppResult<ProductionOperationSummaryReport>.Failure(
+                "reports.date_range_too_large",
+                "Khoảng thời gian báo cáo tối đa là 366 ngày.");
+        }
+
+        var order = await db.ProductionOrders.AsNoTracking()
+            .Where(item => item.Id == orderId)
+            .Select(item => new { item.Id, item.Code, item.ProductName })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (order is null)
+        {
+            return AppResult<ProductionOperationSummaryReport>.Failure(
+                "reports.order_not_found",
+                "Không tìm thấy mã sản xuất.");
+        }
+
+        var operations = await db.ProductionOperations.AsNoTracking()
+            .Where(item => item.ProductionOrderId == orderId)
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.OperationNumber)
+            .Select(item => new
+            {
+                item.Id,
+                item.OperationNumber,
+                item.Name,
+                item.Unit
+            })
+            .ToListAsync(cancellationToken);
+
+        var aggregates = await db.ProductionEntries.AsNoTracking()
+            .Where(item => !item.IsDeleted
+                && item.ProductionOrderId == orderId
+                && item.WorkDate >= rangeFrom
+                && item.WorkDate <= rangeUntil)
+            .GroupBy(item => item.ProductionOperationId)
+            .Select(group => new
+            {
+                OperationId = group.Key,
+                HcQuantity = group.Sum(item => item.HcQuantity),
+                TcQuantity = group.Sum(item => item.TcQuantity),
+                TotalQuantity = group.Sum(item => item.TotalQuantity)
+            })
+            .ToListAsync(cancellationToken);
+
+        var aggregateByOperation = aggregates.ToDictionary(item => item.OperationId);
+        var summaries = operations
+            .Select(operation =>
+            {
+                aggregateByOperation.TryGetValue(operation.Id, out var aggregate);
+                return new ProductionOperationSummary(
+                    operation.Id,
+                    operation.OperationNumber,
+                    operation.Name,
+                    operation.Unit,
+                    aggregate?.HcQuantity ?? 0m,
+                    aggregate?.TcQuantity ?? 0m,
+                    aggregate?.TotalQuantity ?? 0m);
+            })
+            .ToArray();
+
+        return AppResult<ProductionOperationSummaryReport>.Success(
+            new ProductionOperationSummaryReport(
+                order.Id,
+                order.Code,
+                order.ProductName,
+                summaries.Length,
+                summaries));
+    }
+
     public async Task<AppResult<ProductionReportData>> BuildAsync(
         ProductionReportFilter filter,
         CancellationToken cancellationToken)

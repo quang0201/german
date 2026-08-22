@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using German.Application.Auth;
@@ -111,6 +112,76 @@ public sealed class ReportExportApiTests
         Assert.AreEqual(HttpStatusCode.OK, matchingResponse.StatusCode);
         var matchingManagement = GetWorksheetText(await matchingResponse.Content.ReadAsByteArrayAsync(), "Báo cáo quản lý");
         Assert.IsTrue(matchingManagement.Contains("manager3", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public async Task Summary_Manager_ReturnsAllOrderOperationsIncludingZeroAndFiltersByDate()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedAccountAsync(factory, "summary-manager", "M004", UserRole.Manager, "secret");
+        var orderId = Guid.NewGuid();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var employee = await db.Employees.SingleAsync(item => item.EmployeeCode == "M004");
+            var account = await db.UserAccounts.SingleAsync(item => item.EmployeeId == employee.Id);
+            var order = new ProductionOrder
+            {
+                Id = orderId,
+                Code = "0417",
+                ProductName = "Túi 0417",
+                PlannedQuantity = 1000m,
+                Status = ProductionOrderStatus.InProduction
+            };
+            var first = new ProductionOperation
+            {
+                ProductionOrderId = order.Id,
+                OperationNumber = 11,
+                Name = "May thân",
+                Unit = "cái",
+                SortOrder = 1
+            };
+            var second = new ProductionOperation
+            {
+                ProductionOrderId = order.Id,
+                OperationNumber = 12,
+                Name = "Đóng gói",
+                Unit = "thùng",
+                SortOrder = 2
+            };
+            var entry = new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 8, 12),
+                EmployeeId = employee.Id,
+                ProductionOrderId = order.Id,
+                ProductionOperationId = first.Id,
+                EntryMode = ProductionEntryMode.Direct,
+                HcQuantity = 100m,
+                TcQuantity = 20m,
+                TotalQuantity = 120m,
+                SubmittedByUserId = account.Id
+            };
+            db.AddRange(order, first, second, entry);
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "summary-manager", "secret");
+
+        var response = await client.GetAsync(
+            $"/api/reports/production/summary?orderId={orderId}&fromDate=2026-08-12&untilDate=2026-08-12");
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = json.RootElement;
+        Assert.AreEqual("0417", root.GetProperty("orderCode").GetString());
+        Assert.AreEqual("Túi 0417", root.GetProperty("productName").GetString());
+        Assert.AreEqual(2, root.GetProperty("operationCount").GetInt32());
+        var operations = root.GetProperty("operations");
+        Assert.AreEqual(2, operations.GetArrayLength());
+        Assert.AreEqual(120m, operations[0].GetProperty("totalQuantity").GetDecimal());
+        Assert.AreEqual("thùng", operations[1].GetProperty("unit").GetString());
+        Assert.AreEqual(0m, operations[1].GetProperty("totalQuantity").GetDecimal());
     }
 
     private static string GetWorksheetText(byte[] workbookBytes, string sheetName)

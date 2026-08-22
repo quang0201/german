@@ -48,6 +48,11 @@ export function attendanceDayBlocks(year, month) {
   });
 }
 
+export function attendanceBlockIndexForMonth(monthKey, today = new Date()) {
+  if (currentAttendanceMonth(today) !== monthKey) return 0;
+  return Math.floor((today.getDate() - 1) / 7);
+}
+
 export function attendanceBlockKey(generation, batchId, dayFrom) {
   return `${generation}|${batchId}|${dayFrom}`;
 }

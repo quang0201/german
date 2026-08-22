@@ -20,9 +20,10 @@ function draftDay(drafts, employee, day) {
   };
 }
 
-export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, onLoadMore, loadingMore, onRetryBlock }) {
+export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, onLoadMore, loadingMore, onRetryBlock, today = new Date() }) {
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   if (loading) return <div className="erp-empty-state">Đang tải dữ liệu chấm công...</div>;
   if (!employees.length) return <div className="erp-empty-state">Chưa có nhân viên đang hoạt động.</div>;
@@ -40,7 +41,8 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
               <th className="erp-attendance-sticky-shift" rowSpan="2">Ca</th>
               {days.map((day) => {
                 const label = dayLabel(day.workDate);
-                return <th key={day.workDate} colSpan="1" className={label.weekday === "CN" ? "erp-attendance-sunday" : ""}><span>{label.weekday}</span><strong>{label.date}</strong></th>;
+                const isToday = day.workDate === todayIso;
+                return <th key={day.workDate} colSpan="1" className={[label.weekday === "CN" ? "erp-attendance-sunday" : "", isToday ? "erp-attendance-today" : ""].filter(Boolean).join(" ")} aria-current={isToday ? "date" : undefined}><span>{label.weekday}</span><strong>{label.date}</strong></th>;
               })}
               <th rowSpan="2" className="erp-attendance-total">Giờ HC</th>
               <th rowSpan="2" className="erp-attendance-total">Giờ TC</th>
