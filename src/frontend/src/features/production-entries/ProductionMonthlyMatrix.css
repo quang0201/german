@@ -5,6 +5,8 @@
 .erp-month-order-filter [aria-pressed="true"] { border-color:var(--color-primary); background:var(--color-primary-soft); color:var(--color-primary-hover); }
 .erp-month-sunday-toggle { display:flex; align-items:center; gap:8px; color:var(--color-text-muted); font-size:13px; white-space:nowrap; }
 .erp-month-sunday-toggle input { width:16px; height:16px; accent-color:var(--color-primary); }
+.erp-month-matrix-horizontal-scroll { height:14px; overflow-x:auto; overflow-y:hidden; border:1px solid var(--color-border); border-bottom:0; background:var(--color-surface-soft); scrollbar-gutter:stable; }
+.erp-month-matrix-horizontal-scroll > div { height:1px; }
 .erp-month-matrix-scroll { max-height:680px; overflow:auto; border:1px solid var(--color-border); background:var(--color-surface); scrollbar-gutter:stable; }
 .erp-month-matrix-table { width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
 .erp-month-matrix-table th, .erp-month-matrix-table td { height:var(--table-row-height); border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border); padding:0 8px; background:var(--color-surface); white-space:nowrap; }
