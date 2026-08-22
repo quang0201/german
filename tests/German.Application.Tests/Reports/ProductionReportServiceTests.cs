@@ -271,11 +271,54 @@ public sealed class ProductionReportServiceTests
         CollectionAssert.AreEqual(
             new[]
             {
-                new ProductionOperationSummary(seed.Operation.Id, 11, "May thân", "cái", 100m, 20m, 120m),
-                new ProductionOperationSummary(secondOperation.Id, 12, "Đóng gói", "thùng", 30m, 5m, 35m),
-                new ProductionOperationSummary(zeroOperation.Id, 13, "Kiểm hàng", "kiện", 0m, 0m, 0m)
+                new ProductionOperationSummary(seed.Operation.Id, 11, "May thân", "cái", 100m, 20m, 120m, 0m, 120m),
+                new ProductionOperationSummary(secondOperation.Id, 12, "Đóng gói", "thùng", 30m, 5m, 35m, 0m, 35m),
+                new ProductionOperationSummary(zeroOperation.Id, 13, "Kiểm hàng", "kiện", 0m, 0m, 0m, 0m, 0m)
             },
             result.Value.Operations.ToArray());
+    }
+
+    [TestMethod]
+    public async Task BuildOperationSummaryAsync_AddsExternalQuantityAndKeepsZeroOperation()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var zeroOperation = new ProductionOperation
+        {
+            ProductionOrderId = seed.Order.Id,
+            OperationNumber = 12,
+            Name = "Đóng gói",
+            Unit = "thùng",
+            SortOrder = 2
+        };
+        var outside = new ProductionExternalQuantity
+        {
+            ProductionOrderId = seed.Order.Id,
+            ProductionOperationId = seed.Operation.Id,
+            ReceivedDate = new DateOnly(2026, 8, 13),
+            Quantity = 5000m,
+            SubmittedByUserId = Guid.NewGuid()
+        };
+        var outsideDate = new ProductionExternalQuantity
+        {
+            ProductionOrderId = seed.Order.Id,
+            ProductionOperationId = seed.Operation.Id,
+            ReceivedDate = new DateOnly(2026, 8, 20),
+            Quantity = 9000m,
+            SubmittedByUserId = Guid.NewGuid()
+        };
+        db.AddRange(zeroOperation, outside, outsideDate);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildOperationSummaryAsync(
+            seed.Order.Id, new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 13), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(2, result.Value!.Operations.Count);
+        Assert.AreEqual(5000m, result.Value.Operations[0].ExternalQuantity);
+        Assert.AreEqual(5120m, result.Value.Operations[0].CombinedTotalQuantity);
+        Assert.AreEqual(0m, result.Value.Operations[1].ExternalQuantity);
+        Assert.AreEqual(0m, result.Value.Operations[1].CombinedTotalQuantity);
     }
 
     [TestMethod]

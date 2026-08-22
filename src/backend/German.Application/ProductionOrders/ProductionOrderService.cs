@@ -218,8 +218,12 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             .IgnoreQueryFilters()
             .Where(x => x.ProductionOperationId == operation.Id)
             .ToListAsync(cancellationToken);
+        var externalQuantities = await db.ProductionExternalQuantities
+            .Where(x => x.ProductionOperationId == operation.Id)
+            .ToListAsync(cancellationToken);
 
         db.ProductionEntries.RemoveRange(entries);
+        db.ProductionExternalQuantities.RemoveRange(externalQuantities);
         db.ProductionOperations.Remove(operation);
         await db.SaveChangesAsync(cancellationToken);
         return AppResult.Success();

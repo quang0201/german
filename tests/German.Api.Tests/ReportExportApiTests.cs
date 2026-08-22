@@ -161,7 +161,15 @@ public sealed class ReportExportApiTests
                 TotalQuantity = 120m,
                 SubmittedByUserId = account.Id
             };
-            db.AddRange(order, first, second, entry);
+            var external = new ProductionExternalQuantity
+            {
+                ProductionOrderId = order.Id,
+                ProductionOperationId = first.Id,
+                ReceivedDate = new DateOnly(2026, 8, 12),
+                Quantity = 5000m,
+                SubmittedByUserId = account.Id
+            };
+            db.AddRange(order, first, second, entry, external);
             await db.SaveChangesAsync();
         });
 
@@ -180,6 +188,8 @@ public sealed class ReportExportApiTests
         var operations = root.GetProperty("operations");
         Assert.AreEqual(2, operations.GetArrayLength());
         Assert.AreEqual(120m, operations[0].GetProperty("totalQuantity").GetDecimal());
+        Assert.AreEqual(5000m, operations[0].GetProperty("externalQuantity").GetDecimal());
+        Assert.AreEqual(5120m, operations[0].GetProperty("combinedTotalQuantity").GetDecimal());
         Assert.AreEqual("thùng", operations[1].GetProperty("unit").GetString());
         Assert.AreEqual(0m, operations[1].GetProperty("totalQuantity").GetDecimal());
     }

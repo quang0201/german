@@ -48,10 +48,11 @@ describe("Industrial Clarity visual system", () => {
 
   test("keeps sidebar navigation buttons named when labels are visually hidden", () => {
     const html = renderToString(
-      React.createElement(Sidebar, { role: "Admin", pathname: "/overview", collapsed: false })
+      React.createElement(Sidebar, { role: "Admin", pathname: "/reports", collapsed: false })
     );
 
-    expect(html).toContain('aria-label="Tổng quan"');
+    expect(html).toContain('aria-label="Báo cáo"');
+    expect(html).not.toContain('aria-label="Tổng quan"');
     expect(html).toContain('aria-label="Sản lượng"');
     expect(html).toContain('aria-label="Tài khoản"');
   });
