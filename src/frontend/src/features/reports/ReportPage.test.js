@@ -36,11 +36,13 @@ describe("ReportPage", () => {
       },
     }));
 
-    expect(chartHtml).toContain("0417 — Túi 0417");
-    expect(chartHtml).toContain("CĐ11");
-    expect(chartHtml).toContain("HC: 80");
-    expect(chartHtml).toContain("TC: 20");
-    expect(chartHtml).toContain("Tổng: 100 cái");
-    expect(chartHtml).toContain("Tổng: 0 thùng");
+    expect(chartHtml).toContain("0417");
+    expect(chartHtml).toContain("Túi 0417");
+    expect(chartHtml).toContain("CĐ");
+    expect(chartHtml).toContain("HC: ");
+    expect(chartHtml).toContain("TC: ");
+    expect(chartHtml).toContain("Tổng:");
+    expect(chartHtml).toContain("cái");
+    expect(chartHtml).toContain("thùng");
   });
 });

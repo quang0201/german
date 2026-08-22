@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { productionExportFileName } from "../production-entries/productionExport.js";
+import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 function localToday() { return new Date().toISOString().slice(0, 10); }
 
@@ -13,12 +14,73 @@ export function buildProductionReportExportUrl(fromDate, untilDate) {
   return `/api/reports/production/export.xlsx?${params.toString()}`;
 }
 
+export function buildProductionReportSummaryUrl(orderId, fromDate, untilDate) {
+  const params = new URLSearchParams({ orderId, fromDate, untilDate });
+  return `/api/reports/production/summary?${params.toString()}`;
+}
+
 export function ReportPage() {
   const [fromDate, setFromDate] = useState(localToday());
   const [untilDate, setUntilDate] = useState(localToday());
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [orderId, setOrderId] = useState("");
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
   const toast = useToast();
+
+  useEffect(() => {
+    let active = true;
+    setOrdersLoading(true);
+    api.get("/api/lookups/production-orders/active")
+      .then((items) => {
+        if (!active) return;
+        setOrders(items);
+      })
+      .catch((requestError) => {
+        if (active) setSummaryError(requestError.message || "Không thể tải danh sách Mã SX.");
+      })
+      .finally(() => {
+        if (active) setOrdersLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!orderId || !fromDate || !untilDate) {
+      setSummary(null);
+      setSummaryError("");
+      setSummaryLoading(false);
+      return undefined;
+    }
+    if (fromDate > untilDate) {
+      setSummary(null);
+      setSummaryError("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+      setSummaryLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+    setSummaryLoading(true);
+    setSummaryError("");
+    api.get(buildProductionReportSummaryUrl(orderId, fromDate, untilDate))
+      .then((result) => {
+        if (active) setSummary(result);
+      })
+      .catch((requestError) => {
+        if (active) {
+          setSummary(null);
+          setSummaryError(requestError.message || "Không thể tải tổng hợp sản lượng.");
+        }
+      })
+      .finally(() => {
+        if (active) setSummaryLoading(false);
+      });
+    return () => { active = false; };
+  }, [orderId, fromDate, untilDate]);
 
   async function exportReport() {
     setError("");
@@ -46,10 +108,21 @@ export function ReportPage() {
       <PageHeader title="Báo cáo" description="Xuất báo cáo sản lượng theo khoảng thời gian." />
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       <div className="erp-report-toolbar">
+        <Field label="Mã SX">
+          <select className="erp-control" value={orderId} onChange={(event) => setOrderId(event.target.value)} disabled={ordersLoading}>
+            <option value="">{ordersLoading ? "Đang tải Mã SX..." : "Chọn Mã SX"}</option>
+            {orders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}
+          </select>
+        </Field>
         <Field label="Từ ngày"><input className="erp-control" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></Field>
         <Field label="Đến ngày"><input className="erp-control" type="date" value={untilDate} onChange={(event) => setUntilDate(event.target.value)} /></Field>
         <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
       </div>
+      {summaryError && <Alert variant="error" title="Không thể tải báo cáo công đoạn.">{summaryError}</Alert>}
+      {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp sản lượng...</div>}
+      {!summaryLoading && !summaryError && !orderId && <div className="erp-report-state">Chọn Mã SX và khoảng ngày để xem sản lượng từng công đoạn.</div>}
+      {!summaryLoading && !summaryError && orderId && summary && summary.operations.length === 0 && <div className="erp-report-state">Mã SX này chưa có công đoạn.</div>}
+      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionOperationSummaryChart summary={summary} />}
     </div>
   );
 }
