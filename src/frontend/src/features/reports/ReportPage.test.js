@@ -65,8 +65,9 @@ describe("ReportPage", () => {
       },
     }));
 
-    expect(chartHtml).toContain("Đơn vị: cái");
-    expect(chartHtml).toContain("Đơn vị: thùng");
+    expect(chartHtml).not.toContain("<h3>");
+    expect(chartHtml).toContain('aria-label="Đơn vị: cái"');
+    expect(chartHtml).toContain('aria-label="Đơn vị: thùng"');
     expect(chartHtml.match(/style=\"width:50%\"/g)?.length ?? 0).toBe(0);
     expect(chartHtml.match(/style=\"width:100%\"/g)?.length ?? 0).toBe(2);
     expect(chartHtml).toContain("1.000");
