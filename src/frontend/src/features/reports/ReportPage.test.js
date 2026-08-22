@@ -51,4 +51,24 @@ describe("ReportPage", () => {
       "/api/reports/production/summary?orderId=order-1&fromDate=2026-08-01&untilDate=2026-08-10",
     );
   });
+
+  test("groups operation bars by unit and scales each unit independently", () => {
+    const chartHtml = renderToString(React.createElement(ProductionOperationSummaryChart, {
+      summary: {
+        orderCode: "0417",
+        productName: "Túi 0417",
+        operationCount: 2,
+        operations: [
+          { operationNumber: 11, name: "May thân", unit: "cái", hcQuantity: 1000, tcQuantity: 0, totalQuantity: 1000 },
+          { operationNumber: 12, name: "Đóng gói", unit: "thùng", hcQuantity: 50, tcQuantity: 0, totalQuantity: 50 },
+        ],
+      },
+    }));
+
+    expect(chartHtml).toContain("Đơn vị: cái");
+    expect(chartHtml).toContain("Đơn vị: thùng");
+    expect(chartHtml.match(/style=\"width:50%\"/g)?.length).toBe(0);
+    expect(chartHtml).toContain("1000 cái");
+    expect(chartHtml).toContain("50 thùng");
+  });
 });
