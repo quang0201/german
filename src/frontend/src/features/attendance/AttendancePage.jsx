@@ -5,6 +5,7 @@ import { api } from "../../lib/api.js";
 import { AttendanceMonthlyMatrix } from "./AttendanceMonthlyMatrix.jsx";
 import {
   attendanceBlockKey,
+  attendanceBlockIndexForMonth,
   attendanceDayBlocks,
   attendanceDayKey,
   activeAttendanceEmployees,
@@ -32,7 +33,7 @@ function monthLabel(monthKey) {
 export function AttendancePage() {
   const [monthKey, setMonthKey] = useState(() => currentAttendanceMonth());
   const [cache, setCache] = useState(() => emptyAttendanceCache(currentAttendanceMonth(), 0));
-  const [activeBlockIndex, setActiveBlockIndex] = useState(0);
+  const [activeBlockIndex, setActiveBlockIndex] = useState(() => attendanceBlockIndexForMonth(currentAttendanceMonth()));
   const [blockNavigating, setBlockNavigating] = useState(false);
   const [drafts, setDrafts] = useState({});
   const [employeeId, setEmployeeId] = useState("");
@@ -56,13 +57,16 @@ export function AttendancePage() {
   useEffect(() => {
     const generation = monthGenerationRef.current + 1;
     monthGenerationRef.current = generation;
-    activeBlockIndexRef.current = 0;
+    const [year, month] = monthKey.split("-").map(Number);
+    const initialBlockIndex = attendanceBlockIndexForMonth(monthKey);
+    const initialBlock = attendanceDayBlocks(year, month)[initialBlockIndex] ?? attendanceDayBlocks(year, month)[0];
+    activeBlockIndexRef.current = initialBlockIndex;
     requestKeysRef.current = new Set();
     blockPromisesRef.current = new Map();
     loadingMoreRef.current = false;
     dirtyDayKeysRef.current = new Set();
     dayRevisionsRef.current = {};
-    setActiveBlockIndex(0);
+    setActiveBlockIndex(initialBlockIndex);
     setBlockNavigating(false);
     setLoadingMore(false);
     setSaving(false);
@@ -71,8 +75,7 @@ export function AttendancePage() {
     setCache(emptyAttendanceCache(monthKey, generation));
     setDrafts({});
     setDirtyDayKeys(new Set());
-    const [year, month] = monthKey.split("-");
-    api.get(`/api/attendance/monthly?year=${year}&month=${month}&employeeLimit=20&dayFrom=1&dayCount=7`)
+    api.get(`/api/attendance/monthly?year=${year}&month=${month}&employeeLimit=20&dayFrom=${initialBlock.dayFrom}&dayCount=${initialBlock.dayCount}`)
       .then((payload) => {
         if (!isCurrentAttendanceRequest(monthKey, monthKey, generation, monthGenerationRef.current)) return;
         setCache(mergeAttendanceCache(emptyAttendanceCache(monthKey, generation), payload, { batchId: "batch-0" }));

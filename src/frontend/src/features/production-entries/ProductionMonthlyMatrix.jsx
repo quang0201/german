@@ -5,7 +5,8 @@ const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
 const cellsByDate = (operation) => new Map((operation.cells ?? []).map((cell) => [cell.workDate, cell]));
 
-export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", excludeSundays = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick }) {
+export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", excludeSundays = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick, today = new Date() }) {
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const axis = useMemo(() => monthDateAxis(monthKey, excludeSundays), [monthKey, excludeSundays]);
   const scrollRef = useRef(null);
   const scrollLeftRef = useRef(0);
@@ -19,9 +20,20 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
 
   useLayoutEffect(() => {
     if (!loading && !error && scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollLeftRef.current;
+      const todayButton = monthKey === todayIso.slice(0, 7)
+        ? scrollRef.current.querySelector(`[data-date="${todayIso}"]`)
+        : null;
+      const nextScrollLeft = todayButton
+        ? Math.max(0, todayButton.offsetLeft - 220)
+        : scrollLeftRef.current;
+      if (!todayButton) {
+        scrollRef.current.scrollLeft = scrollLeftRef.current;
+        return;
+      }
+      scrollRef.current.scrollLeft = nextScrollLeft;
+      scrollLeftRef.current = nextScrollLeft;
     }
-  }, [loading, error, monthKey, selectedOrderId, excludeSundays]);
+  }, [loading, error, monthKey, selectedOrderId, excludeSundays, todayIso]);
 
   return (
     <section className="erp-month-matrix-section" aria-label={`Sản lượng ${monthLabel(monthKey)}`}>
@@ -33,7 +45,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
       </div>
       {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
       {loading && <div className="erp-table-state">Đang tải sản lượng tháng...</div>}
-      {!loading && !error && <div ref={scrollRef} onScroll={(event) => { scrollLeftRef.current = event.currentTarget.scrollLeft; }} className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => <th key={day.isoDate} className="erp-month-day-head" colSpan="2"><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>)}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
+      {!loading && !error && <div ref={scrollRef} onScroll={(event) => { scrollLeftRef.current = event.currentTarget.scrollLeft; }} className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => { const isToday = day.isoDate === todayIso; return <th key={day.isoDate} className={`erp-month-day-head${isToday ? " erp-month-today" : ""}`} colSpan="2" aria-current={isToday ? "date" : undefined}><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>; })}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
         {orders.length === 0 && <tr><td colSpan={totalColumns} className="erp-table-state">Chưa có sản lượng. Bấm vào ngày phía trên để nhập nhanh nhiều công đoạn.</td></tr>}
         {orders.flatMap((order) => {
           const rows = [<tr className="erp-month-order-row" key={`order-${order.orderId}`}><th colSpan={totalColumns}><strong>Mã SX: {order.orderCode}</strong><span>{order.productName}</span></th></tr>];
