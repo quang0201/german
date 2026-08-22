@@ -7,7 +7,9 @@ public sealed record ProductionOperationSummary(
     string Unit,
     decimal HcQuantity,
     decimal TcQuantity,
-    decimal TotalQuantity);
+    decimal TotalQuantity,
+    decimal ExternalQuantity,
+    decimal CombinedTotalQuantity);
 
 public sealed record ProductionOperationSummaryReport(
     Guid OrderId,

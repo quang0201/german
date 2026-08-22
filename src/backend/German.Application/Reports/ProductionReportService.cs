@@ -70,10 +70,24 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .ToListAsync(cancellationToken);
 
         var aggregateByOperation = aggregates.ToDictionary(item => item.OperationId);
+        var externalAggregates = await db.ProductionExternalQuantities.AsNoTracking()
+            .Where(item => item.ProductionOrderId == orderId
+                && item.ReceivedDate >= rangeFrom
+                && item.ReceivedDate <= rangeUntil)
+            .GroupBy(item => item.ProductionOperationId)
+            .Select(group => new
+            {
+                OperationId = group.Key,
+                Quantity = group.Sum(item => item.Quantity)
+            })
+            .ToListAsync(cancellationToken);
+        var externalByOperation = externalAggregates.ToDictionary(item => item.OperationId, item => item.Quantity);
         var summaries = operations
             .Select(operation =>
             {
                 aggregateByOperation.TryGetValue(operation.Id, out var aggregate);
+                externalByOperation.TryGetValue(operation.Id, out var externalQuantity);
+                var totalQuantity = aggregate?.TotalQuantity ?? 0m;
                 return new ProductionOperationSummary(
                     operation.Id,
                     operation.OperationNumber,
@@ -81,7 +95,9 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                     operation.Unit,
                     aggregate?.HcQuantity ?? 0m,
                     aggregate?.TcQuantity ?? 0m,
-                    aggregate?.TotalQuantity ?? 0m);
+                    totalQuantity,
+                    externalQuantity,
+                    totalQuantity + externalQuantity);
             })
             .ToArray();
 

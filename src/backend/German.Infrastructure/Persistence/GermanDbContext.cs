@@ -20,6 +20,7 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
     public DbSet<ProductionOperation> ProductionOperations => Set<ProductionOperation>();
     public DbSet<ProductionEntry> ProductionEntries => Set<ProductionEntry>();
+    public DbSet<ProductionExternalQuantity> ProductionExternalQuantities => Set<ProductionExternalQuantity>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<AttendanceDay> AttendanceDays => Set<AttendanceDay>();
     public DbSet<AttendanceShiftEntry> AttendanceShiftEntries => Set<AttendanceShiftEntry>();
@@ -157,6 +158,17 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
                 .WithMany()
                 .HasForeignKey(x => x.DeletedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProductionExternalQuantity>(builder =>
+        {
+            builder.Property(x => x.Quantity).HasPrecision(18, 2);
+            builder.Property(x => x.SourceName).HasMaxLength(200);
+            builder.Property(x => x.Note).HasMaxLength(1000);
+            builder.HasIndex(x => new { x.ProductionOrderId, x.ProductionOperationId, x.ReceivedDate });
+            builder.HasOne<ProductionOrder>().WithMany().HasForeignKey(x => x.ProductionOrderId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<ProductionOperation>().WithMany().HasForeignKey(x => x.ProductionOperationId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<UserAccount>().WithMany().HasForeignKey(x => x.SubmittedByUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<AuditLog>(builder =>
