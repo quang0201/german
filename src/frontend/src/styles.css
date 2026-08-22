@@ -208,6 +208,8 @@
   flex: 1;
   min-height: 0;
 }
+.erp-production-manager-content > .erp-production-attendance-workspace { flex: 1; min-height: 0; }
+.erp-production-attendance-workspace > [role="tabpanel"] { min-height: 0; }
 .erp-production-manager-page {
   display: flex;
   flex-direction: column;
