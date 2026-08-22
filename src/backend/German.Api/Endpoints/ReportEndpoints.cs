@@ -12,8 +12,27 @@ public static class ReportEndpoints
         var group = endpoints.MapGroup("/api/reports")
             .RequireAuthorization("ManagerOrAdmin");
 
+        group.MapGet("/production/summary", GetProductionSummaryAsync);
         group.MapGet("/production/export.xlsx", ExportProductionAsync);
         return endpoints;
+    }
+
+    private static async Task<IResult> GetProductionSummaryAsync(
+        Guid orderId,
+        DateOnly? fromDate,
+        DateOnly? untilDate,
+        ProductionReportService service,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.BuildOperationSummaryAsync(
+            orderId,
+            fromDate,
+            untilDate,
+            cancellationToken);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : ApiResultMapper.Error(result.Error!);
     }
 
     private static async Task<IResult> ExportProductionAsync(
