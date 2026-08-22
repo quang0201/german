@@ -19,8 +19,8 @@ export function ProductionAttendanceWorkspace(props) {
     <div className="erp-production-attendance-workspace">
       <section className="erp-production-attendance-switcher" aria-label="Chọn màn nhập liệu">
         <div className="erp-production-attendance-tabs" role="tablist" aria-label="Loại dữ liệu nhập">
-          <button type="button" role="tab" aria-selected={activeView === "production"} className={`erp-button ${activeView === "production" ? "erp-button-primary" : "erp-button-secondary"}`} onClick={() => selectView("production")}>Nhập sản lượng</button>
-          <button type="button" role="tab" aria-selected={activeView === "attendance"} className={`erp-button ${activeView === "attendance" ? "erp-button-primary" : "erp-button-secondary"}`} onClick={() => selectView("attendance")}>Chấm công</button>
+          <button type="button" role="tab" aria-selected={activeView === "production"} className={`erp-button erp-production-attendance-tab ${activeView === "production" ? "erp-button-primary" : "erp-button-secondary"}`} onClick={() => selectView("production")}>Nhập sản lượng</button>
+          <button type="button" role="tab" aria-selected={activeView === "attendance"} className={`erp-button erp-production-attendance-tab ${activeView === "attendance" ? "erp-button-primary" : "erp-button-secondary"}`} onClick={() => selectView("attendance")}>Chấm công</button>
         </div>
       </section>
       <div
