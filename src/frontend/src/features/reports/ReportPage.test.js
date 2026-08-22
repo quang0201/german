@@ -67,8 +67,11 @@ describe("ReportPage", () => {
 
     expect(chartHtml).toContain("Đơn vị: cái");
     expect(chartHtml).toContain("Đơn vị: thùng");
-    expect(chartHtml.match(/style=\"width:50%\"/g)?.length).toBe(0);
-    expect(chartHtml).toContain("1000 cái");
-    expect(chartHtml).toContain("50 thùng");
+    expect(chartHtml.match(/style=\"width:50%\"/g)?.length ?? 0).toBe(0);
+    expect(chartHtml.match(/style=\"width:100%\"/g)?.length ?? 0).toBe(2);
+    expect(chartHtml).toContain("1.000");
+    expect(chartHtml).toContain("cái");
+    expect(chartHtml).toContain("50");
+    expect(chartHtml).toContain("thùng");
   });
 });
