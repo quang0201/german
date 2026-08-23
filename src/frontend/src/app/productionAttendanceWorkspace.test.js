@@ -12,9 +12,12 @@ describe("ProductionAttendanceWorkspace", () => {
       session: { role: "Manager" },
     })));
 
-    expect(html).toContain("Nhập liệu sản lượng và chấm công");
+    expect(html).not.toContain("Nhập liệu chung");
+    expect(html).not.toContain("Nhập liệu sản lượng và chấm công");
+    expect(html).not.toContain("Một màn hình cho phép chuyển nhanh giữa sản lượng và giờ công của cùng kỳ làm việc.");
     expect(html).toContain("Nhập sản lượng");
     expect(html).toContain("Chấm công");
+    expect(html).toContain("erp-production-attendance-tab");
   });
 
   test("keeps visited tabs mounted so switching back can preserve local drafts", () => {

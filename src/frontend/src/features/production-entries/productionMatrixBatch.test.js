@@ -16,6 +16,7 @@ describe("production matrix batch attendance", () => {
 
     expect(source).toContain("/api/lookups/attendance-hours");
     expect(source).toContain("Theo ca chấm công");
+    expect(source).toContain('useState("attendance-shifts")');
     expect(source).toContain("resolveBatchEntryQuantities");
     expect(source).toContain("/api/production-entries/batch-direct");
   });
