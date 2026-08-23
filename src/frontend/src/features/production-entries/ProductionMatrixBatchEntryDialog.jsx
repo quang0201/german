@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
-import { isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildBatchDirectPayload, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 const INPUT_MODES = [
   { value: "direct", label: "Nhập trực tiếp" },
@@ -186,9 +186,13 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     }
     setSaving(true); setError("");
     try {
-      const result = await api.post("/api/production-entries/batch-direct", {
-        workDate: day.isoDate, employeeId, productionOrderId: orderId, items,
-      });
+      const result = await api.post("/api/production-entries/batch-direct", buildBatchDirectPayload({
+        workDate: day.isoDate,
+        employeeId,
+        productionOrderId: orderId,
+        hourDraft: inputMode === "attendance-shifts" ? hourDraft : null,
+        items,
+      }));
       onSaved?.(result);
     } catch (requestError) { setError(requestError.message || "Không thể lưu nhiều công đoạn."); }
     finally { setSaving(false); }

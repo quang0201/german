@@ -213,6 +213,79 @@ public sealed class AttendanceService(IGermanDbContext db)
         return AppResult<AttendanceSaveResult>.Success(new AttendanceSaveResult(command.Year, command.Month, savedEmployeeData));
     }
 
+    public async Task<AppResult> PrepareDayAsync(
+        AttendanceDayInput input,
+        CancellationToken cancellationToken)
+    {
+        var employee = await db.Employees
+            .AsNoTracking()
+            .SingleOrDefaultAsync(item => item.Id == input.EmployeeId, cancellationToken);
+        if (employee is null)
+        {
+            return AppResult.Failure("attendance.employee_not_found", "Không tìm thấy nhân viên.");
+        }
+
+        if (!employee.IsActive)
+        {
+            return AppResult.Failure("attendance.inactive_employee", "Nhân viên đã được tắt và không thể tạo ngày chấm công mới.");
+        }
+
+        if (input.OvertimeHours < 0 || input.OvertimeHours > 24)
+        {
+            return AppResult.Failure("attendance.invalid_value", "Giờ TC phải nằm trong khoảng từ 0 đến 24.");
+        }
+
+        if (input.Shifts.GroupBy(item => item.SlotNumber).Any(group => group.Count() > 1))
+        {
+            return AppResult.Failure("attendance.invalid_shift", "Công đoạn ca bị trùng.");
+        }
+
+        var existingDay = await db.AttendanceDays
+            .Include(item => item.Shifts)
+            .SingleOrDefaultAsync(item => item.EmployeeId == input.EmployeeId && item.WorkDate == input.WorkDate, cancellationToken);
+        var day = existingDay;
+        if (day is null)
+        {
+            var scheduleContext = await LoadScheduleContextAsync([input.EmployeeId], input.WorkDate, input.WorkDate, cancellationToken);
+            var snapshots = ResolveCurrentSlots(input.EmployeeId, input.WorkDate, scheduleContext);
+            if (snapshots.Count == 0)
+            {
+                return AppResult.Failure("attendance.shift_not_setup", "Nhân viên chưa được cấu hình ca cho ngày này.");
+            }
+
+            day = new AttendanceDay
+            {
+                EmployeeId = input.EmployeeId,
+                WorkDate = input.WorkDate,
+                Shifts = snapshots.Select(ToEntity).ToList()
+            };
+            db.AttendanceDays.Add(day);
+        }
+
+        day.OvertimeHours = input.OvertimeHours;
+        var inputs = input.Shifts.ToDictionary(item => item.SlotNumber);
+        foreach (var shift in day.Shifts)
+        {
+            if (!inputs.TryGetValue(shift.SlotNumber, out var inputShift))
+            {
+                continue;
+            }
+
+            var validation = ApplyValue(shift, inputShift);
+            if (!validation.IsSuccess)
+            {
+                return validation;
+            }
+        }
+
+        if (inputs.Keys.Any(slot => day.Shifts.All(shift => shift.SlotNumber != slot)))
+        {
+            return AppResult.Failure("attendance.invalid_shift", "Công đoạn ca không thuộc lịch của ngày này.");
+        }
+
+        return AppResult.Success();
+    }
+
     private async Task<ShiftScheduleContext> LoadScheduleContextAsync(
         IReadOnlyCollection<Guid> employeeIds,
         DateOnly from,

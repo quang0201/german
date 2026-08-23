@@ -17,7 +17,25 @@ public sealed class AttendanceHoursQueryService(IGermanDbContext db)
 
         if (day is null)
         {
-            return new AttendanceHoursDto(employeeId, workDate, false, 0m, 0m, 0m, 0m, []);
+            var assignment = await db.EmployeeShiftAssignments.AsNoTracking()
+                .Where(item => item.EmployeeId == employeeId
+                    && item.EffectiveFrom <= workDate
+                    && (item.EffectiveTo == null || item.EffectiveTo >= workDate))
+                .OrderByDescending(item => item.EffectiveFrom)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (assignment is null)
+            {
+                return new AttendanceHoursDto(employeeId, workDate, false, 0m, 0m, 0m, 0m, []);
+            }
+
+            var scheduledPeriods = await db.ShiftPeriods.AsNoTracking()
+                .Where(item => item.ShiftTemplateId == assignment.ShiftTemplateId)
+                .OrderBy(item => item.SortOrder)
+                .ToListAsync(cancellationToken);
+            var scheduledShifts = scheduledPeriods
+                .Select((item, index) => new AttendanceShiftHoursDto(index + 1, item.Name, 0m))
+                .ToList();
+            return new AttendanceHoursDto(employeeId, workDate, false, 0m, 0m, 0m, 0m, scheduledShifts);
         }
 
         var workedShifts = day.Shifts

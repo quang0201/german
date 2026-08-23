@@ -22,7 +22,7 @@ export function isCurrentAttendanceRequest(
 
 export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
   const hasAttendance = Boolean(attendance?.hasAttendance);
-  const incomingShifts = hasAttendance ? (attendance.shifts ?? []) : [];
+  const incomingShifts = attendance?.shifts ?? [];
   const dirtyShifts = dirty.shifts ?? {};
 
   return {
@@ -70,6 +70,33 @@ export function resolveBatchEntryQuantities({ mode, draft, hourDraft }) {
   return { hc: preview.hc, tc: preview.tc, preview };
 }
 
+export function buildBatchDirectPayload({ workDate, employeeId, productionOrderId, hourDraft, items }) {
+  const shifts = (hourDraft?.shifts ?? []).map((shift) => ({
+    slotNumber: shift.slotNumber,
+    kind: "Hours",
+    workedHours: requiredHours(shift.workedHours, shift.shiftName || `Ca ${shift.slotNumber}`),
+  }));
+
+  const payload = {
+    workDate,
+    employeeId,
+    productionOrderId,
+    items,
+  };
+
+  if (!hourDraft) return payload;
+
+  return {
+    ...payload,
+    attendance: {
+      employeeId,
+      workDate,
+      overtimeHours: requiredHours(hourDraft?.tcHours ?? 0, "TC"),
+      shifts,
+    },
+  };
+}
+
 function requiredQuantity(value, label) {
   if (value === "" || value === null || value === undefined) {
     throw new RangeError(`${label} không được để trống.`);
@@ -79,5 +106,12 @@ function requiredQuantity(value, label) {
     throw new RangeError(`${label} phải là số không âm.`);
   }
   return quantity;
+}
+
+function requiredHours(value, label) {
+  if (value === "" || value === null || value === undefined) return 0;
+  const hours = Number(value);
+  if (!Number.isFinite(hours) || hours < 0) throw new RangeError(`${label} phải là số giờ không âm.`);
+  return hours;
 }
 import { calculateHourSplitPreview, calculateMultiShiftHourSplit } from "./productionMatrixHourSplit.js";

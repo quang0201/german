@@ -3,8 +3,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using German.Application.Auth;
 using German.Domain.Auth;
+using German.Domain.Attendance;
 using German.Domain.Employees;
 using German.Domain.Production;
+using German.Domain.Shifts;
 using German.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,6 +63,62 @@ public sealed class ProductionEntryBatchDirectApiTests
         {
             var db = services.GetRequiredService<GermanDbContext>();
             Assert.AreEqual(2, await db.ProductionEntries.CountAsync());
+        });
+    }
+
+    [TestMethod]
+    public async Task BatchDirect_WithAttendanceHoursCreatesAttendanceAndProduction()
+    {
+        await using var factory = new GermanApiFactory();
+        BatchSeed seed = default!;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            seed = await SeedAsync(services, db, "manager-batch-attendance", "M925", UserRole.Manager);
+            var template = new ShiftTemplate { Name = "Ca chuẩn" };
+            template.Periods.Add(new ShiftPeriod { Name = "Ca 1", SortOrder = 1, StartTime = new TimeOnly(7, 0), EndTime = new TimeOnly(11, 0) });
+            template.Periods.Add(new ShiftPeriod { Name = "Ca 2", SortOrder = 2, StartTime = new TimeOnly(13, 0), EndTime = new TimeOnly(17, 0) });
+            db.AddRange(template, new EmployeeShiftAssignment
+            {
+                EmployeeId = seed.Employee.Id,
+                ShiftTemplateId = template.Id,
+                EffectiveFrom = new DateOnly(2026, 8, 1)
+            });
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-batch-attendance");
+        var response = await client.PostAsJsonAsync("/api/production-entries/batch-direct", new
+        {
+            workDate = "2026-08-22",
+            employeeId = seed.Employee.Id,
+            productionOrderId = seed.Order.Id,
+            attendance = new
+            {
+                employeeId = seed.Employee.Id,
+                workDate = "2026-08-22",
+                overtimeHours = 1m,
+                shifts = new[]
+                {
+                    new { slotNumber = 1, kind = AttendanceShiftValueKind.Hours, workedHours = 4m },
+                    new { slotNumber = 2, kind = AttendanceShiftValueKind.Hours, workedHours = 4m }
+                }
+            },
+            items = new[]
+            {
+                new { productionOperationId = seed.Operations[0].Id, directHcQuantity = 800m, directTcQuantity = 100m, note = (string?)null }
+            }
+        });
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            Assert.AreEqual(1, await db.ProductionEntries.CountAsync());
+            var day = await db.AttendanceDays.Include(item => item.Shifts).SingleAsync();
+            Assert.AreEqual(1m, day.OvertimeHours);
+            Assert.AreEqual(8m, day.Shifts.Sum(item => item.WorkedHours ?? 0m));
         });
     }
 
