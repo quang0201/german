@@ -31,7 +31,9 @@ export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
       : (hasAttendance ? String(attendance.regularHours ?? "") : ""),
     tcHours: dirty.tcHours
       ? current.tcHours
-      : (hasAttendance ? String(attendance.overtimeHours ?? "") : ""),
+      : (hasAttendance
+        ? String(attendance.overtimeHours ?? "0")
+        : (current.tcHours === "" || current.tcHours === null || current.tcHours === undefined ? "0" : current.tcHours)),
     shifts: incomingShifts.map((shift) => {
       const slotKey = String(shift.slotNumber);
       const currentShift = (current.shifts ?? []).find(
