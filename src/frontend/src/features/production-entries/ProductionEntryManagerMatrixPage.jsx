@@ -26,7 +26,7 @@ const emptyFilters = { employeeId: "", operationId: "", search: "" };
 export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPanelClose }) {
   const [monthKey, setMonthKey] = useState(() => currentMonthKey(localIsoDate()));
   const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [excludeSundays, setExcludeSundays] = useState(true);
+  const [excludeSundays, setExcludeSundays] = useState(false);
   const [filters, setFilters] = useState(emptyFilters);
   const [draft, setDraft] = useState(emptyFilters);
   const [employees, setEmployees] = useState([]);
