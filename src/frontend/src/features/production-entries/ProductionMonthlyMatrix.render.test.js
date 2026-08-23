@@ -86,4 +86,17 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(matrixSource).toContain("todayIso");
     expect(matrixSource).toContain("offsetLeft");
   });
+
+  test("marks Sundays separately while keeping today highlighted", () => {
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={dataWithOneOrder()}
+      monthKey="2026-08"
+      excludeSundays={false}
+      today={new Date("2026-08-20T08:00:00")}
+    />);
+
+    expect(html).toMatch(/class="[^"]*erp-month-sunday[^"]*"[^>]*>[\s\S]*data-date="2026-08-02"/);
+    expect(html).toMatch(/class="[^"]*erp-month-today[^"]*"[^>]*>[\s\S]*data-date="2026-08-20"/);
+    expect(matrixSource).toContain("day.isSunday");
+  });
 });

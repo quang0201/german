@@ -32,4 +32,10 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toMatch(/thead tr:first-child th:not\(\[rowspan="2"\]\)[\s\S]*height:\s*46px/);
     expect(matrixCss).toMatch(/thead th\[rowspan="2"\][\s\S]*top:\s*0[\s\S]*height:\s*77px\s*!important[\s\S]*vertical-align:\s*middle/);
   });
+
+  test("uses a red weekend header and keeps today's header visually stronger", () => {
+    expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-sunday[\s\S]*background:/);
+    expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-sunday[\s\S]*color:/);
+    expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-today[\s\S]*background:/);
+  });
 });

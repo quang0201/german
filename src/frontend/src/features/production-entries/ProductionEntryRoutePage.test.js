@@ -37,4 +37,10 @@ describe("ProductionEntryRoutePage", () => {
     expect(source).toContain("ProductionEntryManagerMatrixPage");
     expect(source).not.toContain("ProductionAttendanceWorkspace");
   });
+
+  test("shows Sundays by default in the manager production matrix", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
+
+    expect(source).toContain('const [excludeSundays, setExcludeSundays] = useState(false);');
+  });
 });
