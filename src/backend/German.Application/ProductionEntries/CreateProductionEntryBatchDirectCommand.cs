@@ -1,3 +1,5 @@
+using German.Application.Attendance;
+
 namespace German.Application.ProductionEntries;
 
 public sealed record CreateProductionEntryBatchDirectItem(
@@ -10,7 +12,8 @@ public sealed record CreateProductionEntryBatchDirectCommand(
     DateOnly WorkDate,
     Guid EmployeeId,
     Guid ProductionOrderId,
-    IReadOnlyList<CreateProductionEntryBatchDirectItem> Items);
+    IReadOnlyList<CreateProductionEntryBatchDirectItem> Items,
+    AttendanceDayInput? Attendance = null);
 
 public sealed record CreateProductionEntryBatchDirectResult(
     int CreatedCount,

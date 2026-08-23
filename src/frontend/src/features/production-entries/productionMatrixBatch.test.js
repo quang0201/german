@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { isCurrentAttendanceRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildBatchDirectPayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("production matrix batch attendance", () => {
   test("ignores attendance responses for an obsolete employee or day", () => {
@@ -19,6 +19,7 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain('useState("attendance-shifts")');
     expect(source).toContain("resolveBatchEntryQuantities");
     expect(source).toContain("/api/production-entries/batch-direct");
+    expect(source).toContain("attendance");
   });
 
   test("builds Direct quantities from total-hours and attendance-shift modes", () => {
@@ -35,6 +36,44 @@ describe("production matrix batch attendance", () => {
       .toMatchObject({ hc: 800, tc: 200 });
     expect(resolveBatchEntryQuantities({ mode: "attendance-shifts", draft: { total: "1000" }, hourDraft }))
       .toMatchObject({ hc: 800, tc: 200 });
+  });
+
+  test("builds attendance hours together with the production payload", () => {
+    const payload = buildBatchDirectPayload({
+      workDate: "2026-08-22",
+      employeeId: "employee-1",
+      productionOrderId: "order-1",
+      hourDraft: {
+        tcHours: "1",
+        shifts: [
+          { slotNumber: 1, workedHours: "4" },
+          { slotNumber: 2, workedHours: "4" },
+        ],
+      },
+      items: [{ productionOperationId: "operation-1", directHcQuantity: 800, directTcQuantity: 100, note: null }],
+    });
+
+    expect(payload.attendance).toEqual({
+      employeeId: "employee-1",
+      workDate: "2026-08-22",
+      overtimeHours: 1,
+      shifts: [
+        { slotNumber: 1, kind: "Hours", workedHours: 4 },
+        { slotNumber: 2, kind: "Hours", workedHours: 4 },
+      ],
+    });
+  });
+
+  test("does not create an attendance payload for direct production mode", () => {
+    const payload = buildBatchDirectPayload({
+      workDate: "2026-08-22",
+      employeeId: "employee-1",
+      productionOrderId: "order-1",
+      hourDraft: null,
+      items: [],
+    });
+
+    expect(payload.attendance).toBeUndefined();
   });
 
   test("keeps edited attendance fields while applying returned shift structure", () => {

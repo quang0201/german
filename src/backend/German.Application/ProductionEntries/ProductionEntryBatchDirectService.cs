@@ -1,4 +1,5 @@
 using German.Application.Abstractions;
+using German.Application.Attendance;
 using German.Application.Common;
 using German.Domain.Auth;
 using German.Domain.Production;
@@ -6,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace German.Application.ProductionEntries;
 
-public sealed class ProductionEntryBatchDirectService(IGermanDbContext db)
+public sealed class ProductionEntryBatchDirectService(IGermanDbContext db, AttendanceService? attendanceService = null)
 {
+    private readonly AttendanceService attendanceWriter = attendanceService ?? new AttendanceService(db);
     public async Task<AppResult<CreateProductionEntryBatchDirectResult>> CreateAsync(
         CurrentActor actor,
         CreateProductionEntryBatchDirectCommand command,
@@ -97,6 +99,21 @@ public sealed class ProductionEntryBatchDirectService(IGermanDbContext db)
             catch (ArgumentOutOfRangeException exception)
             {
                 return Failure("production_entry.invalid_input", exception.Message);
+            }
+        }
+
+        if (command.Attendance is not null)
+        {
+            if (command.Attendance.EmployeeId != command.EmployeeId
+                || command.Attendance.WorkDate != command.WorkDate)
+            {
+                return Failure("production_entry.attendance_mismatch", "Thông tin chấm công không khớp nhân viên hoặc ngày nhập sản lượng.");
+            }
+
+            var attendanceResult = await attendanceWriter.PrepareDayAsync(command.Attendance, cancellationToken);
+            if (!attendanceResult.IsSuccess)
+            {
+                return Failure(attendanceResult.Error!.Code, attendanceResult.Error.Message);
             }
         }
 

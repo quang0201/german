@@ -55,7 +55,17 @@ public static class ProductionEntryEndpoints
     {
         var requestItems = request.Items ?? Array.Empty<CreateProductionEntryBatchDirectItemRequest>();
         var items = requestItems.Select(item => new CreateProductionEntryBatchDirectItem(item.ProductionOperationId, item.DirectHcQuantity, item.DirectTcQuantity, item.Note)).ToArray();
-        var command = new CreateProductionEntryBatchDirectCommand(request.WorkDate, request.EmployeeId, request.ProductionOrderId, items);
+        var attendance = request.Attendance is null
+            ? null
+            : new German.Application.Attendance.AttendanceDayInput(
+                request.Attendance.EmployeeId,
+                request.Attendance.WorkDate,
+                request.Attendance.OvertimeHours,
+                request.Attendance.Shifts.Select(shift => new German.Application.Attendance.AttendanceShiftInput(
+                    shift.SlotNumber,
+                    shift.Kind,
+                    shift.WorkedHours)).ToList());
+        var command = new CreateProductionEntryBatchDirectCommand(request.WorkDate, request.EmployeeId, request.ProductionOrderId, items, attendance);
         var result = await service.CreateAsync(httpContext.User.ToCurrentActor(), command, cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
     }
