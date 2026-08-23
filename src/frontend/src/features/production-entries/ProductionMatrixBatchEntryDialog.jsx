@@ -9,7 +9,7 @@ const INPUT_MODES = [
 ];
 
 const quantityFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
-const emptyHourDraft = () => ({ hcHours: "", tcHours: "", shifts: [] });
+const emptyHourDraft = () => ({ hcHours: "", tcHours: "0", shifts: [] });
 const emptyOperationDraft = () => ({ hc: "", tc: "", total: "", note: "" });
 
 export function firstActiveEmployeeId(employees = []) {

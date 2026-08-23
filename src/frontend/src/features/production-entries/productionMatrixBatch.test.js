@@ -20,6 +20,7 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("resolveBatchEntryQuantities");
     expect(source).toContain("/api/production-entries/batch-direct");
     expect(source).toContain("attendance");
+    expect(source).toContain('tcHours: "0"');
   });
 
   test("builds Direct quantities from total-hours and attendance-shift modes", () => {
@@ -99,6 +100,16 @@ describe("production matrix batch attendance", () => {
     expect(merged.tcHours).toBe("2");
     expect(merged.shifts).toHaveLength(2);
     expect(merged.shifts.map((shift) => shift.workedHours)).toEqual(["4", "4"]);
+  });
+
+  test("defaults overtime to zero when attendance has not been saved", () => {
+    const merged = mergeAttendanceHourDraft(
+      { hcHours: "", tcHours: "0", shifts: [] },
+      { hasAttendance: false, regularHours: 0, overtimeHours: 0, shifts: [] },
+      { hcHours: false, tcHours: false, shifts: {} },
+    );
+
+    expect(merged.tcHours).toBe("0");
   });
 
   test("keeps an edited shift value while loading untouched shifts", () => {
