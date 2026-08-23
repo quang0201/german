@@ -1,5 +1,7 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { ProductionEntryRoutePage } from "./ProductionEntryRoutePage.jsx";
@@ -20,12 +22,19 @@ describe("ProductionEntryRoutePage", () => {
     expect(html).not.toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
   });
 
-  test("routes Manager and Admin to the monthly matrix flow", () => {
+  test("routes Manager and Admin to the monthly matrix flow without a second workspace tab bar", () => {
     for (const role of ["Manager", "Admin"]) {
       const html = renderFor(role);
       expect(html).toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
       expect(html).toContain("Ẩn Chủ nhật");
       expect(html).not.toContain('aria-label="Chọn kỳ"');
     }
+  });
+
+  test("does not route manager production through the combined workspace", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryRoutePage.jsx"), "utf8");
+
+    expect(source).toContain("ProductionEntryManagerMatrixPage");
+    expect(source).not.toContain("ProductionAttendanceWorkspace");
   });
 });

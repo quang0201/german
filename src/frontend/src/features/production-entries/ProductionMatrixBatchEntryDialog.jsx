@@ -33,7 +33,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const [operations, setOperations] = useState([]);
   const [employeeId, setEmployeeId] = useState("");
   const [orderId, setOrderId] = useState("");
-  const [inputMode, setInputMode] = useState("direct");
+  const [inputMode, setInputMode] = useState("attendance-shifts");
   const [hourDraft, setHourDraft] = useState(emptyHourDraft);
   const [drafts, setDrafts] = useState({});
   const [error, setError] = useState("");
@@ -57,7 +57,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setOrderId("");
     setOrders([]);
     setOperations([]);
-    setInputMode("direct");
+    setInputMode("attendance-shifts");
     setHourDraft(emptyHourDraft());
     setDrafts({});
     setError("");
