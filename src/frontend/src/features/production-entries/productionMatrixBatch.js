@@ -43,7 +43,7 @@ export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
         ...shift,
         workedHours: dirtyShifts[slotKey]
           ? currentShift?.workedHours ?? ""
-          : String(shift.workedHours ?? ""),
+          : String(hasAttendance ? (shift.workedHours ?? "0") : "4"),
       };
     }),
   };

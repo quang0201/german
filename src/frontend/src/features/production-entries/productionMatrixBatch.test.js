@@ -112,6 +112,39 @@ describe("production matrix batch attendance", () => {
     expect(merged.tcHours).toBe("0");
   });
 
+  test("defaults each unsaved regular shift to four hours", () => {
+    const merged = mergeAttendanceHourDraft(
+      { hcHours: "", tcHours: "0", shifts: [] },
+      {
+        hasAttendance: false,
+        regularHours: 0,
+        overtimeHours: 0,
+        shifts: [
+          { slotNumber: 1, shiftName: "Ca 1", workedHours: 0 },
+          { slotNumber: 2, shiftName: "Ca 2", workedHours: 0 },
+        ],
+      },
+      { hcHours: false, tcHours: false, shifts: {} },
+    );
+
+    expect(merged.shifts.map((shift) => shift.workedHours)).toEqual(["4", "4"]);
+  });
+
+  test("keeps saved attendance shift hours instead of applying the four-hour default", () => {
+    const merged = mergeAttendanceHourDraft(
+      { hcHours: "", tcHours: "0", shifts: [] },
+      {
+        hasAttendance: true,
+        regularHours: 7,
+        overtimeHours: 0,
+        shifts: [{ slotNumber: 1, shiftName: "Ca 1", workedHours: 7 }],
+      },
+      { hcHours: false, tcHours: false, shifts: {} },
+    );
+
+    expect(merged.shifts[0].workedHours).toBe("7");
+  });
+
   test("keeps an edited shift value while loading untouched shifts", () => {
     const merged = mergeAttendanceHourDraft(
       {
