@@ -215,6 +215,27 @@ public sealed class AttendanceServiceTests
     }
 
     [TestMethod]
+    public async Task GetMonth_HidesLegacyInactiveEmployeeWithoutHistory()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee
+        {
+            EmployeeCode = "A105D",
+            FullName = "Nghỉ cũ không rõ ngày",
+            IsActive = false,
+            DeactivatedAt = null
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 8, DayFrom: 1, DayCount: 1),
+            CancellationToken.None);
+
+        Assert.IsFalse(result.Employees.Any(x => x.EmployeeId == employee.Id));
+    }
+
+    [TestMethod]
     public async Task GetMonth_DoesNotCreateEditableSlotsForUnsavedDaysOfInactiveEmployee()
     {
         await using var db = CreateDbContext();

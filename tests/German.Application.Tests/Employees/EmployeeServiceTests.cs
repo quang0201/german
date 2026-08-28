@@ -163,6 +163,28 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task DeleteAsyncDoesNotInventDeactivationDateForLegacyInactiveEmployee()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee
+        {
+            EmployeeCode = "E013",
+            FullName = "Nhân viên cũ",
+            IsActive = false,
+            DeactivatedAt = null
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).DeleteAsync(employee.Id, CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        var unchanged = await db.Employees.SingleAsync();
+        Assert.IsFalse(unchanged.IsActive);
+        Assert.IsNull(unchanged.DeactivatedAt);
+    }
+
+    [TestMethod]
     public async Task AssignShiftRejectsInactiveEmployee()
     {
         await using var db = CreateDb();
