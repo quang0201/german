@@ -185,6 +185,7 @@ public sealed class ManagerAdministrationApiTests
             var db = services.GetRequiredService<GermanDbContext>();
             var employee = await db.Employees.SingleAsync(x => x.Id == employeeId);
             Assert.IsFalse(employee.IsActive);
+            Assert.AreEqual(DateOnly.FromDateTime(DateTime.UtcNow), employee.DeactivatedAt);
             Assert.IsTrue(await db.UserAccounts.AnyAsync(x => x.EmployeeId == employeeId && x.IsActive));
             Assert.IsTrue(await db.AttendanceDays.AnyAsync(x => x.EmployeeId == employeeId));
             Assert.IsTrue(await db.ProductionEntries.AnyAsync(x => x.EmployeeId == employeeId && !x.IsDeleted));

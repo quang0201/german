@@ -5,6 +5,7 @@ public sealed record EmployeeDto(
     string EmployeeCode,
     string FullName,
     bool IsActive,
+    DateOnly? DeactivatedAt,
     EmployeeCurrentShiftDto? CurrentShift);
 
 public sealed record EmployeeCurrentShiftDto(

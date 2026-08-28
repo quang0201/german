@@ -143,6 +143,31 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetAsync_HidesProductionAfterEmployeeDeactivationMonth()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee
+        {
+            EmployeeCode = "E100",
+            FullName = "Ẩn tháng sau",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 15)
+        };
+        var order = NewOrder("0417", "Mã hàng 0417");
+        var operation = NewOperation(order, 7, "May");
+        db.AddRange(employee, order, operation);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 9, 1), 20m, 0m);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 9, null, null, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(0, result.Value!.Orders.Count);
+    }
+
+    [TestMethod]
     public async Task GetAsync_OrderFilterKeepsToolbarOptionsButFiltersBlocksAndSummary()
     {
         await using var db = CreateDb();

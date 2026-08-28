@@ -10,6 +10,13 @@ describe("attendance model", () => {
     ]).map((employee) => employee.employeeId)).toEqual(["active", "legacy"]);
   });
 
+  test("keeps an employee deactivated during the selected month available for history", () => {
+    expect(activeAttendanceEmployees([
+      { employeeId: "august", isActive: false, deactivatedAt: "2026-08-15" },
+      { employeeId: "july", isActive: false, deactivatedAt: "2026-07-31" },
+    ], "2026-08").map((employee) => employee.employeeId)).toEqual(["august"]);
+  });
+
   test("selects the week containing today for the current month and the first week otherwise", () => {
     expect(attendanceBlockIndexForMonth("2026-08", new Date("2026-08-22T08:00:00"))).toBe(3);
     expect(attendanceBlockIndexForMonth("2026-07", new Date("2026-08-22T08:00:00"))).toBe(0);

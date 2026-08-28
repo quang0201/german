@@ -222,6 +222,47 @@ public sealed class AttendanceServiceTests
     }
 
     [TestMethod]
+    public async Task GetMonth_IncludesEmployeeDeactivatedDuringRequestedMonthWithoutAttendance()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee
+        {
+            EmployeeCode = "A105D",
+            FullName = "Tắt giữa tháng",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 15)
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 8, DayFrom: 15, DayCount: 1), CancellationToken.None);
+
+        Assert.AreEqual(employee.Id, result.Employees.Single().EmployeeId);
+        Assert.IsFalse(result.Employees.Single().Days.Single().HasShiftSetup);
+    }
+
+    [TestMethod]
+    public async Task GetMonth_HidesInactiveEmployeeAfterDeactivationMonthWithoutHistory()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee
+        {
+            EmployeeCode = "A105E",
+            FullName = "Ẩn tháng sau",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 15)
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new AttendanceService(db).GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 9), CancellationToken.None);
+
+        Assert.AreEqual(0, result.Employees.Count);
+    }
+
+    [TestMethod]
     public async Task SaveMonth_AllowsEditingExistingInactiveDayButRejectsNewDay()
     {
         await using var db = CreateDbContext();

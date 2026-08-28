@@ -41,6 +41,9 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   const [recordsContext, setRecordsContext] = useState(null);
   const toast = useToast();
   const bounds = useMemo(() => monthBounds(monthKey), [monthKey]);
+  const availableEmployees = useMemo(() => employees.filter((item) => item.isActive !== false
+    || !item.deactivatedAt
+    || item.deactivatedAt >= `${monthKey}-01`), [employees, monthKey]);
 
   useEffect(() => {
     api.get("/api/employees").then(setEmployees)
@@ -125,7 +128,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
         <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
       </div>
       <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
-        <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
+        <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{availableEmployees.map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}{item.isActive === false ? " (Đã tắt)" : ""}</option>)}</select></Field>
         <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
       </FilterBar>

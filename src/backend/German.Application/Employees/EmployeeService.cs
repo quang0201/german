@@ -115,6 +115,14 @@ public sealed class EmployeeService(IGermanDbContext db)
 
         employee.EmployeeCode = command.EmployeeCode.Trim();
         employee.FullName = command.FullName.Trim();
+        if (command.IsActive)
+        {
+            employee.DeactivatedAt = null;
+        }
+        else if (employee.IsActive)
+        {
+            employee.DeactivatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
+        }
         employee.IsActive = command.IsActive;
         employee.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
@@ -130,6 +138,7 @@ public sealed class EmployeeService(IGermanDbContext db)
         }
 
         employee.IsActive = false;
+        employee.DeactivatedAt ??= DateOnly.FromDateTime(DateTime.UtcNow);
         employee.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         return AppResult.Success();
@@ -193,7 +202,7 @@ public sealed class EmployeeService(IGermanDbContext db)
     }
 
     private static EmployeeDto ToDto(Employee employee, EmployeeCurrentShiftDto? currentShift = null) =>
-        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, currentShift);
+        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, employee.DeactivatedAt, currentShift);
 
     private static string Normalize(string value) => value?.Trim().ToUpperInvariant() ?? string.Empty;
 }

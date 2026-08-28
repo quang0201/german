@@ -31,8 +31,9 @@ export function mergeAttendanceEmployees(existing, incoming) {
   return merged.concat((incoming ?? []).filter((employee) => !existingIds.has(employee.employeeId)));
 }
 
-export function activeAttendanceEmployees(employees = []) {
-  return employees.filter((employee) => employee.isActive !== false);
+export function activeAttendanceEmployees(employees = [], monthKey = "") {
+  return employees.filter((employee) => employee.isActive !== false
+    || (employee.deactivatedAt && (!monthKey || employee.deactivatedAt >= `${monthKey}-01`)));
 }
 
 export function isCurrentAttendanceRequest(requestedMonthKey, currentMonthKey, requestedGeneration, currentGeneration) {
@@ -78,6 +79,7 @@ export function mergeAttendanceCache(cache, payload, { batchId, inputCursor = nu
       employeeCode: employee.employeeCode,
       fullName: employee.fullName,
       isActive: employee.isActive !== false,
+      deactivatedAt: employee.deactivatedAt ?? null,
       totals: employee.totals ?? { regularWorkedHours: 0, overtimeHours: 0, paidLeaveHours: 0, sickLeaveHours: 0 },
     };
   }

@@ -93,6 +93,45 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task DeleteAsyncRecordsDeactivatedDate()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E008", FullName = "Tắt hôm nay" };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).DeleteAsync(employee.Id, CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        var saved = await db.Employees.SingleAsync();
+        Assert.IsFalse(saved.IsActive);
+        Assert.AreEqual(DateOnly.FromDateTime(DateTime.UtcNow), saved.DeactivatedAt);
+    }
+
+    [TestMethod]
+    public async Task UpdateAsyncClearsDeactivatedDateWhenEmployeeIsReactivated()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee
+        {
+            EmployeeCode = "E009",
+            FullName = "Mở lại",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 1)
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).UpdateAsync(
+            employee.Id,
+            new UpdateEmployeeCommand("E009", "Mở lại", true),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        Assert.IsNull((await db.Employees.SingleAsync()).DeactivatedAt);
+    }
+
+    [TestMethod]
     public async Task ListAsyncIncludesCurrentShiftForTheRequestedDate()
     {
         await using var db = CreateDb();

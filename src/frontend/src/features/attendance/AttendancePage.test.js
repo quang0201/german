@@ -13,7 +13,7 @@ describe("AttendancePage", () => {
     expect(html).toContain("Tuần tiếp ›");
     expect(html).toContain("‹ Tuần trước");
     expect(html).toContain("Tất cả nhân viên");
-    expect(html).toContain("Ô trống = chưa nhập");
+    expect(html).toContain("Nhân viên tắt trong tháng vẫn được xem ở chế độ chỉ đọc");
   });
 
   test("renders dynamic regular shifts and one daily TC row", () => {
