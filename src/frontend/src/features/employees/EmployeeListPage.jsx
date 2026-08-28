@@ -31,8 +31,28 @@ export function EmployeeListPage() {
   function loadShiftTemplates() { setShiftLoading(true); api.get("/api/shift-templates").then((items) => { setShiftTemplates(items); setShiftError(""); }).catch((e) => setShiftError(mapProductionEntryError(e, "Không thể tải bộ ca."))).finally(() => setShiftLoading(false)); }
   useEffect(() => { loadEmployees(); loadShiftTemplates(); }, []);
   async function submitCreate(payload) { setCreateSaving(true); setCreateError(""); try { await api.post("/api/employees", payload); setCreateOpen(false); loadEmployees(); } catch (e) { setCreateError(mapProductionEntryError(e, "Không thể tạo nhân viên và gán bộ ca.")); } finally { setCreateSaving(false); } }
-  async function submitEdit(payload) { if (!editingEmployee) return; setEditSaving(true); setEditError(""); try { const updated = await api.put(`/api/employees/${editingEmployee.id}`, payload); setRows((current) => current.map((row) => row.id === editingEmployee.id ? updated : row)); setEditingEmployee(null); } catch (e) { setEditError(mapProductionEntryError(e, "Không thể lưu nhân viên.")); } finally { setEditSaving(false); } }
-  async function assignShift(payload) { if (!editingEmployee) return false; setAssignmentSaving(true); setAssignmentError(""); try { await api.post(`/api/employees/${editingEmployee.id}/shift-assignments`, payload); return true; } catch (e) { setAssignmentError(mapProductionEntryError(e, "Không thể gán bộ ca.")); return false; } finally { setAssignmentSaving(false); } }
+  async function submitEdit(payload) { if (!editingEmployee) return; setEditSaving(true); setEditError(""); try { const updated = await api.put(`/api/employees/${editingEmployee.id}`, payload); setRows((current) => current.map((row) => row.id === editingEmployee.id ? { ...row, ...updated, currentShiftTemplateId: row.currentShiftTemplateId, currentShiftTemplateName: row.currentShiftTemplateName, currentShiftEffectiveFrom: row.currentShiftEffectiveFrom } : row)); setEditingEmployee(null); } catch (e) { setEditError(mapProductionEntryError(e, "Không thể lưu nhân viên.")); } finally { setEditSaving(false); } }
+  async function assignShift(payload) {
+    if (!editingEmployee) return false;
+    setAssignmentSaving(true);
+    setAssignmentError("");
+    try {
+      await api.post(`/api/employees/${editingEmployee.id}/shift-assignments`, payload);
+      try {
+        const refreshedRows = await api.get("/api/employees");
+        setRows(refreshedRows);
+        setEditingEmployee((current) => current ? refreshedRows.find((row) => row.id === current.id) ?? current : current);
+      } catch (refreshError) {
+        setError(mapProductionEntryError(refreshError, "Đã đổi bộ ca nhưng không thể tải lại danh sách nhân viên."));
+      }
+      return true;
+    } catch (e) {
+      setAssignmentError(mapProductionEntryError(e, "Không thể gán bộ ca."));
+      return false;
+    } finally {
+      setAssignmentSaving(false);
+    }
+  }
   async function deleteEmployee(row) {
     setDeletingEmployeeId(row.id);
     setDeleteError("");
@@ -46,6 +66,6 @@ export function EmployeeListPage() {
       setConfirmingDelete(null);
     }
   }
-  const columns = [{ key: "employeeCode", label: "Mã NV" }, { key: "fullName", label: "Họ tên" }, { key: "isActive", label: "Trạng thái", render: (row) => row.isActive ? "Đang hoạt động" : "Đã tắt" }, { key: "actions", label: "Thao tác", render: (row) => <div className="erp-table-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => { setEditingEmployee(row); setEditError(""); setAssignmentError(""); }}>Sửa</button>{row.isActive && <button type="button" className="erp-button erp-button-danger" disabled={deletingEmployeeId === row.id} onClick={() => setConfirmingDelete(row)}>{deletingEmployeeId === row.id ? "Đang xóa..." : "Xóa"}</button>}</div> }];
+  const columns = [{ key: "employeeCode", label: "Mã NV" }, { key: "fullName", label: "Họ tên" }, { key: "currentShiftTemplateName", label: "Bộ ca hiện tại", render: (row) => row.currentShiftTemplateName || <span className="erp-employee-shift-missing">Chưa gán bộ ca</span> }, { key: "isActive", label: "Trạng thái", render: (row) => row.isActive ? "Đang hoạt động" : "Đã tắt" }, { key: "actions", label: "Thao tác", render: (row) => <div className="erp-table-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => { setEditingEmployee(row); setEditError(""); setAssignmentError(""); }}>Sửa</button>{row.isActive && <button type="button" className="erp-button erp-button-danger" disabled={deletingEmployeeId === row.id} onClick={() => setConfirmingDelete(row)}>{deletingEmployeeId === row.id ? "Đang xóa..." : "Xóa"}</button>}</div> }];
   return <div className="erp-feature-page"><PageHeader title="Nhân viên" description="Quản lý hồ sơ nhân viên và trạng thái làm việc." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setCreateOpen(true); setCreateError(""); }}>+ Thêm nhân viên</button>} />{error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}{deleteError && <Alert variant="error" title="Không thể xóa nhân viên.">{deleteError}</Alert>}{shiftError && <Alert variant="warning" title="Bộ ca chưa sẵn sàng.">{shiftError}</Alert>}<FormSection title="Nhân viên" description="Tạo mới bằng popup để gán bộ ca và ngày hiệu lực ngay từ đầu." actions={<button type="button" className="erp-button erp-button-secondary" onClick={() => { setCreateOpen(true); setCreateError(""); }}>+ Thêm nhân viên</button>}><div className="erp-field-wide erp-section-description">Mỗi nhân viên mới cần được gán bộ ca HC trước khi nhập chấm công.</div></FormSection><DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có nhân viên." rowKey="id" rowClassName={(row) => row.isActive === false ? "erp-employee-inactive" : ""} /><EmployeeDialog mode="create" open={createOpen} shifts={shiftTemplates} shiftLoading={shiftLoading} loading={createSaving} error={createError || shiftError} onClose={() => setCreateOpen(false)} onSubmit={submitCreate} onChange={() => setCreateError("")} /><EmployeeDialog open={Boolean(editingEmployee)} employee={editingEmployee} shifts={shiftTemplates} shiftLoading={shiftLoading} loading={editSaving} assignmentLoading={assignmentSaving} error={editError} assignmentError={assignmentError} onClose={() => { setEditingEmployee(null); setAssignmentError(""); }} onSubmit={submitEdit} onAssignShift={assignShift} onChange={() => { setEditError(""); setAssignmentError(""); }} /><ConfirmDialog open={Boolean(confirmingDelete)} title="Xác nhận xóa nhân viên?" confirmLabel="Xóa nhân viên" loading={Boolean(deletingEmployeeId)} onClose={() => setConfirmingDelete(null)} onConfirm={() => deleteEmployee(confirmingDelete)}>Nhân viên {confirmingDelete?.employeeCode} — {confirmingDelete?.fullName} sẽ được chuyển sang trạng thái đã tắt. Lịch sử chấm công vẫn được giữ lại.</ConfirmDialog></div>;
 }

@@ -60,6 +60,65 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task ListAsyncReturnsShiftAssignmentActiveOnRequestedDate()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E010", FullName = "Nguyễn Văn E" };
+        var previousShift = new ShiftTemplate { Name = "Ca cũ", IsActive = true };
+        var currentShift = new ShiftTemplate { Name = "Ca hiện tại", IsActive = true };
+        db.AddRange(employee, previousShift, currentShift);
+        db.EmployeeShiftAssignments.AddRange(
+            new EmployeeShiftAssignment
+            {
+                EmployeeId = employee.Id,
+                ShiftTemplateId = previousShift.Id,
+                EffectiveFrom = new DateOnly(2026, 8, 1),
+                EffectiveTo = new DateOnly(2026, 8, 19)
+            },
+            new EmployeeShiftAssignment
+            {
+                EmployeeId = employee.Id,
+                ShiftTemplateId = currentShift.Id,
+                EffectiveFrom = new DateOnly(2026, 8, 20)
+            });
+        await db.SaveChangesAsync();
+
+        var rows = await new EmployeeService(db).ListAsync(
+            CancellationToken.None,
+            new DateOnly(2026, 8, 28));
+
+        var row = rows.Single();
+        Assert.AreEqual(currentShift.Id, row.CurrentShiftTemplateId);
+        Assert.AreEqual("Ca hiện tại", row.CurrentShiftTemplateName);
+        Assert.AreEqual(new DateOnly(2026, 8, 20), row.CurrentShiftEffectiveFrom);
+    }
+
+    [TestMethod]
+    public async Task ListAsyncDoesNotTreatFutureAssignmentAsCurrent()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E011", FullName = "Nguyễn Văn F" };
+        var futureShift = new ShiftTemplate { Name = "Ca tương lai", IsActive = true };
+        db.AddRange(employee, futureShift);
+        db.EmployeeShiftAssignments.Add(new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = futureShift.Id,
+            EffectiveFrom = new DateOnly(2026, 9, 1)
+        });
+        await db.SaveChangesAsync();
+
+        var rows = await new EmployeeService(db).ListAsync(
+            CancellationToken.None,
+            new DateOnly(2026, 8, 28));
+
+        var row = rows.Single();
+        Assert.IsNull(row.CurrentShiftTemplateId);
+        Assert.IsNull(row.CurrentShiftTemplateName);
+        Assert.IsNull(row.CurrentShiftEffectiveFrom);
+    }
+
+    [TestMethod]
     public async Task DeleteAsyncDeactivatesEmployeeAndKeepsHistory()
     {
         await using var db = CreateDb();

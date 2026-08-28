@@ -5,6 +5,12 @@ import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate
 import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
 import "./EmployeeDialog.css";
 
+function formatEmployeeDate(value) {
+  if (!value) return "—";
+  const [year, month, day] = String(value).split("-");
+  return year && month && day ? `${day}/${month}/${year}` : String(value);
+}
+
 export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], shiftLoading = false, loading = false, assignmentLoading = false, error = "", assignmentError = "", onClose, onSubmit, onAssignShift, onChange }) {
   const [draft, setDraft] = useState(() => mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));
   const [assignmentDraft, setAssignmentDraft] = useState({ shiftTemplateId: "", effectiveFrom: "" });
@@ -62,6 +68,7 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
         {error && <Alert variant="error" title="Không thể lưu nhân viên.">{error}</Alert>}
         <form onSubmit={submit}>
           <div className="erp-employee-dialog-fields">
+            {mode === "edit" && <div className="erp-employee-dialog-section-heading"><h3>Thông tin nhân viên</h3></div>}
             <Field label="Mã nhân viên" required>
               <input className="erp-control" required value={draft.employeeCode} onChange={(event) => update("employeeCode", event.target.value)} />
             </Field>
@@ -80,10 +87,17 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
               </Field>
             </> : <>
               <label className="erp-employee-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>
+              <div className="erp-employee-current-shift-section">
+                <div className="erp-employee-dialog-section-heading">
+                  <h3>Bộ ca đang áp dụng hôm nay</h3>
+                  <p>Thông tin ca hiệu lực theo ngày hiện tại.</p>
+                </div>
+                {employee?.currentShiftTemplateName ? <div className="erp-employee-current-shift-card"><strong>{employee.currentShiftTemplateName}</strong><span>Ngày hiệu lực: {formatEmployeeDate(employee.currentShiftEffectiveFrom)}</span></div> : <Alert variant="warning" title="Chưa gán bộ ca.">Nhân viên chưa có bộ ca áp dụng cho hôm nay.</Alert>}
+              </div>
               {onAssignShift && <div className="erp-employee-shift-section">
                 <div className="erp-employee-shift-section-heading">
                   <div>
-                    <h3>Điều chỉnh bộ ca</h3>
+                    <h3>Đổi bộ ca mới</h3>
                     <p>Lịch sử ca cũ được giữ nguyên. Bộ ca mới áp dụng từ ngày bạn chọn.</p>
                   </div>
                 </div>

@@ -38,5 +38,8 @@ describe("EmployeeListPage", () => {
     expect(source).toContain('api.post(`/api/employees/${editingEmployee.id}/shift-assignments`');
     expect(source).toContain("onAssignShift");
     expect(source).toContain("assignmentSaving");
+    expect(source).toContain('label: "Bộ ca hiện tại"');
+    expect(source).toContain("currentShiftTemplateName");
+    expect(source).toContain("refreshedRows");
   });
 });

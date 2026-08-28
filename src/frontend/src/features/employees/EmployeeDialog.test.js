@@ -39,10 +39,36 @@ describe("EmployeeDialog", () => {
       onAssignShift={() => {}}
     />);
 
-    expect(html).toContain("Điều chỉnh bộ ca");
+    expect(html).toContain("Đổi bộ ca mới");
     expect(html).toContain("Gán bộ ca mới");
     expect(html).toContain("Ngày hiệu lực");
     expect(html).toContain("Lịch sử ca cũ được giữ nguyên");
+  });
+
+  test("shows current shift details and warns when no shift is assigned today", () => {
+    const currentHtml = renderToStaticMarkup(<EmployeeDialog
+      open
+      employee={{ ...employee, currentShiftTemplateName: "Ca hành chính", currentShiftEffectiveFrom: "2026-08-20" }}
+      shifts={[{ id: "shift-1", name: "Ca hành chính", isActive: true }]}
+      onClose={() => {}}
+      onSubmit={() => {}}
+      onAssignShift={() => {}}
+    />);
+    const missingHtml = renderToStaticMarkup(<EmployeeDialog
+      open
+      employee={employee}
+      shifts={[{ id: "shift-1", name: "Ca hành chính", isActive: true }]}
+      onClose={() => {}}
+      onSubmit={() => {}}
+      onAssignShift={() => {}}
+    />);
+
+    expect(currentHtml).toContain("Thông tin nhân viên");
+    expect(currentHtml).toContain("Bộ ca đang áp dụng hôm nay");
+    expect(currentHtml).toContain("Ca hành chính");
+    expect(currentHtml).toContain("Ngày hiệu lực: 20/08/2026");
+    expect(currentHtml).toContain("Đổi bộ ca mới");
+    expect(missingHtml).toContain("Chưa gán bộ ca");
   });
 
   test("keeps shift reassignment read-only for an inactive employee", () => {
