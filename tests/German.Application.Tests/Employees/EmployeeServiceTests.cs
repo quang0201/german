@@ -129,7 +129,59 @@ public sealed class EmployeeServiceTests
         var result = await new EmployeeService(db).DeleteAsync(employee.Id, CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess);
-        Assert.IsFalse((await db.Employees.SingleAsync()).IsActive);
+        var deactivated = await db.Employees.SingleAsync();
+        Assert.IsFalse(deactivated.IsActive);
+        Assert.AreEqual(DateOnly.FromDateTime(DateTime.Today), deactivated.DeactivatedAt);
+    }
+
+    [TestMethod]
+    public async Task UpdateAsyncTracksDeactivationAndClearsItWhenReactivated()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E012", FullName = "Nguyễn Văn G" };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+        var service = new EmployeeService(db);
+
+        var deactivate = await service.UpdateAsync(
+            employee.Id,
+            new UpdateEmployeeCommand("E012", "Nguyễn Văn G", false),
+            CancellationToken.None);
+
+        Assert.IsTrue(deactivate.IsSuccess, deactivate.Error?.Message);
+        Assert.AreEqual(DateOnly.FromDateTime(DateTime.Today), (await db.Employees.SingleAsync()).DeactivatedAt);
+
+        var reactivate = await service.UpdateAsync(
+            employee.Id,
+            new UpdateEmployeeCommand("E012", "Nguyễn Văn G", true),
+            CancellationToken.None);
+
+        Assert.IsTrue(reactivate.IsSuccess, reactivate.Error?.Message);
+        var restored = await db.Employees.SingleAsync();
+        Assert.IsTrue(restored.IsActive);
+        Assert.IsNull(restored.DeactivatedAt);
+    }
+
+    [TestMethod]
+    public async Task DeleteAsyncDoesNotInventDeactivationDateForLegacyInactiveEmployee()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee
+        {
+            EmployeeCode = "E013",
+            FullName = "Nhân viên cũ",
+            IsActive = false,
+            DeactivatedAt = null
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).DeleteAsync(employee.Id, CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        var unchanged = await db.Employees.SingleAsync();
+        Assert.IsFalse(unchanged.IsActive);
+        Assert.IsNull(unchanged.DeactivatedAt);
     }
 
     [TestMethod]

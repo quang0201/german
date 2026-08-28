@@ -2,12 +2,18 @@ import { describe, expect, test } from "bun:test";
 import { activeAttendanceEmployees, attendanceBlockIndexForMonth, attendanceDayBlocks, buildAttendanceSavePayload, buildAttendanceRenderData, calculateDisplayTotals, calculateDraftTotals, emptyAttendanceCache, isCurrentAttendanceRequest, mergeAttendanceCache, mergeAttendanceEmployees, parseAttendanceCell, patchAttendanceSave, setAttendanceBlockStatus, mergeAttendanceSaveDrafts } from "./attendanceModel.js";
 
 describe("attendance model", () => {
-  test("excludes inactive employees from the attendance selector", () => {
-    expect(activeAttendanceEmployees([
+  test("keeps an inactive employee selectable through the deactivation month only", () => {
+    const employees = [
       { employeeId: "active", isActive: true },
-      { employeeId: "inactive", isActive: false },
+      { employeeId: "same-month", isActive: false, deactivatedAt: "2026-08-20" },
+      { employeeId: "older", isActive: false, deactivatedAt: "2026-07-31" },
+      { employeeId: "legacy-inactive", isActive: false, deactivatedAt: null },
       { employeeId: "legacy", isActive: undefined },
-    ]).map((employee) => employee.employeeId)).toEqual(["active", "legacy"]);
+    ];
+    expect(activeAttendanceEmployees(employees, "2026-08").map((employee) => employee.employeeId))
+      .toEqual(["active", "same-month", "legacy"]);
+    expect(activeAttendanceEmployees(employees, "2026-09").map((employee) => employee.employeeId))
+      .toEqual(["active", "legacy"]);
   });
 
   test("selects the week containing today for the current month and the first week otherwise", () => {

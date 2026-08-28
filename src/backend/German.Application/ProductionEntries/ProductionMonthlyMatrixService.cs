@@ -29,6 +29,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
             where entry.WorkDate >= fromDate
                 && entry.WorkDate <= untilDate
                 && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
+                && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= fromDate)
                 && (!request.EmployeeId.HasValue || entry.EmployeeId == request.EmployeeId.Value)
                 && (!request.OperationId.HasValue || entry.ProductionOperationId == request.OperationId.Value)
             select new { entry, employee, order, operation };

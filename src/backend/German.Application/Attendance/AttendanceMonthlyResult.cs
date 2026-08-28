@@ -30,6 +30,7 @@ public sealed record AttendanceEmployeeMonthDto(
     string EmployeeCode,
     string FullName,
     bool IsActive,
+    DateOnly? DeactivatedAt,
     IReadOnlyList<AttendanceDayDto> Days,
     AttendanceTotalsDto Totals);
 

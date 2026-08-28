@@ -6,6 +6,7 @@ import { FilterBar } from "../../components/erp/FilterBar.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
+import { employeeVisibleForMonth } from "../employees/employeeVisibility.js";
 import { ProductionEntryDetailPage } from "./ProductionEntryDetailPage.jsx";
 import { ProductionExportDialog } from "./ProductionExportDialog.jsx";
 import { ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
@@ -46,6 +47,18 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     api.get("/api/employees").then(setEmployees)
       .catch((requestError) => setError(requestError.message || "Không thể tải nhân viên."));
   }, []);
+
+  useEffect(() => {
+    const visibleIds = new Set(
+      employees.filter((employee) => employeeVisibleForMonth(employee, monthKey)).map((employee) => String(employee.id)),
+    );
+    setDraft((current) => current.employeeId && !visibleIds.has(String(current.employeeId))
+      ? { ...current, employeeId: "" }
+      : current);
+    setFilters((current) => current.employeeId && !visibleIds.has(String(current.employeeId))
+      ? { ...current, employeeId: "" }
+      : current);
+  }, [employees, monthKey]);
 
   useEffect(() => {
     if (!selectedOrderId) { setOperations([]); return; }
@@ -125,7 +138,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
         <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
       </div>
       <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
-        <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
+        <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
         <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
       </FilterBar>
