@@ -99,4 +99,14 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toMatch(/class="[^"]*erp-month-today[^"]*"[^>]*>[\s\S]*data-date="2026-08-20"/);
     expect(matrixSource).toContain("day.isSunday");
   });
+
+  test("marks inactive production employees red and disables entry cells", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].isActive = false;
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+
+    expect(html).toContain("erp-month-inactive");
+    expect(html).toContain("Đã tắt");
+    expect(html).toMatch(/button[^>]*disabled=""[^>]*aria-label="Bạch Thị Đào CĐ4 01\/08 HC"/);
+  });
 });

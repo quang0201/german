@@ -53,6 +53,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
           </thead>
           <tbody>
             {employees.map((employee) => {
+              const inactive = employee.isActive === false;
               const dayMap = new Map((employee.days ?? []).map((day) => [day.workDate, day]));
               const maxSlots = Math.max(0, ...(employee.days ?? []).map((day) => day.shifts?.length ?? 0));
               const totals = calculateDisplayTotals(employee, drafts);
@@ -61,8 +62,8 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
                 const isTc = rowIndex === maxSlots;
                 const slotNumber = rowIndex + 1;
                 return (
-                  <tr key={`${employee.employeeId}-${isTc ? "tc" : slotNumber}`}>
-                    {rowIndex === 0 && <th className="erp-attendance-sticky-employee erp-attendance-employee" rowSpan={rowCount}>{employee.employeeCode}<span>{employee.fullName}</span></th>}
+                  <tr key={`${employee.employeeId}-${isTc ? "tc" : slotNumber}`} className={inactive ? "erp-attendance-inactive" : ""}>
+                    {rowIndex === 0 && <th className="erp-attendance-sticky-employee erp-attendance-employee" rowSpan={rowCount}>{employee.employeeCode}<span>{employee.fullName}</span>{inactive && <em>Đã tắt</em>}</th>}
                     <th className="erp-attendance-sticky-shift erp-attendance-shift-name">{isTc ? "TC" : `Ca ${slotNumber}`}</th>
                     {days.map((headerDay) => {
                       const day = dayMap.get(headerDay.workDate);
@@ -70,9 +71,9 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
                       const key = attendanceDayKey(employee.employeeId, headerDay.workDate);
                       const draft = draftDay(drafts, employee, day ?? headerDay);
                       if (isTc) {
-                        return <td key={`${key}-tc`} className="erp-attendance-tc-cell"><input className="erp-control erp-attendance-cell" inputMode="decimal" aria-label={`${employee.fullName} TC ${headerDay.workDate}`} value={draft.overtimeHours} disabled={!day?.hasShiftSetup} onChange={(event) => onOvertimeChange(employee, headerDay, event.target.value)} /></td>;
+                        return <td key={`${key}-tc`} className="erp-attendance-tc-cell"><input className="erp-control erp-attendance-cell" inputMode="decimal" aria-label={`${employee.fullName} TC ${headerDay.workDate}`} value={draft.overtimeHours} disabled={inactive || !day?.hasShiftSetup} readOnly={inactive} onChange={(event) => onOvertimeChange(employee, headerDay, event.target.value)} /></td>;
                       }
-                      return <td key={`${key}-${slotNumber}`}><input className="erp-control erp-attendance-cell" aria-label={`${employee.fullName} Ca ${slotNumber} ${headerDay.workDate}`} value={shift ? cellDraft(drafts, employee.employeeId, headerDay, slotNumber) : ""} disabled={!shift} onChange={(event) => onCellChange(employee, headerDay, shift, event.target.value)} /></td>;
+                      return <td key={`${key}-${slotNumber}`}><input className="erp-control erp-attendance-cell" aria-label={`${employee.fullName} Ca ${slotNumber} ${headerDay.workDate}`} value={shift ? cellDraft(drafts, employee.employeeId, headerDay, slotNumber) : ""} disabled={inactive || !shift} readOnly={inactive} onChange={(event) => onCellChange(employee, headerDay, shift, event.target.value)} /></td>;
                     })}
                     {rowIndex === 0 && <>
                       <td rowSpan={rowCount} className="erp-attendance-total">{totals.regularWorkedHours}</td>

@@ -44,7 +44,7 @@ internal static class ProductionMonthlyMatrixBuilder
         IGrouping<(Guid OrderId, string OrderCode, string ProductName), ProductionMonthlyMatrixRow> group)
     {
         var employees = group
-            .GroupBy(row => (row.EmployeeId, row.EmployeeCode, row.EmployeeName))
+            .GroupBy(row => (row.EmployeeId, row.EmployeeCode, row.EmployeeName, row.EmployeeIsActive))
             .OrderBy(employeeGroup => employeeGroup.Key.EmployeeCode)
             .Select(BuildEmployee)
             .ToList();
@@ -53,7 +53,7 @@ internal static class ProductionMonthlyMatrixBuilder
     }
 
     private static ProductionMatrixEmployeeGroupDto BuildEmployee(
-        IGrouping<(Guid EmployeeId, string EmployeeCode, string EmployeeName), ProductionMonthlyMatrixRow> group)
+        IGrouping<(Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive), ProductionMonthlyMatrixRow> group)
     {
         var operations = group
             .GroupBy(row => (row.OperationId, row.OperationNumber, row.OperationName))
@@ -61,7 +61,7 @@ internal static class ProductionMonthlyMatrixBuilder
             .Select(BuildOperation)
             .ToList();
         return new ProductionMatrixEmployeeGroupDto(
-            group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, operations);
+            group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, operations);
     }
 
     private static ProductionMatrixOperationRowDto BuildOperation(

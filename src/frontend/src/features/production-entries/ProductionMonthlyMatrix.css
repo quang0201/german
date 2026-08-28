@@ -29,6 +29,10 @@
 .erp-month-matrix-table thead .erp-month-sticky-employee,
 .erp-month-matrix-table thead .erp-month-sticky-operation { z-index:12; background:var(--color-surface-soft) !important; }
 .erp-month-employee { font-weight:700; vertical-align:top; padding-top:10px !important; }
+.erp-month-employee em { display:block; margin-top:5px; color:var(--color-error); font-size:11px; font-style:normal; font-weight:800; }
+.erp-month-matrix-table tbody tr.erp-month-inactive td { background:var(--color-error-soft) !important; color:var(--color-error); }
+.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-employee,
+.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-operation { background:var(--color-error-soft) !important; }
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; }
 .erp-month-value-cell button { width:100%; height:100%; border:0; background:transparent; padding:0 7px; color:var(--color-text); text-align:right; font:inherit; font-variant-numeric:tabular-nums; }

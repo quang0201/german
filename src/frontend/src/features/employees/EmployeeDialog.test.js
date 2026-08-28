@@ -45,6 +45,22 @@ describe("EmployeeDialog", () => {
     expect(html).toContain("Lịch sử ca cũ được giữ nguyên");
   });
 
+  test("keeps shift reassignment read-only for an inactive employee", () => {
+    const html = renderToStaticMarkup(<EmployeeDialog
+      open
+      employee={{ ...employee, isActive: false }}
+      shifts={[{ id: "shift-1", name: "Ca hành chính", isActive: true }]}
+      onClose={() => {}}
+      onSubmit={() => {}}
+      onAssignShift={() => {}}
+    />);
+
+    expect(html).toContain("Nhân viên đã tắt không thể gán ca mới.");
+    expect(html).toMatch(/select[^>]*disabled=""/);
+    expect(html).toMatch(/type="date"[^>]*disabled=""/);
+    expect(html).toMatch(/button[^>]*disabled=""[^>]*>Gán bộ ca mới/);
+  });
+
   test("builds update payload with trimmed employee fields", () => {
     expect(buildEmployeeUpdatePayload({ ...employeeForm(employee), employeeCode: " E002 ", fullName: " Trần Thị B ", isActive: false })).toEqual({
       employeeCode: "E002",

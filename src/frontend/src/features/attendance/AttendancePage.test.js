@@ -28,6 +28,17 @@ describe("AttendancePage", () => {
     expect(html).toContain('value="P"');
   });
 
+  test("marks inactive employee red and makes attendance read-only", () => {
+    const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
+      data={{ employees: [{ employeeId: "e-inactive", employeeCode: "E9", fullName: "Đã nghỉ", isActive: false, days: [{ workDate: "2026-08-16", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] }}
+      drafts={{ "e-inactive|2026-08-16": { overtimeHours: "1", shifts: { 1: "4" } } }}
+      loading={false}
+    />);
+    expect(html).toContain("erp-attendance-inactive");
+    expect(html).toContain("Đã tắt");
+    expect(html).toMatch(/input[^>]*disabled=""/);
+  });
+
   test("keeps regular shift rows dynamic per employee", () => {
     const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
       data={{ employees: [
