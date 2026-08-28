@@ -50,7 +50,8 @@ public sealed class EmployeeService(IGermanDbContext db)
                     employee.IsActive,
                     current.ShiftTemplateId,
                     current.ShiftTemplateName,
-                    current.EffectiveFrom);
+                    current.EffectiveFrom,
+                    employee.DeactivatedAt);
             })
             .ToList();
     }
@@ -121,7 +122,16 @@ public sealed class EmployeeService(IGermanDbContext db)
 
         employee.EmployeeCode = command.EmployeeCode.Trim();
         employee.FullName = command.FullName.Trim();
+        var wasActive = employee.IsActive;
         employee.IsActive = command.IsActive;
+        if (wasActive && !command.IsActive)
+        {
+            employee.DeactivatedAt = Today();
+        }
+        else if (!wasActive && command.IsActive)
+        {
+            employee.DeactivatedAt = null;
+        }
         employee.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         return AppResult<EmployeeDto>.Success(ToDto(employee));
@@ -135,6 +145,10 @@ public sealed class EmployeeService(IGermanDbContext db)
             return AppResult.Failure("employee.not_found", "Không tìm thấy nhân viên.");
         }
 
+        if (employee.IsActive)
+        {
+            employee.DeactivatedAt = Today();
+        }
         employee.IsActive = false;
         employee.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
@@ -199,7 +213,9 @@ public sealed class EmployeeService(IGermanDbContext db)
     }
 
     private static EmployeeDto ToDto(Employee employee) =>
-        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive);
+        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, DeactivatedAt: employee.DeactivatedAt);
+
+    private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
 
     private static string Normalize(string value) => value?.Trim().ToUpperInvariant() ?? string.Empty;
 }

@@ -187,6 +187,34 @@ public sealed class AttendanceServiceTests
     }
 
     [TestMethod]
+    public async Task GetMonth_ShowsKnownInactiveEmployeeThroughDeactivationMonthAndHidesNextMonth()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee
+        {
+            EmployeeCode = "A105A",
+            FullName = "Nghỉ trong tháng 8",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 20)
+        };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+        var service = new AttendanceService(db);
+
+        var deactivationMonth = await service.GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 8, DayFrom: 1, DayCount: 1),
+            CancellationToken.None);
+        var nextMonth = await service.GetMonthAsync(
+            new AttendanceMonthlyQuery(2026, 9, DayFrom: 1, DayCount: 1),
+            CancellationToken.None);
+
+        Assert.IsTrue(deactivationMonth.Employees.Any(x => x.EmployeeId == employee.Id));
+        Assert.AreEqual(new DateOnly(2026, 8, 20),
+            deactivationMonth.Employees.Single(x => x.EmployeeId == employee.Id).DeactivatedAt);
+        Assert.IsFalse(nextMonth.Employees.Any(x => x.EmployeeId == employee.Id));
+    }
+
+    [TestMethod]
     public async Task GetMonth_DoesNotCreateEditableSlotsForUnsavedDaysOfInactiveEmployee()
     {
         await using var db = CreateDbContext();

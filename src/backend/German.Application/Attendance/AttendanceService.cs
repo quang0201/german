@@ -34,10 +34,13 @@ public sealed class AttendanceService(IGermanDbContext db)
         }
         else
         {
-            employeesQuery = employeesQuery.Where(x => x.IsActive || db.AttendanceDays.Any(attendance =>
-                attendance.EmployeeId == x.Id
-                && attendance.WorkDate >= monthFrom
-                && attendance.WorkDate <= monthUntil));
+            employeesQuery = employeesQuery.Where(x =>
+                x.IsActive
+                || (x.DeactivatedAt.HasValue && x.DeactivatedAt.Value >= monthFrom)
+                || (!x.DeactivatedAt.HasValue && db.AttendanceDays.Any(attendance =>
+                    attendance.EmployeeId == x.Id
+                    && attendance.WorkDate >= monthFrom
+                    && attendance.WorkDate <= monthUntil)));
             if (query.EmployeeId.HasValue)
             {
                 employeesQuery = employeesQuery.Where(x => x.Id == query.EmployeeId.Value);
@@ -95,6 +98,7 @@ public sealed class AttendanceService(IGermanDbContext db)
                 employee.EmployeeCode,
                 employee.FullName,
                 employee.IsActive,
+                employee.DeactivatedAt,
                 days,
                 monthlyTotals.GetValueOrDefault(employee.Id, AttendanceTotalsDto.Empty)));
         }

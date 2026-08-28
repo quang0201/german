@@ -7,7 +7,8 @@ public sealed record EmployeeDto(
     bool IsActive,
     Guid? CurrentShiftTemplateId = null,
     string? CurrentShiftTemplateName = null,
-    DateOnly? CurrentShiftEffectiveFrom = null);
+    DateOnly? CurrentShiftEffectiveFrom = null,
+    DateOnly? DeactivatedAt = null);
 
 public sealed record CreateEmployeeCommand(
     string EmployeeCode,

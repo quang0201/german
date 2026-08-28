@@ -143,6 +143,39 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetAsync_HidesKnownInactiveEmployeeStartingTheMonthAfterDeactivation()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee
+        {
+            EmployeeCode = "E098",
+            FullName = "Nghỉ tháng 8",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 20)
+        };
+        var order = NewOrder("0417", "Mã hàng 0417");
+        var operation = NewOperation(order, 8, "May");
+        db.AddRange(employee, order, operation);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 8, 10), 20m, 0m);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 9, 10), 30m, 0m);
+        await db.SaveChangesAsync();
+
+        var service = new ProductionMonthlyMatrixService(db);
+        var deactivationMonth = await service.GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 8, null, null, null, null, false),
+            CancellationToken.None);
+        var nextMonth = await service.GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 9, null, null, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(deactivationMonth.IsSuccess, deactivationMonth.Error?.Message);
+        Assert.AreEqual(1, deactivationMonth.Value!.Orders.Count);
+        Assert.IsTrue(nextMonth.IsSuccess, nextMonth.Error?.Message);
+        Assert.AreEqual(0, nextMonth.Value!.Orders.Count);
+        Assert.AreEqual(0, nextMonth.Value.Summary.EntryCount);
+    }
+
+    [TestMethod]
     public async Task GetAsync_OrderFilterKeepsToolbarOptionsButFiltersBlocksAndSummary()
     {
         await using var db = CreateDb();
