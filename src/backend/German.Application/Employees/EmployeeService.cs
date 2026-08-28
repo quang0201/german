@@ -8,12 +8,45 @@ namespace German.Application.Employees;
 
 public sealed class EmployeeService(IGermanDbContext db)
 {
-    public async Task<IReadOnlyList<EmployeeDto>> ListAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<EmployeeDto>> ListAsync(
+        CancellationToken cancellationToken,
+        DateOnly? asOfDate = null)
     {
-        return await db.Employees.AsNoTracking()
+        var employees = await db.Employees.AsNoTracking()
             .OrderBy(x => x.EmployeeCode)
-            .Select(x => new EmployeeDto(x.Id, x.EmployeeCode, x.FullName, x.IsActive))
             .ToListAsync(cancellationToken);
+
+        if (employees.Count == 0)
+        {
+            return [];
+        }
+
+        var date = asOfDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var employeeIds = employees.Select(x => x.Id).ToArray();
+        var assignments = await db.EmployeeShiftAssignments.AsNoTracking()
+            .Where(x => employeeIds.Contains(x.EmployeeId)
+                && x.EffectiveFrom <= date
+                && (x.EffectiveTo == null || x.EffectiveTo >= date))
+            .OrderByDescending(x => x.EffectiveFrom)
+            .ToListAsync(cancellationToken);
+        var shiftIds = assignments.Select(x => x.ShiftTemplateId).Distinct().ToArray();
+        var shifts = await db.ShiftTemplates.AsNoTracking()
+            .Where(x => shiftIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+
+        return employees.Select(employee =>
+        {
+            var assignment = assignments.FirstOrDefault(x => x.EmployeeId == employee.Id);
+            var shift = assignment is not null && shifts.TryGetValue(assignment.ShiftTemplateId, out var template)
+                ? new EmployeeCurrentShiftDto(
+                    template.Id,
+                    template.Name,
+                    template.IsActive,
+                    assignment.EffectiveFrom,
+                    assignment.EffectiveTo)
+                : null;
+            return ToDto(employee, shift);
+        }).ToList();
     }
 
     public async Task<AppResult<EmployeeDto>> CreateAsync(CreateEmployeeCommand command, CancellationToken cancellationToken)
@@ -159,8 +192,8 @@ public sealed class EmployeeService(IGermanDbContext db)
         return AppResult<EmployeeShiftAssignment>.Success(assignment);
     }
 
-    private static EmployeeDto ToDto(Employee employee) =>
-        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive);
+    private static EmployeeDto ToDto(Employee employee, EmployeeCurrentShiftDto? currentShift = null) =>
+        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, currentShift);
 
     private static string Normalize(string value) => value?.Trim().ToUpperInvariant() ?? string.Empty;
 }

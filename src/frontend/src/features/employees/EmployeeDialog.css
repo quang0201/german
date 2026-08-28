@@ -1,10 +1,31 @@
-.erp-employee-dialog { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; }
+.erp-employee-dialog { width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; }
 .erp-employee-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .erp-employee-dialog-header h2 { margin: 0; }
 .erp-employee-dialog-fields { display: grid; gap: 14px; margin-top: 16px; }
+.erp-employee-dialog-section { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+.erp-employee-dialog-section-heading h3 { margin: 0; font-size: 1rem; }
+.erp-employee-dialog-section-heading p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
+.erp-employee-basic-fields { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .erp-employee-active { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.erp-employee-status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; background: var(--color-surface-soft); }
+.erp-status-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; }
+.erp-status-badge-active { color: #166534; background: #dcfce7; }
+.erp-status-badge-inactive { color: #991b1b; background: #fee2e2; }
+.erp-employee-current-shift-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 14px; border: 1px solid #93c5fd; border-radius: 10px; background: #eff6ff; color: #1e3a8a; }
+.erp-employee-current-shift-card > div { display: grid; gap: 3px; }
+.erp-employee-current-shift-card strong { color: #1e40af; }
+.erp-employee-current-shift-card > span { color: #475569; font-size: 0.85rem; white-space: nowrap; }
+.erp-employee-current-shift-card-missing { border-color: #fbbf24; background: #fffbeb; color: #92400e; }
+.erp-employee-current-shift-card-missing strong { color: #92400e; }
 .erp-employee-shift-section { display: grid; gap: 12px; margin-top: 4px; padding: 14px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface-soft); }
 .erp-employee-shift-section-heading h3 { margin: 0; font-size: 1rem; }
 .erp-employee-shift-section-heading p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
 .erp-employee-shift-fields { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 560px) { .erp-employee-shift-fields { grid-template-columns: 1fr; } }
+.erp-employee-current-shift { display: grid; gap: 2px; min-width: 150px; }
+.erp-employee-current-shift strong { font-size: 0.9rem; }
+.erp-employee-current-shift span, .erp-employee-current-shift em { color: var(--color-text-muted); font-size: 0.78rem; font-style: normal; }
+.erp-employee-current-shift em { color: #b45309; }
+.erp-employee-shift-missing { color: #b45309; font-weight: 700; }
+.erp-employee-guide { display: flex; flex-wrap: wrap; gap: 10px 24px; color: var(--color-text-muted); font-size: 0.9rem; }
+.erp-employee-guide strong { display: inline-grid; width: 22px; height: 22px; place-items: center; margin-right: 5px; border-radius: 50%; color: #1d4ed8; background: #dbeafe; }
+@media (max-width: 640px) { .erp-employee-basic-fields, .erp-employee-shift-fields { grid-template-columns: 1fr; } .erp-employee-current-shift-card { align-items: flex-start; flex-direction: column; gap: 5px; } }

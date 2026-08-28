@@ -92,6 +92,54 @@ public sealed class EmployeeServiceTests
         Assert.AreEqual(0, await db.EmployeeShiftAssignments.CountAsync());
     }
 
+    [TestMethod]
+    public async Task ListAsyncIncludesCurrentShiftForTheRequestedDate()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E006", FullName = "Có bộ ca" };
+        var shift = new ShiftTemplate { Name = "Ca sản xuất", IsActive = true };
+        db.AddRange(employee, shift, new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).ListAsync(
+            CancellationToken.None,
+            new DateOnly(2026, 8, 28));
+
+        Assert.AreEqual(1, result.Count);
+        var item = result[0];
+        Assert.IsNotNull(item.CurrentShift);
+        Assert.AreEqual("Ca sản xuất", item.CurrentShift!.ShiftTemplateName);
+        Assert.AreEqual(new DateOnly(2026, 8, 1), item.CurrentShift.EffectiveFrom);
+    }
+
+    [TestMethod]
+    public async Task ListAsyncDoesNotShowExpiredShiftAsCurrent()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E007", FullName = "Đã đổi ca" };
+        var shift = new ShiftTemplate { Name = "Ca cũ", IsActive = true };
+        db.AddRange(employee, shift, new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1),
+            EffectiveTo = new DateOnly(2026, 8, 15)
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).ListAsync(
+            CancellationToken.None,
+            new DateOnly(2026, 8, 28));
+
+        Assert.AreEqual(1, result.Count);
+        Assert.IsNull(result[0].CurrentShift);
+    }
+
     private static GermanDbContext CreateDb() => new(
         new DbContextOptionsBuilder<GermanDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())

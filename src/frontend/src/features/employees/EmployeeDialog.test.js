@@ -5,7 +5,7 @@ import { EmployeeDialog } from "./EmployeeDialog.jsx";
 import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
 
 describe("EmployeeDialog", () => {
-  const employee = { id: "employee-1", employeeCode: "E001", fullName: "Nguyễn Văn An", isActive: true };
+  const employee = { id: "employee-1", employeeCode: "E001", fullName: "Nguyễn Văn An", isActive: true, currentShift: { shiftTemplateName: "Ca hành chính", shiftTemplateIsActive: true, effectiveFrom: "2026-08-01" } };
 
   test("does not render when closed", () => {
     expect(renderToStaticMarkup(<EmployeeDialog open={false} />)).toBe("");
@@ -17,6 +17,8 @@ describe("EmployeeDialog", () => {
     expect(html).toContain("Sửa nhân viên");
     expect(html).toContain('value="E001"');
     expect(html).toContain('value="Nguyễn Văn An"');
+    expect(html).toContain("Bộ ca đang áp dụng hôm nay");
+    expect(html).toContain("Ca hành chính");
     expect(html).toContain("Lưu thay đổi");
   });
 
@@ -39,7 +41,7 @@ describe("EmployeeDialog", () => {
       onAssignShift={() => {}}
     />);
 
-    expect(html).toContain("Điều chỉnh bộ ca");
+    expect(html).toContain("Đổi bộ ca");
     expect(html).toContain("Gán bộ ca mới");
     expect(html).toContain("Ngày hiệu lực");
     expect(html).toContain("Lịch sử ca cũ được giữ nguyên");

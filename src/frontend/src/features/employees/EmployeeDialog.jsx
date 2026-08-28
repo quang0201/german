@@ -30,6 +30,7 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
   if (!open) return null;
 
   const canAssignShift = employee?.isActive !== false && draft.isActive;
+  const currentShift = employee?.currentShift;
 
   function update(key, value) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -62,28 +63,54 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
         {error && <Alert variant="error" title="Không thể lưu nhân viên.">{error}</Alert>}
         <form onSubmit={submit}>
           <div className="erp-employee-dialog-fields">
-            <Field label="Mã nhân viên" required>
-              <input className="erp-control" required value={draft.employeeCode} onChange={(event) => update("employeeCode", event.target.value)} />
-            </Field>
-            <Field label="Họ tên" required>
-              <input className="erp-control" required value={draft.fullName} onChange={(event) => update("fullName", event.target.value)} />
-            </Field>
+            <div className="erp-employee-dialog-section">
+              <div className="erp-employee-dialog-section-heading">
+                <h3>Thông tin nhân viên</h3>
+                <p>Cập nhật mã và tên hiển thị trong toàn hệ thống.</p>
+              </div>
+              <div className="erp-employee-basic-fields">
+                <Field label="Mã nhân viên" required>
+                  <input className="erp-control" required value={draft.employeeCode} onChange={(event) => update("employeeCode", event.target.value)} />
+                </Field>
+                <Field label="Họ tên" required>
+                  <input className="erp-control" required value={draft.fullName} onChange={(event) => update("fullName", event.target.value)} />
+                </Field>
+              </div>
+            </div>
             {mode === "create" ? <>
-              <Field label="Bộ ca HC" required>
-                <select className="erp-control" required disabled={shiftLoading} value={draft.shiftTemplateId} onChange={(event) => update("shiftTemplateId", event.target.value)}>
-                  <option value="">{shiftLoading ? "Đang tải bộ ca..." : "Chọn bộ ca"}</option>
-                  {shifts.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Ngày hiệu lực" required>
-                <input className="erp-control" type="date" required value={draft.effectiveFrom} onChange={(event) => update("effectiveFrom", event.target.value)} />
-              </Field>
+              <div className="erp-employee-dialog-section">
+                <div className="erp-employee-dialog-section-heading">
+                  <h3>Bộ ca ban đầu</h3>
+                  <p>Bộ ca này được dùng để tạo lịch chấm công từ ngày hiệu lực.</p>
+                </div>
+                <div className="erp-employee-shift-fields">
+                  <Field label="Bộ ca HC" required>
+                    <select className="erp-control" required disabled={shiftLoading} value={draft.shiftTemplateId} onChange={(event) => update("shiftTemplateId", event.target.value)}>
+                      <option value="">{shiftLoading ? "Đang tải bộ ca..." : "Chọn bộ ca"}</option>
+                      {shifts.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Ngày hiệu lực" required>
+                    <input className="erp-control" type="date" required value={draft.effectiveFrom} onChange={(event) => update("effectiveFrom", event.target.value)} />
+                  </Field>
+                </div>
+              </div>
             </> : <>
-              <label className="erp-employee-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>
+              <div className="erp-employee-status-row">
+                <label className="erp-employee-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>
+                <span className={draft.isActive ? "erp-status-badge erp-status-badge-active" : "erp-status-badge erp-status-badge-inactive"}>{draft.isActive ? "Đang hoạt động" : "Đã tắt"}</span>
+              </div>
+              <div className={currentShift ? "erp-employee-current-shift-card" : "erp-employee-current-shift-card erp-employee-current-shift-card-missing"}>
+                <div>
+                  <span className="erp-employee-card-label">Bộ ca đang áp dụng hôm nay</span>
+                  {currentShift ? <strong>{currentShift.shiftTemplateName}</strong> : <strong>Chưa gán bộ ca</strong>}
+                </div>
+                {currentShift ? <span>Hiệu lực từ {currentShift.effectiveFrom}</span> : <span>Nhân viên chưa có lịch ca hiệu lực.</span>}
+              </div>
               {onAssignShift && <div className="erp-employee-shift-section">
                 <div className="erp-employee-shift-section-heading">
                   <div>
-                    <h3>Điều chỉnh bộ ca</h3>
+                    <h3>Đổi bộ ca</h3>
                     <p>Lịch sử ca cũ được giữ nguyên. Bộ ca mới áp dụng từ ngày bạn chọn.</p>
                   </div>
                 </div>
