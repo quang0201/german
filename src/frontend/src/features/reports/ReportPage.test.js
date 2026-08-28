@@ -3,10 +3,15 @@ import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl } from "./ReportPage.jsx";
+import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, currentReportMonthRange } from "./ReportPage.jsx";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ReportPage", () => {
+  test("defaults report dates to the current calendar month", () => {
+    expect(currentReportMonthRange(new Date(2026, 7, 14))).toEqual({ fromDate: "2026-08-01", untilDate: "2026-08-31" });
+    expect(currentReportMonthRange(new Date(2028, 1, 14))).toEqual({ fromDate: "2028-02-01", untilDate: "2028-02-29" });
+  });
+
   test("renders the report controls inside the ERP feedback provider", () => {
     const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
     expect(html).toContain("Báo cáo");
