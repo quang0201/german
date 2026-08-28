@@ -8,3 +8,11 @@
 .erp-employee-shift-section-heading p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
 .erp-employee-shift-fields { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 560px) { .erp-employee-shift-fields { grid-template-columns: 1fr; } }
+
+.erp-employee-dialog-section-heading h3 { margin: 0; font-size: 1rem; }
+.erp-employee-dialog-section-heading p { margin: 4px 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
+.erp-employee-current-shift-section { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); }
+.erp-employee-current-shift-card { display: grid; gap: 4px; padding: 10px 12px; border-radius: 6px; background: var(--color-primary-soft); }
+.erp-employee-current-shift-card strong { color: var(--color-primary-strong); }
+.erp-employee-current-shift-card span { color: var(--color-text-muted); font-size: 0.85rem; }
+.erp-employee-shift-missing { color: var(--color-warning); font-weight: 700; }

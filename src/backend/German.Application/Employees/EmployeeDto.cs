@@ -4,7 +4,10 @@ public sealed record EmployeeDto(
     Guid Id,
     string EmployeeCode,
     string FullName,
-    bool IsActive);
+    bool IsActive,
+    Guid? CurrentShiftTemplateId = null,
+    string? CurrentShiftTemplateName = null,
+    DateOnly? CurrentShiftEffectiveFrom = null);
 
 public sealed record CreateEmployeeCommand(
     string EmployeeCode,

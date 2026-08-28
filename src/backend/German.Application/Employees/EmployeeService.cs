@@ -8,12 +8,51 @@ namespace German.Application.Employees;
 
 public sealed class EmployeeService(IGermanDbContext db)
 {
-    public async Task<IReadOnlyList<EmployeeDto>> ListAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<EmployeeDto>> ListAsync(CancellationToken cancellationToken, DateOnly? asOfDate = null)
     {
-        return await db.Employees.AsNoTracking()
+        var date = asOfDate ?? DateOnly.FromDateTime(DateTime.Today);
+        var employees = await db.Employees.AsNoTracking()
             .OrderBy(x => x.EmployeeCode)
-            .Select(x => new EmployeeDto(x.Id, x.EmployeeCode, x.FullName, x.IsActive))
             .ToListAsync(cancellationToken);
+
+        var activeAssignments = await (
+            from assignment in db.EmployeeShiftAssignments.AsNoTracking()
+            join shift in db.ShiftTemplates.AsNoTracking() on assignment.ShiftTemplateId equals shift.Id
+            where assignment.EffectiveFrom <= date
+                && (assignment.EffectiveTo == null || assignment.EffectiveTo >= date)
+            select new
+            {
+                assignment.EmployeeId,
+                assignment.ShiftTemplateId,
+                ShiftTemplateName = shift.Name,
+                assignment.EffectiveFrom
+            })
+            .ToListAsync(cancellationToken);
+
+        var currentByEmployee = activeAssignments
+            .GroupBy(x => x.EmployeeId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderByDescending(x => x.EffectiveFrom).First());
+
+        return employees
+            .Select(employee =>
+            {
+                if (!currentByEmployee.TryGetValue(employee.Id, out var current))
+                {
+                    return ToDto(employee);
+                }
+
+                return new EmployeeDto(
+                    employee.Id,
+                    employee.EmployeeCode,
+                    employee.FullName,
+                    employee.IsActive,
+                    current.ShiftTemplateId,
+                    current.ShiftTemplateName,
+                    current.EffectiveFrom);
+            })
+            .ToList();
     }
 
     public async Task<AppResult<EmployeeDto>> CreateAsync(CreateEmployeeCommand command, CancellationToken cancellationToken)
