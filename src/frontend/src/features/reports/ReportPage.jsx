@@ -5,9 +5,14 @@ import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { productionExportFileName } from "../production-entries/productionExport.js";
+import { localIsoDate } from "../production-entries/productionPeriod.js";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
-function localToday() { return new Date().toISOString().slice(0, 10); }
+export function currentReportMonthRange(today = new Date()) {
+  const first = new Date(today.getFullYear(), today.getMonth(), 1, 12);
+  const last = new Date(today.getFullYear(), today.getMonth() + 1, 0, 12);
+  return { fromDate: localIsoDate(first), untilDate: localIsoDate(last) };
+}
 
 export function buildProductionReportExportUrl(fromDate, untilDate) {
   const params = new URLSearchParams({ fromDate, untilDate });
@@ -20,8 +25,8 @@ export function buildProductionReportSummaryUrl(orderId, fromDate, untilDate) {
 }
 
 export function ReportPage() {
-  const [fromDate, setFromDate] = useState(localToday());
-  const [untilDate, setUntilDate] = useState(localToday());
+  const [fromDate, setFromDate] = useState(() => currentReportMonthRange().fromDate);
+  const [untilDate, setUntilDate] = useState(() => currentReportMonthRange().untilDate);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [orders, setOrders] = useState([]);
