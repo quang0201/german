@@ -29,6 +29,8 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
 
   if (!open) return null;
 
+  const canAssignShift = employee?.isActive !== false && draft.isActive;
+
   function update(key, value) {
     setDraft((current) => ({ ...current, [key]: value }));
     onChange?.();
@@ -40,6 +42,7 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
   }
 
   async function assignShift() {
+    if (!canAssignShift) return;
     if (!assignmentDraft.shiftTemplateId || !assignmentDraft.effectiveFrom) {
       setAssignmentValidationError("Hãy chọn bộ ca và ngày hiệu lực.");
       return;
@@ -88,17 +91,17 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
                 {assignmentValidationError && <Alert variant="error" title="Thiếu thông tin bộ ca.">{assignmentValidationError}</Alert>}
                 <div className="erp-employee-shift-fields">
                   <Field label="Bộ ca mới" required>
-                    <select className="erp-control" value={assignmentDraft.shiftTemplateId} disabled={shiftLoading || assignmentLoading || !draft.isActive} onChange={(event) => { setAssignmentDraft((current) => ({ ...current, shiftTemplateId: event.target.value })); setAssignmentValidationError(""); }}>
+                    <select className="erp-control" value={assignmentDraft.shiftTemplateId} disabled={shiftLoading || assignmentLoading || !canAssignShift} onChange={(event) => { setAssignmentDraft((current) => ({ ...current, shiftTemplateId: event.target.value })); setAssignmentValidationError(""); }}>
                       <option value="">{shiftLoading ? "Đang tải bộ ca..." : "Chọn bộ ca"}</option>
                       {shifts.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                     </select>
                   </Field>
                   <Field label="Ngày hiệu lực" required>
-                    <input className="erp-control" type="date" value={assignmentDraft.effectiveFrom} disabled={!assignmentDraft.shiftTemplateId || assignmentLoading || !draft.isActive} onChange={(event) => { setAssignmentDraft((current) => ({ ...current, effectiveFrom: event.target.value })); setAssignmentValidationError(""); }} />
+                    <input className="erp-control" type="date" value={assignmentDraft.effectiveFrom} disabled={!assignmentDraft.shiftTemplateId || assignmentLoading || !canAssignShift} onChange={(event) => { setAssignmentDraft((current) => ({ ...current, effectiveFrom: event.target.value })); setAssignmentValidationError(""); }} />
                   </Field>
                 </div>
-                <button type="button" className="erp-button erp-button-secondary" disabled={assignmentLoading || shiftLoading || !draft.isActive} onClick={assignShift}>{assignmentLoading ? "Đang gán ca..." : "Gán bộ ca mới"}</button>
-                {!draft.isActive && <p className="erp-field-hint">Nhân viên đã tắt không thể gán ca mới.</p>}
+                <button type="button" className="erp-button erp-button-secondary" disabled={assignmentLoading || shiftLoading || !canAssignShift} onClick={assignShift}>{assignmentLoading ? "Đang gán ca..." : "Gán bộ ca mới"}</button>
+                {!canAssignShift && <p className="erp-field-hint">Nhân viên đã tắt không thể gán ca mới.</p>}
               </div>}
             </>}
           </div>

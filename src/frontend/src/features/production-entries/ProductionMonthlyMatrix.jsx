@@ -59,15 +59,16 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
         {orders.flatMap((order) => {
           const rows = [<tr className="erp-month-order-row" key={`order-${order.orderId}`}><th colSpan={totalColumns}><strong>Mã SX: {order.orderCode}</strong><span>{order.productName}</span></th></tr>];
           for (const employee of order.employees ?? []) {
+            const inactive = employee.isActive === false;
             (employee.operations ?? []).forEach((operation, operationIndex) => {
               const map = cellsByDate(operation);
-              rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`}>
-                {operationIndex === 0 && <td className="erp-month-sticky-employee erp-month-employee" rowSpan={employee.operations.length}>{employee.employeeName}</td>}
+              rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`} className={inactive ? "erp-month-inactive" : ""}>
+                {operationIndex === 0 && <td className="erp-month-sticky-employee erp-month-employee" rowSpan={employee.operations.length}>{employee.employeeName}{inactive && <em>Đã tắt</em>}</td>}
                 <td className="erp-month-sticky-operation erp-month-operation">CĐ{operation.operationNumber}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
                   const context = { cell, order, employee, operation, workDate: day.isoDate };
-                  return [<td key={`${day.isoDate}-hc`} className="erp-month-value-cell"><button type="button" onClick={() => onCellClick?.(context)} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC`}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} className="erp-month-value-cell"><button type="button" onClick={() => onCellClick?.(context)} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC`}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
+                  return [<td key={`${day.isoDate}-hc`} className="erp-month-value-cell"><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC`}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} className="erp-month-value-cell"><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC`}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
                 })}
                 <td className="erp-month-total erp-month-total-hc">{quantity(operation.hcQuantity)}</td><td className="erp-month-total erp-month-total-tc">{quantity(operation.tcQuantity)}</td><td className="erp-month-total erp-month-total-all"><strong>{quantity(operation.totalQuantity)}</strong></td>
               </tr>);

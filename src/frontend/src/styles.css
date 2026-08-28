@@ -157,6 +157,8 @@
 .erp-table tbody tr.is-clickable { cursor: pointer; }
 .erp-table tbody tr.is-clickable:hover, .erp-table tbody tr.is-selected { background: #eff6ff; }
 .erp-table tbody tr:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.erp-table tbody tr.erp-employee-inactive td { background: var(--color-error-soft); color: var(--color-error); }
+.erp-table tbody tr.erp-employee-inactive td:last-child { color: var(--color-text); }
 .erp-table-state { padding: 36px 16px; }
 .erp-production-date-group th { height: 34px; background: var(--color-surface-soft); color: var(--color-text); font-size: 13px; font-weight: 800; letter-spacing: normal; text-transform: none; }
 .erp-production-date-group th span { margin-left: 8px; color: var(--color-text-subtle); font-size: 12px; font-weight: 700; }

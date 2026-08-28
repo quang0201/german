@@ -58,7 +58,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.entry.Id, item.entry.Version, item.entry.WorkDate, item.entry.EntryMode,
                 item.entry.HcQuantity, item.entry.TcQuantity, item.entry.TotalQuantity,
                 item.entry.Note, item.entry.CreatedAt,
-                item.employee.Id, item.employee.EmployeeCode, item.employee.FullName,
+                item.employee.Id, item.employee.EmployeeCode, item.employee.FullName, item.employee.IsActive,
                 item.order.Id, item.order.Code, item.order.ProductName,
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
             .ToListAsync(cancellationToken);
@@ -72,6 +72,6 @@ internal sealed record ProductionMonthlyMatrixRow(
     Guid Id, int Version, DateOnly WorkDate, ProductionEntryMode EntryMode,
     decimal HcQuantity, decimal TcQuantity, decimal TotalQuantity,
     string? Note, DateTimeOffset CreatedAt,
-    Guid EmployeeId, string EmployeeCode, string EmployeeName,
+    Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive,
     Guid OrderId, string OrderCode, string ProductName,
     Guid OperationId, int OperationNumber, string OperationName);

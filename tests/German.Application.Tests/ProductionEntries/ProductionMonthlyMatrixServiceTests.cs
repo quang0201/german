@@ -121,6 +121,28 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetAsync_PreservesInactiveEmployeeForHistoryAndMarksItReadOnly()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E099", FullName = "Đã nghỉ", IsActive = false };
+        var order = NewOrder("0417", "Mã hàng 0417");
+        var operation = NewOperation(order, 7, "May");
+        db.AddRange(employee, order, operation);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 8, 10), 20m, 0m);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 8, null, null, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var matrixEmployee = result.Value!.Orders.Single().Employees.Single();
+        Assert.IsFalse(matrixEmployee.IsActive);
+        Assert.AreEqual("E099", matrixEmployee.EmployeeCode);
+        Assert.AreEqual(20m, matrixEmployee.Operations.Single().TotalQuantity);
+    }
+
+    [TestMethod]
     public async Task GetAsync_OrderFilterKeepsToolbarOptionsButFiltersBlocksAndSummary()
     {
         await using var db = CreateDb();

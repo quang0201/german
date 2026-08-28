@@ -13,6 +13,7 @@ export function DataTable({
   onRowClick,
   selectedRowKey,
   className = "",
+  rowClassName,
 }) {
   if (loading) {
     return <div className="erp-table-state" role="status">Đang tải dữ liệu...</div>;
@@ -39,7 +40,7 @@ export function DataTable({
             return (
               <tr
                 key={key}
-                className={`${selected ? "is-selected" : ""} ${onRowClick ? "is-clickable" : ""}`}
+                className={`${selected ? "is-selected" : ""} ${onRowClick ? "is-clickable" : ""} ${rowClassName?.(row) ?? ""}`.trim()}
                 onClick={() => onRowClick?.(row)}
                 tabIndex={onRowClick ? 0 : undefined}
                 onKeyDown={(event) => {

@@ -39,6 +39,7 @@ public sealed record ProductionMatrixEmployeeGroupDto(
     Guid EmployeeId,
     string EmployeeCode,
     string EmployeeName,
+    bool IsActive,
     IReadOnlyList<ProductionMatrixOperationRowDto> Operations);
 
 public sealed record ProductionMatrixOrderBlockDto(

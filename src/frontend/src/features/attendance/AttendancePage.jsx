@@ -222,7 +222,7 @@ export function AttendancePage() {
   }
 
   function handleCellChange(employee, day, shift, value) {
-    if (!shift) return;
+    if (!shift || employee.isActive === false) return;
     const key = attendanceDayKey(employee.employeeId, day.workDate);
     const current = ensureDraft(employee, day);
     setDrafts((previous) => ({ ...previous, [key]: { ...current, shifts: { ...current.shifts, [shift.slotNumber]: value } } }));
@@ -232,6 +232,7 @@ export function AttendancePage() {
   }
 
   function handleOvertimeChange(employee, day, value) {
+    if (employee.isActive === false) return;
     const key = attendanceDayKey(employee.employeeId, day.workDate);
     const current = ensureDraft(employee, day);
     setDrafts((previous) => ({ ...previous, [key]: { ...current, overtimeHours: value } }));

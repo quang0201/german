@@ -103,6 +103,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }
 
   function handleCell(context) {
+    if (context.employee?.isActive === false) return;
     const action = matrixCellAction(context.cell);
     if (action === "create" || action === "edit-direct") setQuickContext(context);
     else if (action === "open-entry") openEntry(context.cell.records[0].id);
