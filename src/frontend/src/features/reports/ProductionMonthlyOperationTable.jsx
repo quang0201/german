@@ -53,7 +53,7 @@ export function ProductionMonthlyOperationTable({ summary }) {
               <th scope="col">Công đoạn</th>
               {months.map((month) => <th scope="col" key={month.monthKey}>{monthLabel(month)}</th>)}
               <th scope="col">Tổng HC/TC</th>
-              <th scope="col">Tổng</th>
+              <th scope="col">Tổng cộng</th>
             </tr>
           </thead>
           <tbody>

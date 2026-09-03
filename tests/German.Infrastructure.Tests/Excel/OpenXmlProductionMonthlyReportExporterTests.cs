@@ -23,7 +23,7 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         var worksheet = (WorksheetPart)document.WorkbookPart.GetPartById(relationshipId);
         var rows = worksheet.Worksheet!.GetFirstChild<SheetData>()!.Elements<Row>().ToList();
         CollectionAssert.AreEqual(
-            new[] { "Công đoạn", "Tên công đoạn", "ĐVT", "07/2026", "08/2026", "Tổng HC", "Tổng TC", "Tổng" },
+            new[] { "Công đoạn", "Tên công đoạn", "ĐVT", "07/2026", "08/2026", "Tổng HC", "Tổng TC", "Tổng cộng" },
             Cells(rows.Single(row => row.RowIndex!.Value == 4U)));
         CollectionAssert.AreEqual(
             new[] { "HC", "TC", "HC", "TC" },

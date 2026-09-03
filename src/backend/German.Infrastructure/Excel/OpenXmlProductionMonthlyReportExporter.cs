@@ -81,7 +81,7 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
         AddCells(data, 4U,
             At(Col(totalColumnStart) + "4", Text("Tổng HC", HcHeaderStyle)),
             At(Col(totalColumnStart + 1) + "4", Text("Tổng TC", TcHeaderStyle)),
-            At(Col(totalColumnStart + 2) + "4", Text("Tổng", TotalHeaderStyle)));
+            At(Col(totalColumnStart + 2) + "4", Text("Tổng cộng", TotalHeaderStyle)));
         merges.Append(
             new MergeCell { Reference = Col(totalColumnStart) + "4:" + Col(totalColumnStart) + "5" },
             new MergeCell { Reference = Col(totalColumnStart + 1) + "4:" + Col(totalColumnStart + 1) + "5" },
