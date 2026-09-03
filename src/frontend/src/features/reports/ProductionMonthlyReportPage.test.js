@@ -1,12 +1,13 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
+import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { ProductionMonthlyReportPage } from "./ProductionMonthlyReportPage.jsx";
 import { buildProductionMonthlyExportUrl, buildProductionMonthlySummaryUrl, monthRangeToDateRange } from "./productionMonthlyReport.js";
 
 describe("ProductionMonthlyReportPage", () => {
   test("keeps month filters on the dedicated monthly report screen", () => {
-    const html = renderToString(React.createElement(ProductionMonthlyReportPage));
+    const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ProductionMonthlyReportPage)));
 
     expect(html).toContain("Báo cáo theo tháng");
     expect(html).toContain("Từ tháng");
