@@ -135,6 +135,7 @@ public sealed class ReportExportApiTests
             "bao-cao-san-luong-theo-thang_202607_202608.xlsx",
             response.Content.Headers.ContentDisposition?.FileNameStar ??
             response.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
+        Assert.IsTrue(response.Headers.CacheControl?.NoStore == true);
     }
 
     [TestMethod]
