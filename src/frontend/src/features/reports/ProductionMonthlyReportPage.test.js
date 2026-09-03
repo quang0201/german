@@ -12,7 +12,7 @@ describe("ProductionMonthlyReportPage", () => {
     expect(html).toContain("Từ tháng");
     expect(html).toContain("Đến tháng");
     expect(html).toContain('type="month"');
-    expect(html).toContain("Tổng hợp theo tháng");
+    expect(html).toContain("theo từng công đoạn");
   });
 
   test("builds a month-scoped summary URL without changing the daily report contract", () => {
