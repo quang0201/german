@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, buildProductionMonthlySummaryUrl, currentReportMonthRange, monthRangeToDateRange } from "./ReportPage.jsx";
+import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, currentReportMonthRange } from "./ReportPage.jsx";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ReportPage", () => {
@@ -15,6 +15,10 @@ describe("ReportPage", () => {
   test("renders the report controls inside the ERP feedback provider", () => {
     const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
     expect(html).toContain("Báo cáo");
+    expect(html).toContain("Từ ngày");
+    expect(html).toContain("Đến ngày");
+    expect(html).toContain('type="date"');
+    expect(html).not.toContain("Từ tháng");
     expect(html).toContain("Xuất Excel");
   });
 
@@ -55,17 +59,6 @@ describe("ReportPage", () => {
     expect(buildProductionReportSummaryUrl("order-1", "2026-08-01", "2026-08-10")).toBe(
       "/api/reports/production/summary?orderId=order-1&fromDate=2026-08-01&untilDate=2026-08-10",
     );
-  });
-
-  test("builds a monthly summary URL from the selected month range", () => {
-    expect(buildProductionMonthlySummaryUrl("order-1", "2026-07", "2026-08")).toBe(
-      "/api/reports/production/monthly-summary?orderId=order-1&fromMonth=2026-07&untilMonth=2026-08",
-    );
-  });
-
-  test("converts month filters to an exportable inclusive date range", () => {
-    expect(monthRangeToDateRange("2026-07", "2026-08")).toEqual({ fromDate: "2026-07-01", untilDate: "2026-08-31" });
-    expect(monthRangeToDateRange("", "2026-08")).toEqual({ fromDate: "", untilDate: "" });
   });
 
   test("groups operation bars by unit and scales each unit independently", () => {
