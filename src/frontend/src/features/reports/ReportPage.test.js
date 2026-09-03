@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, currentReportMonthRange } from "./ReportPage.jsx";
+import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, buildProductionMonthlySummaryUrl, currentReportMonthRange } from "./ReportPage.jsx";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ReportPage", () => {
@@ -54,6 +54,12 @@ describe("ReportPage", () => {
   test("builds a summary URL scoped to the selected order and date range", () => {
     expect(buildProductionReportSummaryUrl("order-1", "2026-08-01", "2026-08-10")).toBe(
       "/api/reports/production/summary?orderId=order-1&fromDate=2026-08-01&untilDate=2026-08-10",
+    );
+  });
+
+  test("builds a monthly summary URL from the selected month range", () => {
+    expect(buildProductionMonthlySummaryUrl("order-1", "2026-07", "2026-08")).toBe(
+      "/api/reports/production/monthly-summary?orderId=order-1&fromMonth=2026-07&untilMonth=2026-08",
     );
   });
 

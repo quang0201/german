@@ -362,7 +362,7 @@ public sealed class ProductionReportServiceTests
     public async Task BuildMonthlyOperationSummaryAsync_GroupsEachOperationByMonthAndKeepsZeroOperations()
     {
         await using var db = CreateDb();
-        var seed = await SeedAsync(db, new DateOnly(2026, 7, 12));
+        var seed = await SeedAsync(db, new DateOnly(2026, 6, 12));
         var secondOperation = new ProductionOperation
         {
             ProductionOrderId = seed.Order.Id,
@@ -404,10 +404,10 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual(120m, first.Months[0].TotalQuantity);
         Assert.AreEqual(30m, first.Months[1].ExternalQuantity);
         Assert.AreEqual(80m, first.Months[1].CombinedTotalQuantity);
-        Assert.AreEqual(200m, first.HcQuantity);
+        Assert.AreEqual(140m, first.HcQuantity);
         Assert.AreEqual(30m, first.TcQuantity);
         Assert.AreEqual(30m, first.ExternalQuantity);
-        Assert.AreEqual(260m, first.CombinedTotalQuantity);
+        Assert.AreEqual(200m, first.CombinedTotalQuantity);
 
         var zeroOperation = result.Value.Operations[1];
         Assert.AreEqual(12, zeroOperation.OperationNumber);
