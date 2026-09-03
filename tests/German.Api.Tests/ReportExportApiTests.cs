@@ -93,6 +93,51 @@ public sealed class ReportExportApiTests
     }
 
     [TestMethod]
+    public async Task MonthlySummaryExport_Manager_ReturnsMonthlyHcTcWorkbook()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedAccountAsync(factory, "monthly-export-manager", "M005", UserRole.Manager, "secret");
+        var orderId = Guid.NewGuid();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var order = new ProductionOrder
+            {
+                Id = orderId,
+                Code = "0417",
+                ProductName = "Túi 0417",
+                PlannedQuantity = 1000m,
+                Status = ProductionOrderStatus.InProduction
+            };
+            db.Add(new ProductionOperation
+            {
+                ProductionOrderId = orderId,
+                OperationNumber = 9,
+                Name = "May thân",
+                Unit = "cái",
+                SortOrder = 1
+            });
+            db.Add(order);
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "monthly-export-manager", "secret");
+
+        var response = await client.GetAsync(
+            $"/api/reports/production/monthly-summary/export.xlsx?orderId={orderId}&fromMonth=2026-07&untilMonth=2026-08");
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            response.Content.Headers.ContentType?.MediaType);
+        Assert.AreEqual(
+            "bao-cao-san-luong-theo-thang_202607_202608.xlsx",
+            response.Content.Headers.ContentDisposition?.FileNameStar ??
+            response.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
+    }
+
+    [TestMethod]
     public async Task Export_Manager_ForwardsSearchFilter()
     {
         await using var factory = new GermanApiFactory();
