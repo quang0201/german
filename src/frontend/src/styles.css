@@ -303,6 +303,21 @@
 .erp-report-operation-legend-swatch { width:10px; height:10px; display:inline-block; border-radius:2px; }
 .erp-report-operation-details { display: flex; flex-wrap: wrap; gap: 12px; color: var(--color-text-muted); font-size: 12px; }
 .erp-report-operation-details strong { color: var(--color-text); }
+.erp-report-monthly-card { display: grid; gap: 16px; margin-top: 20px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 20px; }
+.erp-report-monthly-card-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 14px; }
+.erp-report-monthly-card-header h2 { margin: 4px 0 0; color: var(--color-text); font-size: 20px; }
+.erp-report-monthly-card-header > span { color: var(--color-text-muted); font-size: 13px; }
+.erp-report-monthly-table-wrap { overflow-x: auto; }
+.erp-report-monthly-table { width: 100%; min-width: 760px; border-collapse: collapse; color: var(--color-text); font-size: 13px; }
+.erp-report-monthly-table th, .erp-report-monthly-table td { border: 1px solid var(--color-border); padding: 10px 12px; text-align: left; vertical-align: top; }
+.erp-report-monthly-table thead th { background: var(--color-surface-soft); color: var(--color-text-muted); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.erp-report-monthly-table tbody th { min-width: 180px; font-weight: 700; }
+.erp-report-monthly-table tbody th span { display: block; margin-top: 3px; color: var(--color-text-muted); font-size: 12px; font-weight: 500; }
+.erp-report-monthly-table tbody tr:hover { background: var(--color-surface-soft); }
+.erp-report-monthly-quantity-cell { display: grid; gap: 3px; min-width: 150px; white-space: nowrap; }
+.erp-report-monthly-quantity-cell span { color: var(--color-text-muted); font-size: 12px; }
+.erp-report-monthly-quantity-cell strong { color: var(--color-primary-strong); }
+.erp-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .erp-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .erp-summary-grid > div { display: grid; gap: 7px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 18px; }
 .erp-summary-grid span { color: var(--color-text-muted); font-size: 13px; font-weight: 700; }
@@ -466,7 +481,7 @@
   .erp-page-actions > *, .erp-filter-actions > * { flex: 1; }
   .erp-filter-fields, .erp-form-grid { grid-template-columns: 1fr; }
   .erp-report-toolbar, .erp-summary-grid { grid-template-columns: 1fr; }
-  .erp-report-summary-card-header, .erp-report-operation-row { align-items: stretch; grid-template-columns: 1fr; }
+  .erp-report-summary-card-header, .erp-report-monthly-card-header, .erp-report-operation-row { align-items: stretch; grid-template-columns: 1fr; }
   .erp-field-wide { grid-column: auto; }
   .erp-mode-grid { grid-template-columns: 1fr; }
   .erp-mode-option { min-height: 0; }
