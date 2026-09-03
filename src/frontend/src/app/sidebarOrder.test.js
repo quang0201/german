@@ -8,7 +8,7 @@ describe("Sidebar navigation order", () => {
     const html = renderToString(React.createElement(Sidebar, { role: "Manager", pathname: "/reports", collapsed: false }));
     const labels = [...html.matchAll(/<span class="erp-nav-label">([^<]+)<\/span>/g)].map((match) => match[1]);
 
-    expect(labels).toEqual(["Báo cáo", "Nhân viên", "Mã sản xuất", "Chấm công", "Sản lượng", "Ca làm việc"]);
+    expect(labels).toEqual(["Báo cáo", "Báo cáo tháng", "Nhân viên", "Mã sản xuất", "Chấm công", "Sản lượng", "Ca làm việc"]);
     expect(html).not.toContain("Tổng quan");
   });
 });

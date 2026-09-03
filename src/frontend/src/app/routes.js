@@ -5,6 +5,7 @@ import { EmployeeListPage } from "../features/employees/EmployeeListPage.jsx";
 import { ProductionOrderListPage } from "../features/production-orders/ProductionOrderListPage.jsx";
 import { ShiftListPage } from "../features/shifts/ShiftListPage.jsx";
 import { ReportPage } from "../features/reports/ReportPage.jsx";
+import { ProductionMonthlyReportPage } from "../features/reports/ProductionMonthlyReportPage.jsx";
 import { UserAccountPage } from "../features/admin/UserAccountPage.jsx";
 import { AuditLogListPage } from "../features/admin/AuditLogListPage.jsx";
 import { AttendancePage } from "../features/attendance/AttendancePage.jsx";
@@ -21,6 +22,7 @@ export const routes = [
   { path: "/shifts", roles: ["Manager", "Admin"], navLabel: "Ca làm việc", breadcrumb: () => [{ label: "Ca làm việc" }], component: ShiftListPage },
   { path: "/attendance", roles: ["Manager", "Admin"], navLabel: "Chấm công", breadcrumb: () => [{ label: "Chấm công" }], component: AttendancePage },
   { path: "/reports", roles: ["Manager", "Admin"], navLabel: "Báo cáo", breadcrumb: () => [{ label: "Báo cáo" }], component: ReportPage },
+  { path: "/reports/monthly", roles: ["Manager", "Admin"], navLabel: "Báo cáo tháng", breadcrumb: () => [{ label: "Báo cáo", href: "/reports" }, { label: "Báo cáo tháng" }], component: ProductionMonthlyReportPage },
   { path: "/admin/accounts", roles: ["Admin"], navLabel: "Tài khoản", breadcrumb: () => [{ label: "Tài khoản" }], component: UserAccountPage },
   { path: "/admin/audit", roles: ["Admin"], navLabel: "Nhật ký kiểm tra", breadcrumb: () => [{ label: "Nhật ký kiểm tra" }], component: AuditLogListPage },
 ];
