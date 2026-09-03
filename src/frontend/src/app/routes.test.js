@@ -31,4 +31,11 @@ describe("ERP route metadata", () => {
     expect(route?.roles).toEqual(["Manager", "Admin"]);
     expect(route?.navLabel).toBe("Chấm công");
   });
+
+  test("exposes monthly production breakdown as a separate report screen", () => {
+    const route = routes.find((item) => item.path === "/reports/monthly");
+    expect(route?.roles).toEqual(["Manager", "Admin"]);
+    expect(route?.navLabel).toBe("Báo cáo tháng");
+    expect(matchRoute("/reports/monthly", routes)?.route.path).toBe("/reports/monthly");
+  });
 });
