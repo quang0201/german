@@ -6,6 +6,129 @@ namespace German.Application.Reports;
 
 public sealed class ProductionReportService(IGermanDbContext db, TimeProvider timeProvider)
 {
+    public async Task<AppResult<ProductionMonthlyOperationSummaryReport>> BuildMonthlyOperationSummaryAsync(
+        Guid orderId,
+        DateOnly? fromDate,
+        DateOnly? untilDate,
+        CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var requestedFrom = fromDate ?? new DateOnly(today.Year, today.Month, 1);
+        var requestedUntil = untilDate ?? requestedFrom.AddMonths(1).AddDays(-1);
+        var rangeFrom = new DateOnly(requestedFrom.Year, requestedFrom.Month, 1);
+        var rangeUntil = new DateOnly(requestedUntil.Year, requestedUntil.Month, 1).AddMonths(1).AddDays(-1);
+
+        if (rangeFrom > rangeUntil)
+        {
+            return AppResult<ProductionMonthlyOperationSummaryReport>.Failure(
+                "reports.invalid_date_range",
+                "Tháng bắt đầu phải nhỏ hơn hoặc bằng tháng kết thúc.");
+        }
+
+        if (rangeUntil.DayNumber - rangeFrom.DayNumber > 366)
+        {
+            return AppResult<ProductionMonthlyOperationSummaryReport>.Failure(
+                "reports.date_range_too_large",
+                "Khoảng thời gian báo cáo tối đa là 12 tháng.");
+        }
+
+        var order = await db.ProductionOrders.AsNoTracking()
+            .Where(item => item.Id == orderId)
+            .Select(item => new { item.Id, item.Code, item.ProductName })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (order is null)
+        {
+            return AppResult<ProductionMonthlyOperationSummaryReport>.Failure(
+                "reports.order_not_found",
+                "Không tìm thấy mã sản xuất.");
+        }
+
+        var operations = await db.ProductionOperations.AsNoTracking()
+            .Where(item => item.ProductionOrderId == orderId)
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.OperationNumber)
+            .Select(item => new { item.Id, item.OperationNumber, item.Name, item.Unit })
+            .ToListAsync(cancellationToken);
+
+        var internalAggregates = await db.ProductionEntries.AsNoTracking()
+            .Where(item => !item.IsDeleted
+                && item.ProductionOrderId == orderId
+                && item.WorkDate >= rangeFrom
+                && item.WorkDate <= rangeUntil)
+            .GroupBy(item => new { item.ProductionOperationId, Year = item.WorkDate.Year, Month = item.WorkDate.Month })
+            .Select(group => new
+            {
+                group.Key.ProductionOperationId,
+                group.Key.Year,
+                group.Key.Month,
+                HcQuantity = group.Sum(item => item.HcQuantity),
+                TcQuantity = group.Sum(item => item.TcQuantity),
+                TotalQuantity = group.Sum(item => item.TotalQuantity)
+            })
+            .ToListAsync(cancellationToken);
+
+        var externalAggregates = await db.ProductionExternalQuantities.AsNoTracking()
+            .Where(item => item.ProductionOrderId == orderId
+                && item.ReceivedDate >= rangeFrom
+                && item.ReceivedDate <= rangeUntil)
+            .GroupBy(item => new { item.ProductionOperationId, Year = item.ReceivedDate.Year, Month = item.ReceivedDate.Month })
+            .Select(group => new
+            {
+                group.Key.ProductionOperationId,
+                group.Key.Year,
+                group.Key.Month,
+                Quantity = group.Sum(item => item.Quantity)
+            })
+            .ToListAsync(cancellationToken);
+
+        var internalByKey = internalAggregates.ToDictionary(
+            item => (item.ProductionOperationId, item.Year, item.Month));
+        var externalByKey = externalAggregates.ToDictionary(
+            item => (item.ProductionOperationId, item.Year, item.Month),
+            item => item.Quantity);
+        var months = EnumerateMonths(rangeFrom, rangeUntil).ToArray();
+        var monthDtos = months
+            .Select(month => new ProductionReportMonth(month.Year, month.Month, MonthKey(month)))
+            .ToArray();
+        var summaries = operations.Select(operation =>
+        {
+            var monthSummaries = months.Select(month =>
+            {
+                internalByKey.TryGetValue((operation.Id, month.Year, month.Month), out var internalValue);
+                externalByKey.TryGetValue((operation.Id, month.Year, month.Month), out var externalQuantity);
+                var totalQuantity = internalValue?.TotalQuantity ?? 0m;
+                return new ProductionOperationMonthSummary(
+                    MonthKey(month),
+                    internalValue?.HcQuantity ?? 0m,
+                    internalValue?.TcQuantity ?? 0m,
+                    totalQuantity,
+                    externalQuantity,
+                    totalQuantity + externalQuantity);
+            }).ToArray();
+
+            return new ProductionMonthlyOperationSummary(
+                operation.Id,
+                operation.OperationNumber,
+                operation.Name,
+                operation.Unit,
+                monthSummaries,
+                monthSummaries.Sum(item => item.HcQuantity),
+                monthSummaries.Sum(item => item.TcQuantity),
+                monthSummaries.Sum(item => item.TotalQuantity),
+                monthSummaries.Sum(item => item.ExternalQuantity),
+                monthSummaries.Sum(item => item.CombinedTotalQuantity));
+        }).ToArray();
+
+        return AppResult<ProductionMonthlyOperationSummaryReport>.Success(
+            new ProductionMonthlyOperationSummaryReport(
+                order.Id,
+                order.Code,
+                order.ProductName,
+                summaries.Length,
+                monthDtos,
+                summaries));
+    }
+
     public async Task<AppResult<ProductionOperationSummaryReport>> BuildOperationSummaryAsync(
         Guid orderId,
         DateOnly? fromDate,
@@ -292,4 +415,16 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
 
         return result.ToArray();
     }
+
+    private static IEnumerable<DateOnly> EnumerateMonths(DateOnly fromDate, DateOnly untilDate)
+    {
+        for (var month = new DateOnly(fromDate.Year, fromDate.Month, 1);
+             month <= untilDate;
+             month = month.AddMonths(1))
+        {
+            yield return month;
+        }
+    }
+
+    private static string MonthKey(DateOnly month) => $"{month.Year:0000}-{month.Month:00}";
 }

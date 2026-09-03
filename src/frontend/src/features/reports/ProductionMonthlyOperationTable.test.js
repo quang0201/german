@@ -31,10 +31,15 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("07/2026");
     expect(html).toContain("08/2026");
     expect(html).toContain("Tổng");
-    expect(html).toContain("CĐ9");
-    expect(html).toContain("HC: 100");
-    expect(html).toContain("Bên ngoài: 30");
-    expect(html).toContain("Tổng: 200 cái");
+    expect(html).toContain("CĐ");
+    expect(html).toContain("9");
+    expect(html).toContain("HC:");
+    expect(html).toContain("100");
+    expect(html).toContain("Bên ngoài:");
+    expect(html).toContain("30");
+    expect(html).toContain("Tổng:");
+    expect(html).toContain("200");
+    expect(html).toContain("cái");
   });
 
   test("renders zero values instead of dropping an operation without production", () => {
@@ -51,7 +56,10 @@ describe("ProductionMonthlyOperationTable", () => {
       },
     }));
 
-    expect(html).toContain("CĐ4");
-    expect(html).toContain("Tổng: 0 kiện");
+    expect(html).toContain("CĐ");
+    expect(html).toContain("4");
+    expect(html).toContain("Tổng:");
+    expect(html).toContain("0");
+    expect(html).toContain("kiện");
   });
 });

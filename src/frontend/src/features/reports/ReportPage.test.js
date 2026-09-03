@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, buildProductionMonthlySummaryUrl, currentReportMonthRange } from "./ReportPage.jsx";
+import { ReportPage, buildProductionReportExportUrl, buildProductionReportSummaryUrl, buildProductionMonthlySummaryUrl, currentReportMonthRange, monthRangeToDateRange } from "./ReportPage.jsx";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ReportPage", () => {
@@ -61,6 +61,11 @@ describe("ReportPage", () => {
     expect(buildProductionMonthlySummaryUrl("order-1", "2026-07", "2026-08")).toBe(
       "/api/reports/production/monthly-summary?orderId=order-1&fromMonth=2026-07&untilMonth=2026-08",
     );
+  });
+
+  test("converts month filters to an exportable inclusive date range", () => {
+    expect(monthRangeToDateRange("2026-07", "2026-08")).toEqual({ fromDate: "2026-07-01", untilDate: "2026-08-31" });
+    expect(monthRangeToDateRange("", "2026-08")).toEqual({ fromDate: "", untilDate: "" });
   });
 
   test("groups operation bars by unit and scales each unit independently", () => {

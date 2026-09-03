@@ -1,4 +1,6 @@
 using German.Application.Reports;
+using German.Application.Common;
+using System.Globalization;
 
 namespace German.Api.Endpoints;
 
@@ -13,8 +15,46 @@ public static class ReportEndpoints
             .RequireAuthorization("ManagerOrAdmin");
 
         group.MapGet("/production/summary", GetProductionSummaryAsync);
+        group.MapGet("/production/monthly-summary", GetProductionMonthlySummaryAsync);
         group.MapGet("/production/export.xlsx", ExportProductionAsync);
         return endpoints;
+    }
+
+    private static async Task<IResult> GetProductionMonthlySummaryAsync(
+        Guid orderId,
+        string? fromMonth,
+        string? untilMonth,
+        ProductionReportService service,
+        CancellationToken cancellationToken)
+    {
+        if (!TryParseMonth(fromMonth, out var rangeFrom)
+            || !TryParseMonth(untilMonth, out var rangeUntil))
+        {
+            return ApiResultMapper.Error(new AppError(
+                "reports.invalid_month",
+                "Tháng phải có định dạng YYYY-MM."));
+        }
+
+        var result = await service.BuildMonthlyOperationSummaryAsync(
+            orderId,
+            rangeFrom,
+            rangeUntil.AddMonths(1).AddDays(-1),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : ApiResultMapper.Error(result.Error!);
+    }
+
+    private static bool TryParseMonth(string? value, out DateOnly month)
+    {
+        return DateOnly.TryParseExact(
+            value,
+            "yyyy-MM",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out month)
+            && month.Day == 1;
     }
 
     private static async Task<IResult> GetProductionSummaryAsync(
