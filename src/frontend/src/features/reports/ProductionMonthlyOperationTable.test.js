@@ -22,6 +22,10 @@ describe("ProductionMonthlyOperationTable", () => {
             { monthKey: "2026-07", hcQuantity: 100, tcQuantity: 20, totalQuantity: 120, externalQuantity: 0, combinedTotalQuantity: 120 },
             { monthKey: "2026-08", hcQuantity: 40, tcQuantity: 10, totalQuantity: 50, externalQuantity: 30, combinedTotalQuantity: 80 },
           ],
+          hcQuantity: 140,
+          tcQuantity: 30,
+          totalQuantity: 170,
+          externalQuantity: 30,
           combinedTotalQuantity: 200,
         }],
       },
@@ -30,15 +34,15 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("Tổng hợp theo tháng");
     expect(html).toContain("07/2026");
     expect(html).toContain("08/2026");
-    expect(html).toContain("Tổng");
+    expect(html).toContain("Tổng HC/TC");
     expect(html).toContain("CĐ");
     expect(html).toContain("9");
     expect(html).toContain("HC:");
     expect(html).toContain("100");
-    expect(html).toContain("Bên ngoài:");
+    expect(html).not.toContain("Nội bộ:");
+    expect(html).not.toContain("Bên ngoài:");
+    expect(html).toContain("140");
     expect(html).toContain("30");
-    expect(html).toContain("Tổng:");
-    expect(html).toContain("200");
     expect(html).toContain("cái");
   });
 
@@ -58,7 +62,8 @@ describe("ProductionMonthlyOperationTable", () => {
 
     expect(html).toContain("CĐ");
     expect(html).toContain("4");
-    expect(html).toContain("Tổng:");
+    expect(html).toContain("HC:");
+    expect(html).toContain("TC:");
     expect(html).toContain("0");
     expect(html).toContain("kiện");
   });
