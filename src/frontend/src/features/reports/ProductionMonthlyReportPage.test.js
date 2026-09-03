@@ -25,6 +25,9 @@ describe("ProductionMonthlyReportPage", () => {
     expect(buildProductionMonthlyExportUrl("order-1", "2026-07", "2026-08")).toBe(
       "/api/reports/production/monthly-summary/export.xlsx?orderId=order-1&fromMonth=2026-07&untilMonth=2026-08",
     );
+    expect(buildProductionMonthlyExportUrl("order-1", "2026-07", "2026-08", "refresh-1")).toBe(
+      "/api/reports/production/monthly-summary/export.xlsx?orderId=order-1&fromMonth=2026-07&untilMonth=2026-08&exportKey=refresh-1",
+    );
     expect(productionMonthlyExportFileName("2026-07", "2026-08")).toBe("bao-cao-san-luong-theo-thang_202607_202608.xlsx");
   });
 });
