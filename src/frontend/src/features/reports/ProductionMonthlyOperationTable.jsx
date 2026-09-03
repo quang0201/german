@@ -28,6 +28,10 @@ function QuantityCell({ value }) {
   );
 }
 
+function TotalCell({ value }) {
+  return <strong className="erp-report-monthly-total">{quantity(value.totalQuantity)}</strong>;
+}
+
 export function ProductionMonthlyOperationTable({ summary }) {
   const months = summary?.months || [];
   const operations = summary?.operations || [];
@@ -49,6 +53,7 @@ export function ProductionMonthlyOperationTable({ summary }) {
               <th scope="col">Công đoạn</th>
               {months.map((month) => <th scope="col" key={month.monthKey}>{monthLabel(month)}</th>)}
               <th scope="col">Tổng HC/TC</th>
+              <th scope="col">Tổng</th>
             </tr>
           </thead>
           <tbody>
@@ -57,6 +62,7 @@ export function ProductionMonthlyOperationTable({ summary }) {
                 <th scope="row"><strong>CĐ{operation.operationNumber}</strong><span>{operation.name}</span></th>
                 {months.map((month) => <td key={month.monthKey}><QuantityCell value={monthValue(operation, month.monthKey)} /></td>)}
                 <td><QuantityCell value={operation} /></td>
+                <td><TotalCell value={operation} /></td>
               </tr>
             ))}
           </tbody>

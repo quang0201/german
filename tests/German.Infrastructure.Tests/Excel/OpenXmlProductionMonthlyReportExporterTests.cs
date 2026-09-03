@@ -23,7 +23,7 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         var worksheet = (WorksheetPart)document.WorkbookPart.GetPartById(relationshipId);
         var rows = worksheet.Worksheet!.GetFirstChild<SheetData>()!.Elements<Row>().ToList();
         CollectionAssert.AreEqual(
-            new[] { "Công đoạn", "Tên công đoạn", "ĐVT", "07/2026", "08/2026", "Tổng HC", "Tổng TC" },
+            new[] { "Công đoạn", "Tên công đoạn", "ĐVT", "07/2026", "08/2026", "Tổng HC", "Tổng TC", "Tổng" },
             Cells(rows.Single(row => row.RowIndex!.Value == 4U)));
         CollectionAssert.AreEqual(
             new[] { "HC", "TC", "HC", "TC" },
@@ -38,6 +38,7 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         Assert.AreEqual("10", Cell(data, "G6").CellValue!.Text);
         Assert.AreEqual("140", Cell(data, "H6").CellValue!.Text);
         Assert.AreEqual("30", Cell(data, "I6").CellValue!.Text);
+        Assert.AreEqual("170", Cell(data, "J6").CellValue!.Text);
         Assert.IsFalse(worksheet.Worksheet.InnerText.Contains("Nội bộ", StringComparison.Ordinal));
         Assert.IsFalse(worksheet.Worksheet.InnerText.Contains("Bên ngoài", StringComparison.Ordinal));
     }
