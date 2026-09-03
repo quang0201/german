@@ -83,7 +83,7 @@ export function ProductionMonthlyReportPage() {
     }
     setExporting(true);
     try {
-      await api.download(buildProductionMonthlyExportUrl(fromMonth, untilMonth), productionMonthlyExportFileName(fromMonth, untilMonth));
+      await api.download(buildProductionMonthlyExportUrl(orderId, fromMonth, untilMonth), productionMonthlyExportFileName(fromMonth, untilMonth));
       toast.success("Đã tải báo cáo sản lượng theo tháng.");
     } catch (requestError) {
       setExportError(requestError.message || "Không thể xuất báo cáo theo tháng.");

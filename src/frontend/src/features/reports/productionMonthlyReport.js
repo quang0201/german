@@ -5,8 +5,8 @@ export function buildProductionMonthlySummaryUrl(orderId, fromMonth, untilMonth)
   return `/api/reports/production/monthly-summary?${params.toString()}`;
 }
 
-export function buildProductionMonthlyExportUrl(fromMonth, untilMonth) {
-  const params = new URLSearchParams({ fromMonth, untilMonth });
+export function buildProductionMonthlyExportUrl(orderId, fromMonth, untilMonth) {
+  const params = new URLSearchParams({ orderId, fromMonth, untilMonth });
   return `/api/reports/production/monthly-summary/export.xlsx?${params.toString()}`;
 }
 
