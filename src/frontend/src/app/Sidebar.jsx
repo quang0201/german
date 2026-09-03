@@ -20,6 +20,7 @@ const icons = {
   "/orders": "orders",
   "/shifts": "shifts",
   "/reports": "reports",
+  "/reports/monthly": "reports",
   "/admin/accounts": "accounts",
   "/admin/audit": "audit",
 };
@@ -35,7 +36,7 @@ export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
       <nav className="erp-sidebar-nav" aria-label="Điều hướng chính">
         {items.map((route) => {
           const active = pathname === route.path
-            || (route.path === "/reports" && pathname.startsWith("/reports/"))
+            || (route.path === "/reports" && pathname !== "/reports/monthly" && pathname.startsWith("/reports/"))
             || (route.path === "/production" && pathname.startsWith("/production/"));
           const label = typeof route.navLabel === "function" ? route.navLabel(role) : route.navLabel;
           return (
