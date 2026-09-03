@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IGermanDbContext>(sp => sp.GetRequiredService<GermanDbContext>());
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddSingleton<IProductionReportExporter, OpenXmlProductionReportExporter>();
+        services.AddSingleton<IProductionMonthlyReportExporter, OpenXmlProductionMonthlyReportExporter>();
         services.AddScoped<IAttendanceExcelExporter, OpenXmlAttendanceExporter>();
         services.AddScoped<BootstrapAdminSeeder>();
         return services;

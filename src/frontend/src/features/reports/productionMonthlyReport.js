@@ -6,9 +6,15 @@ export function buildProductionMonthlySummaryUrl(orderId, fromMonth, untilMonth)
 }
 
 export function buildProductionMonthlyExportUrl(fromMonth, untilMonth) {
-  const { fromDate, untilDate } = monthRangeToDateRange(fromMonth, untilMonth);
-  const params = new URLSearchParams({ fromDate, untilDate });
-  return `/api/reports/production/export.xlsx?${params.toString()}`;
+  const params = new URLSearchParams({ fromMonth, untilMonth });
+  return `/api/reports/production/monthly-summary/export.xlsx?${params.toString()}`;
+}
+
+export function productionMonthlyExportFileName(fromMonth, untilMonth) {
+  if (!/^\d{4}-\d{2}$/.test(fromMonth || "") || !/^\d{4}-\d{2}$/.test(untilMonth || "")) {
+    return "bao-cao-san-luong-theo-thang.xlsx";
+  }
+  return `bao-cao-san-luong-theo-thang_${fromMonth.replace("-", "")}_${untilMonth.replace("-", "")}.xlsx`;
 }
 
 export function currentReportMonthKey(today = new Date()) {

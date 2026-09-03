@@ -4,9 +4,8 @@ import { Field } from "../../components/erp/Field.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { productionExportFileName } from "../production-entries/productionExport.js";
 import { ProductionMonthlyOperationTable } from "./ProductionMonthlyOperationTable.jsx";
-import { buildProductionMonthlyExportUrl, buildProductionMonthlySummaryUrl, currentReportMonthKey, monthRangeToDateRange } from "./productionMonthlyReport.js";
+import { buildProductionMonthlyExportUrl, buildProductionMonthlySummaryUrl, currentReportMonthKey, productionMonthlyExportFileName } from "./productionMonthlyReport.js";
 
 export function ProductionMonthlyReportPage() {
   const initialMonth = currentReportMonthKey();
@@ -82,10 +81,9 @@ export function ProductionMonthlyReportPage() {
       setExportError("Chức năng xuất báo cáo chưa sẵn sàng. Vui lòng tải lại trang.");
       return;
     }
-    const { fromDate, untilDate } = monthRangeToDateRange(fromMonth, untilMonth);
     setExporting(true);
     try {
-      await api.download(buildProductionMonthlyExportUrl(fromMonth, untilMonth), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong-theo-thang"));
+      await api.download(buildProductionMonthlyExportUrl(fromMonth, untilMonth), productionMonthlyExportFileName(fromMonth, untilMonth));
       toast.success("Đã tải báo cáo sản lượng theo tháng.");
     } catch (requestError) {
       setExportError(requestError.message || "Không thể xuất báo cáo theo tháng.");

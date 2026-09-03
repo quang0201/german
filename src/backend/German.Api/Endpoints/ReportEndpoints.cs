@@ -16,6 +16,7 @@ public static class ReportEndpoints
 
         group.MapGet("/production/summary", GetProductionSummaryAsync);
         group.MapGet("/production/monthly-summary", GetProductionMonthlySummaryAsync);
+        group.MapGet("/production/monthly-summary/export.xlsx", ExportProductionMonthlyAsync);
         group.MapGet("/production/export.xlsx", ExportProductionAsync);
         return endpoints;
     }
@@ -55,6 +56,37 @@ public static class ReportEndpoints
             DateTimeStyles.None,
             out month)
             && month.Day == 1;
+    }
+
+    private static async Task<IResult> ExportProductionMonthlyAsync(
+        Guid orderId,
+        string? fromMonth,
+        string? untilMonth,
+        ProductionReportService service,
+        IProductionMonthlyReportExporter exporter,
+        CancellationToken cancellationToken)
+    {
+        if (!TryParseMonth(fromMonth, out var rangeFrom)
+            || !TryParseMonth(untilMonth, out var rangeUntil))
+        {
+            return ApiResultMapper.Error(new AppError(
+                "reports.invalid_month",
+                "Tháng phải có định dạng YYYY-MM."));
+        }
+
+        var result = await service.BuildMonthlyOperationSummaryAsync(
+            orderId,
+            rangeFrom,
+            rangeUntil.AddMonths(1).AddDays(-1),
+            cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return ApiResultMapper.Error(result.Error!);
+        }
+
+        var bytes = exporter.Export(result.Value!);
+        var fileName = $"bao-cao-san-luong-theo-thang_{rangeFrom:yyyyMM}_{rangeUntil:yyyyMM}.xlsx";
+        return Results.File(bytes, XlsxContentType, fileName);
     }
 
     private static async Task<IResult> GetProductionSummaryAsync(
