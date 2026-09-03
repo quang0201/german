@@ -1,0 +1,16 @@
+import React, { useEffect, useState } from "react";
+import { Alert } from "../../components/erp/Alert.jsx";
+import { DataTable } from "../../components/erp/DataTable.jsx";
+import { Field } from "../../components/erp/Field.jsx";
+import { FormSection } from "../../components/erp/FormSection.jsx";
+import { PageHeader } from "../../components/erp/PageHeader.jsx";
+import { api } from "../../lib/api.js";
+import { ShiftTemplateDialog } from "./ShiftTemplateDialog.jsx";
+
+export function ShiftListPage() {
+  const [rows, setRows] = useState([]); const [name, setName] = useState("Ca hành chính"); const [error, setError] = useState(""); const [saving, setSaving] = useState(false); const [editingShift, setEditingShift] = useState(null); const [editError, setEditError] = useState(""); const [editSaving, setEditSaving] = useState(false); const load = () => api.get("/api/shift-templates").then(setRows).catch((e) => setError(e.message || "Không thể tải ca làm việc.")); useEffect(() => { load(); }, []);
+  async function submit(event) { event.preventDefault(); setSaving(true); setError(""); try { await api.post("/api/shift-templates", { name, periods: [{ name: "Ca 1", startTime: "07:00:00", endTime: "11:30:00", sortOrder: 1 }, { name: "Ca 2", startTime: "12:30:00", endTime: "17:00:00", sortOrder: 2 }] }); setName("Ca hành chính"); load(); } catch (e) { setError(e.message || "Không thể tạo bộ ca."); } finally { setSaving(false); } }
+  async function submitEdit(payload) { if (!editingShift) return; setEditSaving(true); setEditError(""); try { const updated = await api.put(`/api/shift-templates/${editingShift.id}`, payload); setRows((current) => current.map((row) => row.id === editingShift.id ? updated : row)); setEditingShift(null); } catch (e) { setEditError(e.message || "Không thể lưu bộ ca."); } finally { setEditSaving(false); } }
+  const columns = [{ key: "name", label: "Tên bộ ca" }, { key: "totalHours", label: "Tổng giờ" }, { key: "periods", label: "Khung giờ", render: (row) => row.periods?.map((p) => `${p.name} ${String(p.startTime).slice(0, 5)}–${String(p.endTime).slice(0, 5)}`).join(" · ") }, { key: "actions", label: "Thao tác", render: (row) => <button type="button" className="erp-button erp-button-secondary" onClick={() => { setEditingShift(row); setEditError(""); }}>Sửa</button> }];
+  return <div className="erp-feature-page"><PageHeader title="Ca làm việc" description="Quản lý bộ ca và khung giờ HC." />{error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}<FormSection title="Tạo bộ ca"><Field label="Tên bộ ca" required><input form="shift-create" className="erp-control" required value={name} onChange={(e) => setName(e.target.value)} /></Field><div className="erp-form-actions"><button className="erp-button erp-button-primary" type="submit" form="shift-create" disabled={saving}>{saving ? "Đang lưu..." : "Tạo bộ ca"}</button></div></FormSection><form id="shift-create" onSubmit={submit} hidden /><DataTable columns={columns} rows={rows} loading={false} error={error} emptyMessage="Chưa có bộ ca." rowKey="id" /><ShiftTemplateDialog open={Boolean(editingShift)} shift={editingShift} loading={editSaving} error={editError} onClose={() => setEditingShift(null)} onSubmit={submitEdit} onChange={() => setEditError("")} /></div>;
+}

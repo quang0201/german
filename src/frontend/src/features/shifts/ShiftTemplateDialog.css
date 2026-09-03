@@ -1,0 +1,10 @@
+.erp-shift-template-dialog { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; }
+.erp-shift-template-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.erp-shift-template-dialog-header h2 { margin: 0; }
+.erp-shift-template-dialog-fields { display: grid; gap: 16px; margin-top: 16px; }
+.erp-shift-template-periods { display: grid; gap: 10px; }
+.erp-shift-template-period-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.erp-shift-template-period { display: grid; grid-template-columns: minmax(0, 1fr) 130px 130px auto; align-items: end; gap: 10px; padding: 10px; border: 1px solid var(--color-border); border-radius: 8px; }
+.erp-shift-template-remove { min-height: 40px; }
+.erp-shift-template-active { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+@media (max-width: 640px) { .erp-shift-template-period { grid-template-columns: 1fr 1fr; } .erp-shift-template-period .erp-field:first-child { grid-column: 1 / -1; } .erp-shift-template-remove { grid-column: 1 / -1; } }

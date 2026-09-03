@@ -1,0 +1,69 @@
+.erp-attendance-page {
+  min-height: calc(100dvh - var(--app-header-height, 64px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.erp-attendance-toolbar,
+.erp-attendance-filters,
+.erp-attendance-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.erp-attendance-toolbar { justify-content: space-between; }
+.erp-attendance-month { display: flex; align-items: center; gap: 8px; }
+.erp-attendance-month strong { min-width: 82px; text-align: center; }
+.erp-attendance-block-navigation { display: flex; align-items: center; gap: 8px; }
+.erp-attendance-block-navigation strong { min-width: 90px; text-align: center; }
+.erp-attendance-summary { color: var(--color-text-muted); font-size: 0.9rem; }
+.erp-attendance-summary strong { color: var(--color-text); }
+.erp-attendance-filters { padding: 8px 0; }
+.erp-attendance-filter-field { min-width: 240px; }
+.erp-attendance-actions { display: flex; align-items: center; gap: 12px; }
+.erp-attendance-dirty { color: var(--color-warning, #9a6700); font-size: 0.9rem; }
+
+.erp-attendance-matrix-section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.erp-attendance-matrix-scroll { flex: 1; min-height: 280px; overflow: auto; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); }
+.erp-attendance-matrix-table { border-collapse: separate; border-spacing: 0; min-width: max-content; width: 100%; }
+.erp-attendance-matrix-table th,
+.erp-attendance-matrix-table td { border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); padding: 5px; background: var(--color-surface); }
+.erp-attendance-matrix-table thead th { position: sticky; top: 0; z-index: 5; text-align: center; background: var(--color-surface-soft); }
+.erp-attendance-matrix-table thead tr:nth-child(2) th { top: 45px; z-index: 6; }
+.erp-attendance-matrix-table thead th span,
+.erp-attendance-matrix-table thead th strong { display: block; }
+.erp-attendance-matrix-table thead th strong { font-size: 0.8rem; }
+.erp-attendance-day-sub { font-size: 0.75rem; color: var(--color-text-muted); }
+.erp-attendance-sticky-employee,
+.erp-attendance-sticky-shift { position: sticky !important; z-index: 8 !important; }
+.erp-attendance-sticky-employee { left: 0; min-width: 180px; }
+.erp-attendance-sticky-shift { left: 180px; min-width: 90px; }
+.erp-attendance-matrix-table thead .erp-attendance-sticky-employee,
+.erp-attendance-matrix-table thead .erp-attendance-sticky-shift { z-index: 12 !important; background: var(--color-surface-soft) !important; }
+.erp-attendance-employee { text-align: left; vertical-align: top; padding-top: 10px !important; }
+.erp-attendance-employee span { display: block; font-weight: 400; color: var(--color-text-muted); margin-top: 3px; }
+.erp-attendance-employee em { display: inline-block; margin-top: 5px; color: var(--color-error); font-size: 0.75rem; font-style: normal; font-weight: 800; }
+.erp-attendance-matrix-table tbody tr.erp-attendance-inactive th,
+.erp-attendance-matrix-table tbody tr.erp-attendance-inactive td { background: var(--color-error-soft); color: var(--color-error); }
+.erp-attendance-matrix-table tbody tr.erp-attendance-inactive .erp-attendance-sticky-employee,
+.erp-attendance-matrix-table tbody tr.erp-attendance-inactive .erp-attendance-sticky-shift { background: var(--color-error-soft) !important; }
+.erp-attendance-matrix-table tbody tr.erp-attendance-inactive .erp-attendance-employee span { color: var(--color-error); }
+.erp-attendance-shift-name { text-align: left; font-weight: 600; }
+.erp-attendance-cell { width: 66px; min-width: 66px; text-align: center; padding: 6px 4px; }
+.erp-attendance-tc-cell { background: color-mix(in srgb, var(--color-warning, #f4b183) 12%, var(--color-surface)); }
+.erp-attendance-total { min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
+.erp-attendance-load-more { padding: 12px; text-align: center; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
+.erp-attendance-block-error { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px; color: var(--color-danger, #b42318); border-top: 1px solid var(--color-border); }
+.erp-attendance-block-loading { padding: 10px; text-align: center; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
+.erp-attendance-window-spacer { width: 66px; min-width: 66px; padding: 0 !important; background: var(--color-surface-soft); }
+.erp-attendance-sunday { background: color-mix(in srgb, var(--color-warning, #f4b183) 10%, var(--color-surface-soft)) !important; }
+.erp-attendance-matrix-table thead th.erp-attendance-today { background: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface-soft)) !important; color: var(--color-primary-strong); box-shadow: inset 0 -3px 0 var(--color-primary); }
+
+@media (max-width: 767px) {
+  .erp-attendance-page { min-height: auto; }
+  .erp-attendance-matrix-section { min-height: 60vh; }
+  .erp-attendance-block-navigation { width: 100%; justify-content: space-between; }
+}
