@@ -41,9 +41,10 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("100");
     expect(html).not.toContain("Nội bộ:");
     expect(html).not.toContain("Bên ngoài:");
+    expect(html).not.toContain("ĐVT");
     expect(html).toContain("140");
     expect(html).toContain("30");
-    expect(html).toContain("cái");
+    expect(html).not.toContain("cái");
   });
 
   test("renders zero values instead of dropping an operation without production", () => {
@@ -65,6 +66,6 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("HC:");
     expect(html).toContain("TC:");
     expect(html).toContain("0");
-    expect(html).toContain("kiện");
+    expect(html).not.toContain("kiện");
   });
 });

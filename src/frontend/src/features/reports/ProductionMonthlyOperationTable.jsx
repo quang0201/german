@@ -19,11 +19,11 @@ function monthValue(operation, monthKey) {
   };
 }
 
-function QuantityCell({ value, unit }) {
+function QuantityCell({ value }) {
   return (
     <div className="erp-report-monthly-quantity-cell">
-      <span>HC: {quantity(value.hcQuantity)} {unit}</span>
-      <strong>TC: {quantity(value.tcQuantity)} {unit}</strong>
+      <span>HC: {quantity(value.hcQuantity)}</span>
+      <strong>TC: {quantity(value.tcQuantity)}</strong>
     </div>
   );
 }
@@ -47,7 +47,6 @@ export function ProductionMonthlyOperationTable({ summary }) {
           <thead>
             <tr>
               <th scope="col">Công đoạn</th>
-              <th scope="col">ĐVT</th>
               {months.map((month) => <th scope="col" key={month.monthKey}>{monthLabel(month)}</th>)}
               <th scope="col">Tổng HC/TC</th>
             </tr>
@@ -56,9 +55,8 @@ export function ProductionMonthlyOperationTable({ summary }) {
             {operations.map((operation) => (
               <tr key={operation.operationId || operation.operationNumber}>
                 <th scope="row"><strong>CĐ{operation.operationNumber}</strong><span>{operation.name}</span></th>
-                <td>{operation.unit || "—"}</td>
-                {months.map((month) => <td key={month.monthKey}><QuantityCell value={monthValue(operation, month.monthKey)} unit={operation.unit} /></td>)}
-                <td><QuantityCell value={operation} unit={operation.unit} /></td>
+                {months.map((month) => <td key={month.monthKey}><QuantityCell value={monthValue(operation, month.monthKey)} /></td>)}
+                <td><QuantityCell value={operation} /></td>
               </tr>
             ))}
           </tbody>
