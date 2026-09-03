@@ -22,9 +22,8 @@ function monthValue(operation, monthKey) {
 function QuantityCell({ value, unit }) {
   return (
     <div className="erp-report-monthly-quantity-cell">
-      <span>HC: {quantity(value.hcQuantity)} · TC: {quantity(value.tcQuantity)}</span>
-      <span>Nội bộ: {quantity(value.totalQuantity)} · Bên ngoài: {quantity(value.externalQuantity)}</span>
-      <strong>Tổng: {quantity(value.combinedTotalQuantity)} {unit}</strong>
+      <span>HC: {quantity(value.hcQuantity)} {unit}</span>
+      <strong>TC: {quantity(value.tcQuantity)} {unit}</strong>
     </div>
   );
 }
@@ -50,7 +49,7 @@ export function ProductionMonthlyOperationTable({ summary }) {
               <th scope="col">Công đoạn</th>
               <th scope="col">ĐVT</th>
               {months.map((month) => <th scope="col" key={month.monthKey}>{monthLabel(month)}</th>)}
-              <th scope="col">Tổng</th>
+              <th scope="col">Tổng HC/TC</th>
             </tr>
           </thead>
           <tbody>
