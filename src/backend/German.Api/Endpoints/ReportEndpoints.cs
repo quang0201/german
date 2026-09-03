@@ -64,6 +64,7 @@ public static class ReportEndpoints
         string? untilMonth,
         ProductionReportService service,
         IProductionMonthlyReportExporter exporter,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
         if (!TryParseMonth(fromMonth, out var rangeFrom)
@@ -86,7 +87,15 @@ public static class ReportEndpoints
 
         var bytes = exporter.Export(result.Value!);
         var fileName = $"bao-cao-san-luong-theo-thang_{rangeFrom:yyyyMM}_{rangeUntil:yyyyMM}.xlsx";
+        SetNoStoreHeaders(httpContext);
         return Results.File(bytes, XlsxContentType, fileName);
+    }
+
+    private static void SetNoStoreHeaders(HttpContext httpContext)
+    {
+        httpContext.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        httpContext.Response.Headers.Pragma = "no-cache";
+        httpContext.Response.Headers.Expires = "0";
     }
 
     private static async Task<IResult> GetProductionSummaryAsync(
