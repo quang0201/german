@@ -358,6 +358,63 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual(0m, result.Value.Operations[0].TotalQuantity);
     }
 
+    [TestMethod]
+    public async Task BuildMonthlyOperationSummaryAsync_GroupsEachOperationByMonthAndKeepsZeroOperations()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 7, 12));
+        var secondOperation = new ProductionOperation
+        {
+            ProductionOrderId = seed.Order.Id,
+            OperationNumber = 12,
+            Name = "Đóng gói",
+            Unit = "thùng",
+            SortOrder = 2
+        };
+        db.Add(secondOperation);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, seed.Employee, seed.Order, seed.Operation, new DateOnly(2026, 7, 12), 100m, 20m);
+        await AddEntryAsync(db, seed.Employee, seed.Order, seed.Operation, new DateOnly(2026, 8, 3), 40m, 10m);
+        db.Add(new ProductionExternalQuantity
+        {
+            ProductionOrderId = seed.Order.Id,
+            ProductionOperationId = seed.Operation.Id,
+            ReceivedDate = new DateOnly(2026, 8, 4),
+            Quantity = 30m,
+            SubmittedByUserId = Guid.NewGuid()
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionReportService(db, TimeProvider.System)
+            .BuildMonthlyOperationSummaryAsync(
+                seed.Order.Id,
+                new DateOnly(2026, 7, 1),
+                new DateOnly(2026, 8, 31),
+                CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(2, result.Value!.Months.Count);
+        Assert.AreEqual("2026-07", result.Value.Months[0].MonthKey);
+        Assert.AreEqual("2026-08", result.Value.Months[1].MonthKey);
+        Assert.AreEqual(2, result.Value.Operations.Count);
+
+        var first = result.Value.Operations[0];
+        Assert.AreEqual(100m, first.Months[0].HcQuantity);
+        Assert.AreEqual(20m, first.Months[0].TcQuantity);
+        Assert.AreEqual(120m, first.Months[0].TotalQuantity);
+        Assert.AreEqual(30m, first.Months[1].ExternalQuantity);
+        Assert.AreEqual(80m, first.Months[1].CombinedTotalQuantity);
+        Assert.AreEqual(200m, first.HcQuantity);
+        Assert.AreEqual(30m, first.TcQuantity);
+        Assert.AreEqual(30m, first.ExternalQuantity);
+        Assert.AreEqual(260m, first.CombinedTotalQuantity);
+
+        var zeroOperation = result.Value.Operations[1];
+        Assert.AreEqual(12, zeroOperation.OperationNumber);
+        Assert.AreEqual(0m, zeroOperation.Months[0].CombinedTotalQuantity);
+        Assert.AreEqual(0m, zeroOperation.Months[1].CombinedTotalQuantity);
+    }
+
     private static GermanDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<GermanDbContext>()
