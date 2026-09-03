@@ -5,6 +5,12 @@ export function buildProductionMonthlySummaryUrl(orderId, fromMonth, untilMonth)
   return `/api/reports/production/monthly-summary?${params.toString()}`;
 }
 
+export function buildProductionMonthlyExportUrl(fromMonth, untilMonth) {
+  const { fromDate, untilDate } = monthRangeToDateRange(fromMonth, untilMonth);
+  const params = new URLSearchParams({ fromDate, untilDate });
+  return `/api/reports/production/export.xlsx?${params.toString()}`;
+}
+
 export function currentReportMonthKey(today = new Date()) {
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 }
