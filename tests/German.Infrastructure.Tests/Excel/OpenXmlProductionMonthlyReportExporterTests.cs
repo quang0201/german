@@ -39,6 +39,16 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         Assert.AreEqual("140", Cell(data, "H6").CellValue!.Text);
         Assert.AreEqual("30", Cell(data, "I6").CellValue!.Text);
         Assert.AreEqual("170", Cell(data, "J6").CellValue!.Text);
+
+        var grandTotal = rows.Single(row => row.RowIndex!.Value == 7U);
+        Assert.AreEqual("TỔNG CỘNG", Cell(grandTotal, "A7").InnerText);
+        Assert.AreEqual("100", Cell(grandTotal, "D7").CellValue!.Text);
+        Assert.AreEqual("20", Cell(grandTotal, "E7").CellValue!.Text);
+        Assert.AreEqual("40", Cell(grandTotal, "F7").CellValue!.Text);
+        Assert.AreEqual("10", Cell(grandTotal, "G7").CellValue!.Text);
+        Assert.AreEqual("140", Cell(grandTotal, "H7").CellValue!.Text);
+        Assert.AreEqual("30", Cell(grandTotal, "I7").CellValue!.Text);
+        Assert.AreEqual("170", Cell(grandTotal, "J7").CellValue!.Text);
         Assert.IsFalse(worksheet.Worksheet.InnerText.Contains("Nội bộ", StringComparison.Ordinal));
         Assert.IsFalse(worksheet.Worksheet.InnerText.Contains("Bên ngoài", StringComparison.Ordinal));
     }

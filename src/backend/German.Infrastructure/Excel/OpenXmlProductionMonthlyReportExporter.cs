@@ -114,6 +114,29 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
             row++;
         }
 
+        var totalCells = new List<Cell>
+        {
+            At("A" + row, Text("TỔNG CỘNG", HeaderStyle)),
+            At("B" + row, Text(string.Empty, HeaderStyle)),
+            At("C" + row, Text(string.Empty, HeaderStyle))
+        };
+        for (var index = 0; index < report.Months.Count; index++)
+        {
+            var month = report.Months[index];
+            var monthKey = month.Year.ToString("0000", CultureInfo.InvariantCulture) + "-" + month.Month.ToString("00", CultureInfo.InvariantCulture);
+            var monthValues = report.Operations
+                .SelectMany(operation => operation.Months)
+                .Where(value => value.MonthKey == monthKey)
+                .ToArray();
+            var column = monthColumnStart + index * 2;
+            totalCells.Add(At(Col(column) + row, Num(monthValues.Sum(value => value.HcQuantity), HcNumberStyle)));
+            totalCells.Add(At(Col(column + 1) + row, Num(monthValues.Sum(value => value.TcQuantity), TcNumberStyle)));
+        }
+        totalCells.Add(At(Col(totalColumnStart) + row, Num(report.Operations.Sum(operation => operation.HcQuantity), HcNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 1) + row, Num(report.Operations.Sum(operation => operation.TcQuantity), TcNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 2) + row, Num(report.Operations.Sum(operation => operation.TotalQuantity), TotalNumberStyle)));
+        AddCells(data, row, totalCells.ToArray());
+
         return new Worksheet(
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
