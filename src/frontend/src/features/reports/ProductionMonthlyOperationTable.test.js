@@ -35,6 +35,7 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("07/2026");
     expect(html).toContain("08/2026");
     expect(html).toContain("Tổng HC/TC");
+    expect(html).toContain('<th scope="col">Tổng</th>');
     expect(html).toContain("CĐ");
     expect(html).toContain("9");
     expect(html).toContain("HC:");
@@ -44,6 +45,7 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).not.toContain("ĐVT");
     expect(html).toContain("140");
     expect(html).toContain("30");
+    expect(html).toContain("170");
     expect(html).not.toContain("cái");
   });
 
