@@ -63,7 +63,7 @@ async function request(path, options = {}) {
 }
 
 async function download(path, filename) {
-  const response = await fetch(path, { credentials: "include" });
+  const response = await fetch(path, { credentials: "include", cache: "no-store" });
   if (!response.ok) {
     throw new ApiError("Không thể tải file.", "download_failed", response.status);
   }
