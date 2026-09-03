@@ -25,8 +25,9 @@ export function buildProductionReportSummaryUrl(orderId, fromDate, untilDate) {
 }
 
 export function ReportPage() {
-  const [fromDate, setFromDate] = useState(() => currentReportMonthRange().fromDate);
-  const [untilDate, setUntilDate] = useState(() => currentReportMonthRange().untilDate);
+  const initialRange = currentReportMonthRange();
+  const [fromDate, setFromDate] = useState(initialRange.fromDate);
+  const [untilDate, setUntilDate] = useState(initialRange.untilDate);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -43,8 +44,7 @@ export function ReportPage() {
     setOrdersLoading(true);
     api.get("/api/production-orders")
       .then((items) => {
-        if (!active) return;
-        setOrders(items);
+        if (active) setOrders(items);
       })
       .catch((requestError) => {
         if (active) setOrderError(requestError.message || "Không thể tải danh sách Mã SX.");

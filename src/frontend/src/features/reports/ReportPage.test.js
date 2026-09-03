@@ -15,6 +15,10 @@ describe("ReportPage", () => {
   test("renders the report controls inside the ERP feedback provider", () => {
     const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
     expect(html).toContain("Báo cáo");
+    expect(html).toContain("Từ ngày");
+    expect(html).toContain("Đến ngày");
+    expect(html).toContain('type="date"');
+    expect(html).not.toContain("Từ tháng");
     expect(html).toContain("Xuất Excel");
   });
 

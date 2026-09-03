@@ -4,7 +4,7 @@ import { navigate } from "./navigation.js";
 import { routes } from "./routes.js";
 
 function navItems(role) {
-  const preferredOrder = ["/reports", "/employees", "/orders", "/attendance", "/production", "/shifts", "/admin/accounts", "/admin/audit"];
+  const preferredOrder = ["/reports", "/reports/monthly", "/employees", "/orders", "/attendance", "/production", "/shifts", "/admin/accounts", "/admin/audit"];
   const seen = new Set();
   return routes.filter((route) => {
     if (!route.roles.includes(role) || route.path.includes(":id") || route.path.endsWith("/new")) return false;
@@ -20,6 +20,7 @@ const icons = {
   "/orders": "orders",
   "/shifts": "shifts",
   "/reports": "reports",
+  "/reports/monthly": "reports",
   "/admin/accounts": "accounts",
   "/admin/audit": "audit",
 };
@@ -34,7 +35,9 @@ export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
       </div>
       <nav className="erp-sidebar-nav" aria-label="Điều hướng chính">
         {items.map((route) => {
-          const active = pathname === route.path || (route.path === "/production" && pathname.startsWith("/production/"));
+          const active = pathname === route.path
+            || (route.path === "/reports" && pathname !== "/reports/monthly" && pathname.startsWith("/reports/"))
+            || (route.path === "/production" && pathname.startsWith("/production/"));
           const label = typeof route.navLabel === "function" ? route.navLabel(role) : route.navLabel;
           return (
             <button key={route.path} type="button" className={`erp-nav-item ${active ? "is-active" : ""}`} onClick={() => { navigate(route.path); onNavigate?.(); }} title={collapsed ? label : undefined} aria-label={label}>

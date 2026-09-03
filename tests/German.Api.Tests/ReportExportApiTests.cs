@@ -194,6 +194,88 @@ public sealed class ReportExportApiTests
         Assert.AreEqual(0m, operations[1].GetProperty("totalQuantity").GetDecimal());
     }
 
+    [TestMethod]
+    public async Task MonthlySummary_Manager_ReturnsMonthColumnsAndTotals()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedAccountAsync(factory, "monthly-manager", "M005", UserRole.Manager, "secret");
+        var orderId = Guid.NewGuid();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            var employee = await db.Employees.SingleAsync(item => item.EmployeeCode == "M005");
+            var account = await db.UserAccounts.SingleAsync(item => item.EmployeeId == employee.Id);
+            var order = new ProductionOrder
+            {
+                Id = orderId,
+                Code = "0418",
+                ProductName = "Túi 0418",
+                PlannedQuantity = 1000m,
+                Status = ProductionOrderStatus.InProduction
+            };
+            var operation = new ProductionOperation
+            {
+                ProductionOrderId = order.Id,
+                OperationNumber = 1,
+                Name = "May thân",
+                Unit = "cái",
+                SortOrder = 1
+            };
+            var entryJuly = new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 7, 12),
+                EmployeeId = employee.Id,
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EntryMode = ProductionEntryMode.Direct,
+                HcQuantity = 100m,
+                TcQuantity = 20m,
+                TotalQuantity = 120m,
+                SubmittedByUserId = account.Id
+            };
+            var entryAugust = new ProductionEntry
+            {
+                WorkDate = new DateOnly(2026, 8, 12),
+                EmployeeId = employee.Id,
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                EntryMode = ProductionEntryMode.Direct,
+                HcQuantity = 40m,
+                TcQuantity = 10m,
+                TotalQuantity = 50m,
+                SubmittedByUserId = account.Id
+            };
+            var external = new ProductionExternalQuantity
+            {
+                ProductionOrderId = order.Id,
+                ProductionOperationId = operation.Id,
+                ReceivedDate = new DateOnly(2026, 8, 15),
+                Quantity = 30m,
+                SubmittedByUserId = account.Id
+            };
+            db.AddRange(order, operation, entryJuly, entryAugust, external);
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "monthly-manager", "secret");
+
+        var response = await client.GetAsync(
+            $"/api/reports/production/monthly-summary?orderId={orderId}&fromMonth=2026-07&untilMonth=2026-08");
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = json.RootElement;
+        Assert.AreEqual("0418", root.GetProperty("orderCode").GetString());
+        Assert.AreEqual(2, root.GetProperty("months").GetArrayLength());
+        Assert.AreEqual("2026-07", root.GetProperty("months")[0].GetProperty("monthKey").GetString());
+        Assert.AreEqual("2026-08", root.GetProperty("months")[1].GetProperty("monthKey").GetString());
+        var operation = root.GetProperty("operations")[0];
+        Assert.AreEqual(120m, operation.GetProperty("months")[0].GetProperty("combinedTotalQuantity").GetDecimal());
+        Assert.AreEqual(80m, operation.GetProperty("months")[1].GetProperty("combinedTotalQuantity").GetDecimal());
+        Assert.AreEqual(200m, operation.GetProperty("combinedTotalQuantity").GetDecimal());
+    }
+
     private static string GetWorksheetText(byte[] workbookBytes, string sheetName)
     {
         using var stream = new MemoryStream(workbookBytes);
