@@ -14,14 +14,24 @@ function monthValue(operation, monthKey) {
     hcQuantity: 0,
     tcQuantity: 0,
     totalQuantity: 0,
+    externalQuantity: 0,
+    combinedTotalQuantity: 0,
   };
 }
 
 function totalValue(value) {
+  const combinedTotal = Number(value.combinedTotalQuantity);
+  if (Number.isFinite(combinedTotal)) return combinedTotal;
+
   const backendTotal = Number(value.totalQuantity);
-  return Number.isFinite(backendTotal)
-    ? backendTotal
-    : Number(value.hcQuantity || 0) + Number(value.tcQuantity || 0);
+  if (Number.isFinite(backendTotal)) return backendTotal + externalValue(value);
+
+  return Number(value.hcQuantity || 0) + Number(value.tcQuantity || 0) + externalValue(value);
+}
+
+function externalValue(value) {
+  const external = Number(value.externalQuantity);
+  return Number.isFinite(external) ? external : 0;
 }
 
 function QuantityCell({ value, unit, showBreakdown, emphasized = false }) {
@@ -40,6 +50,7 @@ function QuantityCell({ value, unit, showBreakdown, emphasized = false }) {
       {showBreakdown && (
         <span className="erp-report-monthly-split">
           HC {quantity(value.hcQuantity)} · TC {quantity(value.tcQuantity)}
+          {externalValue(value) > 0 && ` · Ngoài ${quantity(externalValue(value))}`}
         </span>
       )}
     </div>
@@ -67,7 +78,7 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
               aria-pressed={showBreakdown}
               onClick={() => setShowBreakdown(true)}
             >
-              Tổng + HC/TC
+              Tổng + HC/TC + Ngoài
             </button>
             <button
               type="button"

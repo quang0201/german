@@ -51,7 +51,7 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
         var data = new SheetData();
         var merges = new MergeCells();
         var monthColumnStart = 4;
-        var totalColumnStart = monthColumnStart + report.Months.Count * 2;
+        var totalColumnStart = monthColumnStart + report.Months.Count * 3;
 
         AddRow(data, 1U, Text("BÁO CÁO SẢN LƯỢNG THEO THÁNG", TitleStyle));
         AddRow(data, 2U, Text($"Mã SX: {report.OrderCode} — {report.ProductName}", TextStyle));
@@ -69,23 +69,26 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
 
         for (var index = 0; index < report.Months.Count; index++)
         {
-            var column = monthColumnStart + index * 2;
+            var column = monthColumnStart + index * 3;
             var month = report.Months[index];
             AddCells(data, 4U, At(Col(column) + "4", Text(month.Month.ToString("00", CultureInfo.InvariantCulture) + "/" + month.Year.ToString(CultureInfo.InvariantCulture), HeaderStyle)));
-            merges.Append(new MergeCell { Reference = Col(column) + "4:" + Col(column + 1) + "4" });
+            merges.Append(new MergeCell { Reference = Col(column) + "4:" + Col(column + 2) + "4" });
             AddCells(data, 5U,
                 At(Col(column) + "5", Text("HC", HcHeaderStyle)),
-                At(Col(column + 1) + "5", Text("TC", TcHeaderStyle)));
+                At(Col(column + 1) + "5", Text("TC", TcHeaderStyle)),
+                At(Col(column + 2) + "5", Text("Ngoài", TotalHeaderStyle)));
         }
 
         AddCells(data, 4U,
             At(Col(totalColumnStart) + "4", Text("Tổng HC", HcHeaderStyle)),
             At(Col(totalColumnStart + 1) + "4", Text("Tổng TC", TcHeaderStyle)),
-            At(Col(totalColumnStart + 2) + "4", Text("Tổng cộng", TotalHeaderStyle)));
+            At(Col(totalColumnStart + 2) + "4", Text("Tổng ngoài", TotalHeaderStyle)),
+            At(Col(totalColumnStart + 3) + "4", Text("Tổng cộng", TotalHeaderStyle)));
         merges.Append(
             new MergeCell { Reference = Col(totalColumnStart) + "4:" + Col(totalColumnStart) + "5" },
             new MergeCell { Reference = Col(totalColumnStart + 1) + "4:" + Col(totalColumnStart + 1) + "5" },
-            new MergeCell { Reference = Col(totalColumnStart + 2) + "4:" + Col(totalColumnStart + 2) + "5" });
+            new MergeCell { Reference = Col(totalColumnStart + 2) + "4:" + Col(totalColumnStart + 2) + "5" },
+            new MergeCell { Reference = Col(totalColumnStart + 3) + "4:" + Col(totalColumnStart + 3) + "5" });
 
         var row = 6U;
         foreach (var operation in report.Operations)
@@ -102,14 +105,16 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
             {
                 var month = report.Months[index];
                 monthValues.TryGetValue(month.Year.ToString("0000", CultureInfo.InvariantCulture) + "-" + month.Month.ToString("00", CultureInfo.InvariantCulture), out var value);
-                var column = monthColumnStart + index * 2;
+                var column = monthColumnStart + index * 3;
                 cells.Add(At(Col(column) + row, Num(value?.HcQuantity ?? 0m, HcNumberStyle)));
                 cells.Add(At(Col(column + 1) + row, Num(value?.TcQuantity ?? 0m, TcNumberStyle)));
+                cells.Add(At(Col(column + 2) + row, Num(value?.ExternalQuantity ?? 0m, TotalNumberStyle)));
             }
 
             cells.Add(At(Col(totalColumnStart) + row, Num(operation.HcQuantity, HcNumberStyle)));
             cells.Add(At(Col(totalColumnStart + 1) + row, Num(operation.TcQuantity, TcNumberStyle)));
-            cells.Add(At(Col(totalColumnStart + 2) + row, Num(operation.TotalQuantity, TotalNumberStyle)));
+            cells.Add(At(Col(totalColumnStart + 2) + row, Num(operation.ExternalQuantity, TotalNumberStyle)));
+            cells.Add(At(Col(totalColumnStart + 3) + row, Num(operation.CombinedTotalQuantity, TotalNumberStyle)));
             AddCells(data, row, cells.ToArray());
             row++;
         }
@@ -128,13 +133,15 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
                 .SelectMany(operation => operation.Months)
                 .Where(value => value.MonthKey == monthKey)
                 .ToArray();
-            var column = monthColumnStart + index * 2;
+            var column = monthColumnStart + index * 3;
             totalCells.Add(At(Col(column) + row, Num(monthValues.Sum(value => value.HcQuantity), HcNumberStyle)));
             totalCells.Add(At(Col(column + 1) + row, Num(monthValues.Sum(value => value.TcQuantity), TcNumberStyle)));
+            totalCells.Add(At(Col(column + 2) + row, Num(monthValues.Sum(value => value.ExternalQuantity), TotalNumberStyle)));
         }
         totalCells.Add(At(Col(totalColumnStart) + row, Num(report.Operations.Sum(operation => operation.HcQuantity), HcNumberStyle)));
         totalCells.Add(At(Col(totalColumnStart + 1) + row, Num(report.Operations.Sum(operation => operation.TcQuantity), TcNumberStyle)));
-        totalCells.Add(At(Col(totalColumnStart + 2) + row, Num(report.Operations.Sum(operation => operation.TotalQuantity), TotalNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 2) + row, Num(report.Operations.Sum(operation => operation.ExternalQuantity), TotalNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 3) + row, Num(report.Operations.Sum(operation => operation.CombinedTotalQuantity), TotalNumberStyle)));
         AddCells(data, row, totalCells.ToArray());
 
         return new Worksheet(
@@ -157,12 +164,16 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
     private static Columns Columns(ProductionMonthlyOperationSummaryReport report, int totalColumnStart)
     {
         var columns = new Columns(Column(1U, 14D), Column(2U, 28D), Column(3U, 12D));
-        for (var index = 0; index < report.Months.Count * 2; index++)
+        for (var index = 0; index < report.Months.Count * 3; index++)
         {
             columns.Append(Column((uint)(4 + index), 12D));
         }
 
-        columns.Append(Column((uint)totalColumnStart, 14D), Column((uint)totalColumnStart + 1U, 14D), Column((uint)totalColumnStart + 2U, 14D));
+        columns.Append(
+            Column((uint)totalColumnStart, 14D),
+            Column((uint)totalColumnStart + 1U, 14D),
+            Column((uint)totalColumnStart + 2U, 14D),
+            Column((uint)totalColumnStart + 3U, 14D));
         return columns;
     }
 

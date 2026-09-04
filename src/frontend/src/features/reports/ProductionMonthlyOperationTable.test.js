@@ -95,4 +95,23 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("kiện");
     expect(html).not.toMatch(/HC.*100.*TC.*20/);
   });
+
+  test("adds external quantity when the combined total is not supplied", () => {
+    const html = renderToString(React.createElement(ProductionMonthlyOperationTable, {
+      initialShowBreakdown: false,
+      summary: {
+        months: [{ year: 2026, month: 8, monthKey: "2026-08" }],
+        operations: [{
+          operationNumber: 5,
+          name: "May ngoài",
+          unit: "cái",
+          months: [{ monthKey: "2026-08", hcQuantity: 100, tcQuantity: 20, totalQuantity: 120, externalQuantity: 30 }],
+          totalQuantity: 120,
+          externalQuantity: 30,
+        }],
+      },
+    }));
+
+    expect(html).toContain("150");
+  });
 });
