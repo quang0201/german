@@ -317,7 +317,6 @@
 .erp-report-monthly-table thead th:first-child { left: 0; z-index: 4; min-width: 180px; }
 .erp-report-monthly-table tbody th { position: sticky; left: 0; z-index: 2; min-width: 180px; background: var(--color-surface); font-weight: 700; }
 .erp-report-monthly-table tbody th span { display: block; margin-top: 3px; color: var(--color-text-muted); font-size: 12px; font-weight: 500; }
-.erp-report-monthly-table tbody th .erp-report-monthly-operation-unit { display: block; margin-top: 5px; color: var(--color-primary); font-size: 11px; font-weight: 700; }
 .erp-report-monthly-table tbody tr:hover { background: var(--color-surface-soft); }
 .erp-report-monthly-table tbody tr:hover th { background: var(--color-surface-soft); }
 .erp-report-monthly-table th.is-latest, .erp-report-monthly-table td.is-latest { background: var(--color-primary-soft); }

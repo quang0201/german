@@ -111,7 +111,6 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
                 <th scope="row">
                   <strong>CĐ{operation.operationNumber}</strong>
                   <span>{operation.name}</span>
-                  <small className="erp-report-monthly-operation-unit">[{operation.unit || "—"}]</small>
                 </th>
                 {months.map((month, index) => (
                   <td key={month.monthKey} className={index === months.length - 1 ? "is-latest" : ""}>

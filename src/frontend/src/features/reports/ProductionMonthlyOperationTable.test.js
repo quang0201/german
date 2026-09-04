@@ -40,6 +40,8 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("CĐ");
     expect(html).toContain("9");
     expect(html).toContain("cái");
+    expect(html).not.toContain("erp-report-monthly-operation-unit");
+    expect(html).not.toContain("[cái]");
     expect(html).toContain("120");
     expect(html).toMatch(/HC.*100.*TC.*20/);
     expect(html).toContain("80");
