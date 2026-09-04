@@ -63,7 +63,7 @@ describe("ReportPage", () => {
     );
   });
 
-  test("groups operation bars by unit and scales each unit independently", () => {
+  test("keeps operation bars scaled by unit without rendering unit groups", () => {
     const chartHtml = renderToString(React.createElement(ProductionOperationSummaryChart, {
       summary: {
         orderCode: "0417",
@@ -77,8 +77,9 @@ describe("ReportPage", () => {
     }));
 
     expect(chartHtml).not.toContain("<h3>");
-    expect(chartHtml).toContain('aria-label="Đơn vị: cái"');
-    expect(chartHtml).toContain('aria-label="Đơn vị: thùng"');
+    expect(chartHtml).not.toContain("erp-report-operation-unit-group");
+    expect(chartHtml).not.toContain('aria-label="Đơn vị: cái"');
+    expect(chartHtml).not.toContain('aria-label="Đơn vị: thùng"');
     expect(chartHtml.match(/style=\"width:50%\"/g)?.length ?? 0).toBe(0);
     expect(chartHtml.match(/style=\"width:100%\"/g)?.length ?? 0).toBe(2);
     expect(chartHtml).toContain("1.000");
