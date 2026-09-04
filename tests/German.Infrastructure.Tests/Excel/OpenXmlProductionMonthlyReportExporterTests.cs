@@ -10,7 +10,7 @@ namespace German.Infrastructure.Tests.Excel;
 public sealed class OpenXmlProductionMonthlyReportExporterTests
 {
     [TestMethod]
-    public void Export_WritesOnlyMonthlyHcTcColumnsForEachOperation()
+    public void Export_WritesMonthlyBreakdownAndCombinedTotals()
     {
         using var document = SpreadsheetDocument.Open(
             new MemoryStream(new OpenXmlProductionMonthlyReportExporter().Export(CreateReport())),
@@ -23,10 +23,10 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         var worksheet = (WorksheetPart)document.WorkbookPart.GetPartById(relationshipId);
         var rows = worksheet.Worksheet!.GetFirstChild<SheetData>()!.Elements<Row>().ToList();
         CollectionAssert.AreEqual(
-            new[] { "Công đoạn", "Tên công đoạn", "ĐVT", "07/2026", "08/2026", "Tổng HC", "Tổng TC", "Tổng cộng" },
+            new[] { "Công đoạn", "Tên công đoạn", "ĐVT", "07/2026", "08/2026", "Tổng HC", "Tổng TC", "Tổng ngoài", "Tổng cộng" },
             Cells(rows.Single(row => row.RowIndex!.Value == 4U)));
         CollectionAssert.AreEqual(
-            new[] { "HC", "TC", "HC", "TC" },
+            new[] { "HC", "TC", "Ngoài", "HC", "TC", "Ngoài" },
             Cells(rows.Single(row => row.RowIndex!.Value == 5U)).Skip(3).ToArray());
 
         var data = rows.Single(row => row.RowIndex!.Value == 6U);
@@ -34,23 +34,28 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         Assert.AreEqual("May thân", Cell(data, "B6").InnerText);
         Assert.AreEqual("100", Cell(data, "D6").CellValue!.Text);
         Assert.AreEqual("20", Cell(data, "E6").CellValue!.Text);
-        Assert.AreEqual("40", Cell(data, "F6").CellValue!.Text);
-        Assert.AreEqual("10", Cell(data, "G6").CellValue!.Text);
-        Assert.AreEqual("140", Cell(data, "H6").CellValue!.Text);
+        Assert.AreEqual("0", Cell(data, "F6").CellValue!.Text);
+        Assert.AreEqual("40", Cell(data, "G6").CellValue!.Text);
+        Assert.AreEqual("10", Cell(data, "H6").CellValue!.Text);
         Assert.AreEqual("30", Cell(data, "I6").CellValue!.Text);
-        Assert.AreEqual("170", Cell(data, "J6").CellValue!.Text);
+        Assert.AreEqual("140", Cell(data, "J6").CellValue!.Text);
+        Assert.AreEqual("30", Cell(data, "K6").CellValue!.Text);
+        Assert.AreEqual("30", Cell(data, "L6").CellValue!.Text);
+        Assert.AreEqual("200", Cell(data, "M6").CellValue!.Text);
 
         var grandTotal = rows.Single(row => row.RowIndex!.Value == 7U);
         Assert.AreEqual("TỔNG CỘNG", Cell(grandTotal, "A7").InnerText);
         Assert.AreEqual("100", Cell(grandTotal, "D7").CellValue!.Text);
         Assert.AreEqual("20", Cell(grandTotal, "E7").CellValue!.Text);
-        Assert.AreEqual("40", Cell(grandTotal, "F7").CellValue!.Text);
-        Assert.AreEqual("10", Cell(grandTotal, "G7").CellValue!.Text);
-        Assert.AreEqual("140", Cell(grandTotal, "H7").CellValue!.Text);
+        Assert.AreEqual("0", Cell(grandTotal, "F7").CellValue!.Text);
+        Assert.AreEqual("40", Cell(grandTotal, "G7").CellValue!.Text);
+        Assert.AreEqual("10", Cell(grandTotal, "H7").CellValue!.Text);
         Assert.AreEqual("30", Cell(grandTotal, "I7").CellValue!.Text);
-        Assert.AreEqual("170", Cell(grandTotal, "J7").CellValue!.Text);
-        Assert.IsFalse(worksheet.Worksheet.InnerText.Contains("Nội bộ", StringComparison.Ordinal));
-        Assert.IsFalse(worksheet.Worksheet.InnerText.Contains("Bên ngoài", StringComparison.Ordinal));
+        Assert.AreEqual("140", Cell(grandTotal, "J7").CellValue!.Text);
+        Assert.AreEqual("30", Cell(grandTotal, "K7").CellValue!.Text);
+        Assert.AreEqual("30", Cell(grandTotal, "L7").CellValue!.Text);
+        Assert.AreEqual("200", Cell(grandTotal, "M7").CellValue!.Text);
+        Assert.IsTrue(worksheet.Worksheet.InnerText.Contains("Ngoài", StringComparison.Ordinal));
     }
 
     private static ProductionMonthlyOperationSummaryReport CreateReport() => new(

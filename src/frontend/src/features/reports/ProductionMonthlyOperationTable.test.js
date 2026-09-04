@@ -35,14 +35,16 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("07/2026");
     expect(html).toContain("08/2026");
     expect(html).toContain("Lũy kế");
-    expect(html).toContain("Tổng + HC/TC");
+    expect(html).toContain("Tổng + HC/TC + Ngoài");
     expect(html).toContain("Chỉ tổng");
     expect(html).toContain("CĐ");
     expect(html).toContain("9");
     expect(html).toContain("cái");
     expect(html).toContain("120");
     expect(html).toMatch(/HC.*100.*TC.*20/);
-    expect(html).toContain("170");
+    expect(html).toContain("80");
+    expect(html).toContain("200");
+    expect(html).toContain("Ngoài 30");
     expect(html).toContain("100");
     expect(html).not.toContain("Nội bộ:");
     expect(html).not.toContain("Bên ngoài:");
