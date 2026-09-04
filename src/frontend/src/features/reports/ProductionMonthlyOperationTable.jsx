@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 function quantity(value) {
   return Number(value || 0).toLocaleString("vi-VN");
@@ -14,25 +14,40 @@ function monthValue(operation, monthKey) {
     hcQuantity: 0,
     tcQuantity: 0,
     totalQuantity: 0,
-    externalQuantity: 0,
-    combinedTotalQuantity: 0,
   };
 }
 
-function QuantityCell({ value }) {
+function totalValue(value) {
+  const backendTotal = Number(value.totalQuantity);
+  return Number.isFinite(backendTotal)
+    ? backendTotal
+    : Number(value.hcQuantity || 0) + Number(value.tcQuantity || 0);
+}
+
+function QuantityCell({ value, unit, showBreakdown, emphasized = false }) {
+  const total = totalValue(value);
+  const className = [
+    "erp-report-monthly-metric",
+    total === 0 ? "is-zero" : "",
+    emphasized ? "is-emphasized" : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <div className="erp-report-monthly-quantity-cell">
-      <span>HC: {quantity(value.hcQuantity)}</span>
-      <strong>TC: {quantity(value.tcQuantity)}</strong>
+    <div className={className}>
+      <strong className="erp-report-monthly-total">
+        {total === 0 ? "—" : quantity(total)} <small>{unit}</small>
+      </strong>
+      {showBreakdown && (
+        <span className="erp-report-monthly-split">
+          HC {quantity(value.hcQuantity)} · TC {quantity(value.tcQuantity)}
+        </span>
+      )}
     </div>
   );
 }
 
-function TotalCell({ value }) {
-  return <strong className="erp-report-monthly-total">{quantity(value.totalQuantity)}</strong>;
-}
-
-export function ProductionMonthlyOperationTable({ summary }) {
+export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown = true }) {
+  const [showBreakdown, setShowBreakdown] = useState(initialShowBreakdown);
   const months = summary?.months || [];
   const operations = summary?.operations || [];
 
@@ -43,7 +58,27 @@ export function ProductionMonthlyOperationTable({ summary }) {
           <span className="erp-report-eyebrow">Theo dõi tiến độ</span>
           <h2>Tổng hợp theo tháng</h2>
         </div>
-        <span>{months.length} tháng · {operations.length} công đoạn</span>
+        <div className="erp-report-monthly-toolbar">
+          <span>{months.length} tháng · {operations.length} công đoạn</span>
+          <div className="erp-report-monthly-view-toggle" role="group" aria-label="Cách hiển thị sản lượng">
+            <button
+              type="button"
+              className={`erp-button erp-button-small ${showBreakdown ? "is-active" : ""}`}
+              aria-pressed={showBreakdown}
+              onClick={() => setShowBreakdown(true)}
+            >
+              Tổng + HC/TC
+            </button>
+            <button
+              type="button"
+              className={`erp-button erp-button-small ${!showBreakdown ? "is-active" : ""}`}
+              aria-pressed={!showBreakdown}
+              onClick={() => setShowBreakdown(false)}
+            >
+              Chỉ tổng
+            </button>
+          </div>
+        </div>
       </div>
       <div className="erp-report-monthly-table-wrap">
         <table className="erp-report-monthly-table">
@@ -51,18 +86,40 @@ export function ProductionMonthlyOperationTable({ summary }) {
           <thead>
             <tr>
               <th scope="col">Công đoạn</th>
-              {months.map((month) => <th scope="col" key={month.monthKey}>{monthLabel(month)}</th>)}
-              <th scope="col">Tổng HC/TC</th>
-              <th scope="col">Tổng cộng</th>
+              {months.map((month, index) => (
+                <th scope="col" className={index === months.length - 1 ? "is-latest" : ""} key={month.monthKey}>
+                  {monthLabel(month)}
+                </th>
+              ))}
+              <th scope="col" className="is-cumulative">Lũy kế</th>
             </tr>
           </thead>
           <tbody>
             {operations.map((operation) => (
               <tr key={operation.operationId || operation.operationNumber}>
-                <th scope="row"><strong>CĐ{operation.operationNumber}</strong><span>{operation.name}</span></th>
-                {months.map((month) => <td key={month.monthKey}><QuantityCell value={monthValue(operation, month.monthKey)} /></td>)}
-                <td><QuantityCell value={operation} /></td>
-                <td><TotalCell value={operation} /></td>
+                <th scope="row">
+                  <strong>CĐ{operation.operationNumber}</strong>
+                  <span>{operation.name}</span>
+                  <small className="erp-report-monthly-operation-unit">[{operation.unit || "—"}]</small>
+                </th>
+                {months.map((month, index) => (
+                  <td key={month.monthKey} className={index === months.length - 1 ? "is-latest" : ""}>
+                    <QuantityCell
+                      value={monthValue(operation, month.monthKey)}
+                      unit={operation.unit}
+                      showBreakdown={showBreakdown}
+                      emphasized={index === months.length - 1}
+                    />
+                  </td>
+                ))}
+                <td className="is-cumulative">
+                  <QuantityCell
+                    value={operation}
+                    unit={operation.unit}
+                    showBreakdown={showBreakdown}
+                    emphasized
+                  />
+                </td>
               </tr>
             ))}
           </tbody>

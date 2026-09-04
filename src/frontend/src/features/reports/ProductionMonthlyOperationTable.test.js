@@ -34,19 +34,22 @@ describe("ProductionMonthlyOperationTable", () => {
     expect(html).toContain("Tổng hợp theo tháng");
     expect(html).toContain("07/2026");
     expect(html).toContain("08/2026");
-    expect(html).toContain("Tổng HC/TC");
-    expect(html).toContain('<th scope="col">Tổng cộng</th>');
+    expect(html).toContain("Lũy kế");
+    expect(html).toContain("Tổng + HC/TC");
+    expect(html).toContain("Chỉ tổng");
     expect(html).toContain("CĐ");
     expect(html).toContain("9");
-    expect(html).toContain("HC:");
+    expect(html).toContain("cái");
+    expect(html).toContain("120");
+    expect(html).toMatch(/HC.*100.*TC.*20/);
+    expect(html).toContain("170");
     expect(html).toContain("100");
     expect(html).not.toContain("Nội bộ:");
     expect(html).not.toContain("Bên ngoài:");
-    expect(html).not.toContain("ĐVT");
+    expect(html).not.toContain(">ĐVT<");
     expect(html).toContain("140");
     expect(html).toContain("30");
-    expect(html).toContain("170");
-    expect(html).not.toContain("cái");
+    expect(html).toContain("Lũy kế");
   });
 
   test("renders zero values instead of dropping an operation without production", () => {
@@ -65,9 +68,29 @@ describe("ProductionMonthlyOperationTable", () => {
 
     expect(html).toContain("CĐ");
     expect(html).toContain("4");
-    expect(html).toContain("HC:");
-    expect(html).toContain("TC:");
+    expect(html).toContain("—");
+    expect(html).toMatch(/HC.*0.*TC.*0/);
+    expect(html).toContain("kiện");
     expect(html).toContain("0");
-    expect(html).not.toContain("kiện");
+  });
+
+  test("hides HC/TC detail in the compact total-only mode", () => {
+    const html = renderToString(React.createElement(ProductionMonthlyOperationTable, {
+      initialShowBreakdown: false,
+      summary: {
+        months: [{ year: 2026, month: 7, monthKey: "2026-07" }],
+        operations: [{
+          operationNumber: 4,
+          name: "Kiểm hàng",
+          unit: "kiện",
+          months: [{ monthKey: "2026-07", hcQuantity: 100, tcQuantity: 20, totalQuantity: 120 }],
+          totalQuantity: 120,
+        }],
+      },
+    }));
+
+    expect(html).toContain("120");
+    expect(html).toContain("kiện");
+    expect(html).not.toMatch(/HC.*100.*TC.*20/);
   });
 });
