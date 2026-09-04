@@ -63,6 +63,8 @@ public sealed class ReportExportApiTests
             "san-luong_20260812_20260812.xlsx",
             response.Content.Headers.ContentDisposition?.FileNameStar ??
             response.Content.Headers.ContentDisposition?.FileName?.Trim('"'));
+        Assert.IsTrue(response.Headers.CacheControl?.NoStore == true);
+        Assert.IsTrue(response.Headers.CacheControl?.NoCache == true);
     }
 
     [TestMethod]

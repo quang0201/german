@@ -14,12 +14,14 @@ describe("ReportPage", () => {
 
   test("renders the report controls inside the ERP feedback provider", () => {
     const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
-    expect(html).toContain("Báo cáo");
+    expect(html).not.toContain("erp-page-title");
+    expect(html).not.toContain("Xuất báo cáo sản lượng theo khoảng thời gian.");
     expect(html).toContain("Từ ngày");
     expect(html).toContain("Đến ngày");
     expect(html).toContain('type="date"');
     expect(html).not.toContain("Từ tháng");
     expect(html).toContain("Xuất Excel");
+    expect(html).toContain("Làm mới dữ liệu");
   });
 
   test("builds a stable export URL from the selected date range", () => {

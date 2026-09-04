@@ -126,6 +126,7 @@ public static class ReportEndpoints
         bool? excludeSundays,
         ProductionReportService service,
         IProductionReportExporter exporter,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
         var result = await service.BuildAsync(
@@ -147,6 +148,7 @@ public static class ReportEndpoints
         var report = result.Value!;
         var bytes = exporter.Export(report);
         var fileName = $"san-luong_{report.FromDate:yyyyMMdd}_{report.UntilDate:yyyyMMdd}.xlsx";
+        SetNoStoreHeaders(httpContext);
         return Results.File(bytes, XlsxContentType, fileName);
     }
 }

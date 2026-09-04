@@ -1,13 +1,15 @@
 import React from "react";
 
 export function PageHeader({ title, description, actions, eyebrow }) {
+  const hasContent = Boolean(eyebrow || title || description);
+
   return (
     <header className="erp-page-header">
-      <div>
+      {hasContent && <div>
         {eyebrow && <div className="erp-eyebrow">{eyebrow}</div>}
-        <h1 className="erp-page-title">{title}</h1>
+        {title && <h1 className="erp-page-title">{title}</h1>}
         {description && <p className="erp-page-description">{description}</p>}
-      </div>
+      </div>}
       {actions && <div className="erp-page-actions">{actions}</div>}
     </header>
   );

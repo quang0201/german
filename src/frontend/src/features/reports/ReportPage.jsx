@@ -37,11 +37,15 @@ export function ReportPage() {
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
+  const [refreshToken, setRefreshToken] = useState(0);
   const toast = useToast();
+
+  const refreshing = refreshToken > 0 && (ordersLoading || summaryLoading);
 
   useEffect(() => {
     let active = true;
     setOrdersLoading(true);
+    setOrderError("");
     api.get("/api/production-orders")
       .then((items) => {
         if (active) setOrders(items);
@@ -53,7 +57,7 @@ export function ReportPage() {
         if (active) setOrdersLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [refreshToken]);
 
   useEffect(() => {
     if (!orderId || !fromDate || !untilDate) {
@@ -86,7 +90,12 @@ export function ReportPage() {
         if (active) setSummaryLoading(false);
       });
     return () => { active = false; };
-  }, [orderId, fromDate, untilDate]);
+  }, [orderId, fromDate, untilDate, refreshToken]);
+
+  function refreshData() {
+    setError("");
+    setRefreshToken((value) => value + 1);
+  }
 
   async function exportReport() {
     setError("");
@@ -111,7 +120,11 @@ export function ReportPage() {
 
   return (
     <div className="erp-feature-page">
-      <PageHeader title="Báo cáo" description="Xuất báo cáo sản lượng theo khoảng thời gian." />
+      <PageHeader actions={(
+        <button className="erp-button erp-button-secondary" type="button" onClick={refreshData} disabled={refreshing}>
+          {refreshing ? "Đang làm mới..." : "Làm mới dữ liệu"}
+        </button>
+      )} />
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
       <div className="erp-report-toolbar">
