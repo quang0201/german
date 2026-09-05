@@ -130,6 +130,20 @@ switch (startMode)
         throw new InvalidOperationException($"Unsupported start mode: {startMode}.");
 }
 
+app.Use(async (context, next) =>
+{
+    var requestPath = context.Request.Path.Value ?? string.Empty;
+    var isAppShellRequest = !context.Request.Path.StartsWithSegments("/api")
+        && (requestPath == "/" || !requestPath.Contains('.', StringComparison.Ordinal));
+    if (isAppShellRequest)
+    {
+        context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        context.Response.Headers.Pragma = "no-cache";
+        context.Response.Headers.Expires = "0";
+    }
+
+    await next();
+});
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
