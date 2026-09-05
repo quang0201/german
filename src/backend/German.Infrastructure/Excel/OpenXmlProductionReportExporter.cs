@@ -90,6 +90,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 var groups = block
                     .GroupBy(x => new { x.EmployeeCode, x.EmployeeName, x.OperationNumber, x.Unit })
                     .OrderBy(x => x.Key.EmployeeCode, StringComparer.Ordinal)
+                    .ThenBy(x => x.Key.EmployeeName, StringComparer.Ordinal)
                     .ThenBy(x => x.Key.OperationNumber)
                     .ThenBy(x => x.Key.Unit, StringComparer.Ordinal);
                 string? previousEmployeeCode = null;

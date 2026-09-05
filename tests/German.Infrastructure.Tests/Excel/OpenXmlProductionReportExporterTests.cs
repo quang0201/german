@@ -126,6 +126,38 @@ public sealed class OpenXmlProductionReportExporterTests
     }
 
     [TestMethod]
+    public void Export_KeepsExternalSourceOperationsTogetherAndShowsNameOnce()
+    {
+        var report = new ProductionReportData(
+            new DateOnly(2026, 8, 12),
+            new DateOnly(2026, 8, 12),
+            new[]
+            {
+                new ProductionReportRow(new DateOnly(2026, 8, 12), "__EXTERNAL__", "Nguyễn Thu Hà", "0417", "Túi 0417", 6, "CĐ6", "cái", 300m, 0m, 300m, null, ProductionEntryMode.Direct, null, true),
+                new ProductionReportRow(new DateOnly(2026, 8, 12), "__EXTERNAL__", "Quách Thị Xuân", "0417", "Túi 0417", 5, "CĐ5", "cái", 1180m, 0m, 1180m, null, ProductionEntryMode.Direct, null, true),
+                new ProductionReportRow(new DateOnly(2026, 8, 12), "__EXTERNAL__", "Nguyễn Thu Hà", "0417", "Túi 0417", 5, "CĐ5", "cái", 300m, 0m, 300m, null, ProductionEntryMode.Direct, null, true),
+                new ProductionReportRow(new DateOnly(2026, 8, 12), "__EXTERNAL__", "Quách Thị Xuân", "0417", "Túi 0417", 6, "CĐ6", "cái", 1180m, 0m, 1180m, null, ProductionEntryMode.Direct, null, true),
+            })
+        {
+            Summary = new ProductionReportSummary(2, 4, 2960m, 0m, 2960m),
+            ByDay = [new ProductionReportDaySummary(new DateOnly(2026, 8, 12), 2960m, 0m, 2960m)],
+            ByEmployee =
+            [
+                new ProductionReportEmployeeSummary("__EXTERNAL__", "Nguyễn Thu Hà", 600m, 0m, 600m, true),
+                new ProductionReportEmployeeSummary("__EXTERNAL__", "Quách Thị Xuân", 2360m, 0m, 2360m, true),
+            ],
+        };
+
+        using var document = OpenWorkbook(report);
+        var rows = GetSheetData(document, "Báo cáo quản lý").Elements<Row>().ToList();
+
+        Assert.AreEqual("Nguyễn Thu Hà", GetCell(rows.Single(row => row.RowIndex!.Value == 6U), "A6").InnerText);
+        Assert.IsNull(GetCellOrNull(rows.Single(row => row.RowIndex!.Value == 7U), "A7"));
+        Assert.AreEqual("Quách Thị Xuân", GetCell(rows.Single(row => row.RowIndex!.Value == 8U), "A8").InnerText);
+        Assert.IsNull(GetCellOrNull(rows.Single(row => row.RowIndex!.Value == 9U), "A9"));
+    }
+
+    [TestMethod]
     public void Export_WritesOverviewMetadataMetricsAndAggregateTotals()
     {
         using var document = OpenWorkbook(CreateReport());
