@@ -70,6 +70,9 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
             join employee in db.Employees.AsNoTracking()
                 on external.SourceEmployeeId equals employee.Id into sourceEmployees
             from employee in sourceEmployees.DefaultIfEmpty()
+            join source in db.ProductionExternalSources.AsNoTracking()
+                on external.ExternalSourceId equals source.Id into externalSources
+            from source in externalSources.DefaultIfEmpty()
             where external.ProductionOrderId == orderId
                 && (!operationId.HasValue || external.ProductionOperationId == operationId.Value)
                 && (!fromDate.HasValue || external.ReceivedDate >= fromDate.Value)
@@ -79,6 +82,8 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
                 external.SourceName,
                 external.SourceEmployeeId,
                 SourceEmployeeName = employee == null ? null : employee.FullName,
+                external.ExternalSourceId,
+                ExternalSourceName = source == null ? null : source.Name,
                 external.Quantity,
                 external.ProductionOperationId,
                 operation.OperationNumber,
@@ -92,12 +97,14 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
             .ToListAsync(cancellationToken);
 
         var summaries = items
-            .GroupBy(item => item.SourceEmployeeId.HasValue
-                ? $"employee:{item.SourceEmployeeId.Value}"
-                : $"source:{NormalizeSource(item.SourceName)}", StringComparer.OrdinalIgnoreCase)
-            .OrderBy(group => group.First().SourceEmployeeName ?? NormalizeSource(group.First().SourceName), StringComparer.OrdinalIgnoreCase)
+            .GroupBy(item => item.ExternalSourceId.HasValue
+                ? $"external:{item.ExternalSourceId.Value}"
+                : item.SourceEmployeeId.HasValue
+                    ? $"employee:{item.SourceEmployeeId.Value}"
+                    : $"source:{NormalizeSource(item.SourceName)}", StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.First().ExternalSourceName ?? group.First().SourceEmployeeName ?? NormalizeSource(group.First().SourceName), StringComparer.OrdinalIgnoreCase)
             .Select(group => new ProductionExternalQuantitySummaryDto(
-                group.First().SourceEmployeeName ?? NormalizeSource(group.First().SourceName),
+                group.First().ExternalSourceName ?? group.First().SourceEmployeeName ?? NormalizeSource(group.First().SourceName),
                 group.Sum(item => item.Quantity),
                 group
                     .GroupBy(item => new
@@ -139,11 +146,12 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         if (!referenceValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(referenceValidation.Error!.Code, referenceValidation.Error.Message);
 
         var now = DateTimeOffset.UtcNow;
+        var externalSource = await ResolveExternalSourceAsync(command.SourceName, cancellationToken);
         var item = new ProductionExternalQuantity
         {
             ProductionOrderId = command.ProductionOrderId,
             ProductionOperationId = command.ProductionOperationId,
-            SourceEmployeeId = await ResolveSourceEmployeeIdAsync(command.SourceName, cancellationToken),
+            ExternalSourceId = externalSource?.Id,
             ReceivedDate = command.ReceivedDate,
             Quantity = command.Quantity,
             SourceName = Normalize(command.SourceName),
@@ -173,7 +181,8 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         item.ReceivedDate = command.ReceivedDate;
         item.Quantity = command.Quantity;
         item.SourceName = Normalize(command.SourceName);
-        item.SourceEmployeeId = await ResolveSourceEmployeeIdAsync(command.SourceName, cancellationToken);
+        var externalSource = await ResolveExternalSourceAsync(command.SourceName, cancellationToken);
+        item.ExternalSourceId = externalSource?.Id;
         item.Note = Normalize(command.Note);
         item.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
@@ -227,23 +236,35 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         return string.IsNullOrWhiteSpace(normalized) ? "Không ghi nguồn" : normalized;
     }
 
-    private async Task<Guid?> ResolveSourceEmployeeIdAsync(string? sourceName, CancellationToken cancellationToken)
+    private async Task<ProductionExternalSource?> ResolveExternalSourceAsync(string? sourceName, CancellationToken cancellationToken)
     {
-        var normalized = Normalize(sourceName);
+        var normalized = NormalizeSourceKey(sourceName);
         if (normalized is null) return null;
 
-        var matches = await db.Employees.AsNoTracking()
-            .Where(employee => employee.FullName.ToLower() == normalized.ToLower())
-            .Select(employee => employee.Id)
-            .ToListAsync(cancellationToken);
-        return matches.Count == 1 ? matches[0] : null;
+        var existing = await db.ProductionExternalSources
+            .FirstOrDefaultAsync(source => source.NormalizedName == normalized, cancellationToken);
+        if (existing is not null) return existing;
+
+        var created = new ProductionExternalSource
+        {
+            Name = Normalize(sourceName)!,
+            NormalizedName = normalized
+        };
+        db.ProductionExternalSources.Add(created);
+        return created;
+    }
+
+    private static string? NormalizeSourceKey(string? value)
+    {
+        var normalized = Normalize(value);
+        return normalized?.ToUpperInvariant();
     }
 
     private static Expression<Func<ProductionExternalQuantity, ProductionExternalQuantityDto>> ToProjection() => item => new ProductionExternalQuantityDto(
-        item.Id, item.ProductionOrderId, item.ProductionOperationId, item.SourceEmployeeId, item.ReceivedDate, item.Quantity,
+        item.Id, item.ProductionOrderId, item.ProductionOperationId, item.SourceEmployeeId, item.ExternalSourceId, item.ReceivedDate, item.Quantity,
         item.SourceName, item.Note, item.CreatedAt, item.UpdatedAt);
 
     private static ProductionExternalQuantityDto ToDto(ProductionExternalQuantity item) => new(
-        item.Id, item.ProductionOrderId, item.ProductionOperationId, item.SourceEmployeeId, item.ReceivedDate, item.Quantity,
+        item.Id, item.ProductionOrderId, item.ProductionOperationId, item.SourceEmployeeId, item.ExternalSourceId, item.ReceivedDate, item.Quantity,
         item.SourceName, item.Note, item.CreatedAt, item.UpdatedAt);
 }

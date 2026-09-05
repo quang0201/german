@@ -323,12 +323,14 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 join operation in db.ProductionOperations.AsNoTracking() on external.ProductionOperationId equals operation.Id
                 join sourceEmployee in db.Employees.AsNoTracking() on external.SourceEmployeeId equals sourceEmployee.Id into sourceEmployees
                 from sourceEmployee in sourceEmployees.DefaultIfEmpty()
+                join externalSource in db.ProductionExternalSources.AsNoTracking() on external.ExternalSourceId equals externalSource.Id into externalSources
+                from externalSource in externalSources.DefaultIfEmpty()
                 where external.ReceivedDate >= fromDate
                     && external.ReceivedDate <= untilDate
                     && (!filter.EmployeeId.HasValue || external.SourceEmployeeId == filter.EmployeeId.Value)
                     && (!filter.OrderId.HasValue || external.ProductionOrderId == filter.OrderId.Value)
                     && (!filter.OperationId.HasValue || external.ProductionOperationId == filter.OperationId.Value)
-                select new { external, order, operation, sourceEmployee };
+                select new { external, order, operation, sourceEmployee, externalSource };
 
             if (filter.ExcludeSundays)
             {
@@ -347,7 +349,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
 
             foreach (var item in externalItems)
             {
-                var source = item.sourceEmployee?.FullName;
+                var source = item.externalSource?.Name ?? item.sourceEmployee?.FullName;
                 if (string.IsNullOrWhiteSpace(source))
                 {
                     source = string.IsNullOrWhiteSpace(item.external.SourceName)

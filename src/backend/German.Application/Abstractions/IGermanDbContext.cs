@@ -19,6 +19,7 @@ public interface IGermanDbContext
     DbSet<ProductionOperation> ProductionOperations { get; }
     DbSet<ProductionEntry> ProductionEntries { get; }
     DbSet<ProductionExternalQuantity> ProductionExternalQuantities { get; }
+    DbSet<ProductionExternalSource> ProductionExternalSources { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<AttendanceDay> AttendanceDays { get; }
     DbSet<AttendanceShiftEntry> AttendanceShiftEntries { get; }
