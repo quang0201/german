@@ -17,6 +17,8 @@ describe("ProductionOperationSummaryChart", () => {
 
     expect(html).toContain("erp-report-operation-row is-over-plan");
     expect(html).toContain("Vượt kế hoạch");
+    expect(html).toContain("erp-report-plan-indicator");
+    expect(html).toContain("erp-report-table-scroll-hint");
     expect(html).toContain("Kế hoạch");
     expect(html).toContain("15.000");
   });
