@@ -36,10 +36,14 @@ public sealed class AttendanceApiTests
 
         using var manager = factory.CreateClient(new() { HandleCookies = true });
         await LoginAsync(manager, "attendance-manager", "secret");
-        Assert.AreEqual(HttpStatusCode.OK,
-            (await manager.GetAsync("/api/attendance/monthly?year=2026&month=8")).StatusCode);
+        var monthly = await manager.GetAsync("/api/attendance/monthly?year=2026&month=8");
+        Assert.AreEqual(HttpStatusCode.OK, monthly.StatusCode);
+        Assert.IsTrue(monthly.Headers.CacheControl?.NoStore == true);
+        Assert.IsTrue(monthly.Headers.CacheControl?.NoCache == true);
         var export = await manager.GetAsync("/api/attendance/export?year=2026&month=8");
         Assert.AreEqual(HttpStatusCode.OK, export.StatusCode);
+        Assert.IsTrue(export.Headers.CacheControl?.NoStore == true);
+        Assert.IsTrue(export.Headers.CacheControl?.NoCache == true);
         Assert.AreEqual("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", export.Content.Headers.ContentType?.MediaType);
         StringAssert.Contains(export.Content.Headers.ContentDisposition?.FileNameStar ?? export.Content.Headers.ContentDisposition?.FileName ?? "", "ChamCong_08_2026");
 

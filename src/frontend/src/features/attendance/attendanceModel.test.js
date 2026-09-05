@@ -16,6 +16,25 @@ describe("attendance model", () => {
       .toEqual(["active", "legacy"]);
   });
 
+  test("keeps inactive historical employees out of the attendance entry table", () => {
+    const cache = mergeAttendanceCache(
+      emptyAttendanceCache("2026-08", 1),
+      {
+        dayFrom: 1,
+        dayTo: 7,
+        employees: [
+          { employeeId: "active", employeeCode: "A1", fullName: "Đang làm", isActive: true, days: [] },
+          { employeeId: "inactive", employeeCode: "A2", fullName: "Đã nghỉ", isActive: false, deactivatedAt: "2026-08-20", days: [] },
+        ],
+      },
+      { batchId: "batch-0" },
+    );
+
+    const rendered = buildAttendanceRenderData(cache, "2026-08", [1]);
+
+    expect(rendered.employees.map((employee) => employee.employeeId)).toEqual(["active"]);
+  });
+
   test("selects the week containing today for the current month and the first week otherwise", () => {
     expect(attendanceBlockIndexForMonth("2026-08", new Date("2026-08-22T08:00:00"))).toBe(3);
     expect(attendanceBlockIndexForMonth("2026-07", new Date("2026-08-22T08:00:00"))).toBe(0);

@@ -30,3 +30,23 @@ describe("api.download", () => {
     expect(requestOptions).toEqual({ credentials: "include", cache: "no-store" });
   });
 });
+
+describe("api.get", () => {
+  test("bypasses browser caches for backend data", async () => {
+    const originalFetch = globalThis.fetch;
+    let requestOptions;
+
+    globalThis.fetch = async (_path, options) => {
+      requestOptions = options;
+      return { status: 200, ok: true, headers: new Headers({ "content-type": "application/json" }), json: async () => ({}) };
+    };
+
+    try {
+      await api.get("/api/attendance/monthly?year=2026&month=8");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(requestOptions.cache).toBe("no-store");
+  });
+});
