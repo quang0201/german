@@ -1,6 +1,7 @@
 using German.Application.Common;
 using German.Application.ProductionOrders;
 using German.Domain.Auth;
+using German.Domain.Employees;
 using German.Domain.Production;
 using German.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public sealed class ProductionExternalQuantityServiceTests
         await using var db = CreateDb();
         var order = new ProductionOrder { Code = "0417", ProductName = "Túi", PlannedQuantity = 1000m, Status = ProductionOrderStatus.InProduction };
         var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 4, Name = "May", Unit = "cái", SortOrder = 1 };
+        var sourceEmployee = new Employee { EmployeeCode = "OUT-A", FullName = "Xưởng A" };
         var entry = new ProductionEntry
         {
             ProductionOrderId = order.Id,
@@ -29,7 +31,7 @@ public sealed class ProductionExternalQuantityServiceTests
             TotalQuantity = 12m,
             SubmittedByUserId = Guid.NewGuid()
         };
-        db.AddRange(order, operation, entry);
+        db.AddRange(order, operation, sourceEmployee, entry);
         await db.SaveChangesAsync();
         var service = new ProductionExternalQuantityService(db);
         var actor = new CurrentActor(Guid.NewGuid(), UserRole.Manager, null);
@@ -39,6 +41,7 @@ public sealed class ProductionExternalQuantityServiceTests
 
         Assert.IsTrue(created.IsSuccess, created.Error?.Message);
         Assert.AreEqual("Xưởng A", created.Value!.SourceName);
+        Assert.AreEqual(sourceEmployee.Id, created.Value.SourceEmployeeId);
         Assert.AreEqual("Nhận hàng", created.Value.Note);
         Assert.AreEqual(12m, await db.ProductionEntries.Select(x => x.TotalQuantity).SingleAsync());
 
@@ -51,6 +54,7 @@ public sealed class ProductionExternalQuantityServiceTests
         Assert.IsTrue(updated.IsSuccess, updated.Error?.Message);
         Assert.AreEqual(700m, updated.Value!.Quantity);
         Assert.AreEqual("Xưởng B", updated.Value.SourceName);
+        Assert.IsNull(updated.Value.SourceEmployeeId);
         Assert.IsNull(updated.Value.Note);
 
         var deleted = await service.DeleteAsync(actor, created.Value.Id, CancellationToken.None);

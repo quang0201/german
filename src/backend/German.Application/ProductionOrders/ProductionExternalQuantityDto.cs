@@ -4,6 +4,7 @@ public sealed record ProductionExternalQuantityDto(
     Guid Id,
     Guid ProductionOrderId,
     Guid ProductionOperationId,
+    Guid? SourceEmployeeId,
     DateOnly ReceivedDate,
     decimal Quantity,
     string? SourceName,

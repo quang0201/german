@@ -6,6 +6,7 @@ public sealed class ProductionExternalQuantity : Entity
 {
     public Guid ProductionOrderId { get; set; }
     public Guid ProductionOperationId { get; set; }
+    public Guid? SourceEmployeeId { get; set; }
     public DateOnly ReceivedDate { get; set; }
     public decimal Quantity { get; set; }
     public string? SourceName { get; set; }

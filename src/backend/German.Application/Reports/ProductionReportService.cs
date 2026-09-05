@@ -316,17 +316,19 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .ToListAsync(cancellationToken);
 
         var externalRows = new List<ProductionReportRow>();
-        if (!filter.EmployeeId.HasValue)
         {
             var externalQuery =
                 from external in db.ProductionExternalQuantities.AsNoTracking()
                 join order in db.ProductionOrders.AsNoTracking() on external.ProductionOrderId equals order.Id
                 join operation in db.ProductionOperations.AsNoTracking() on external.ProductionOperationId equals operation.Id
+                join sourceEmployee in db.Employees.AsNoTracking() on external.SourceEmployeeId equals sourceEmployee.Id into sourceEmployees
+                from sourceEmployee in sourceEmployees.DefaultIfEmpty()
                 where external.ReceivedDate >= fromDate
                     && external.ReceivedDate <= untilDate
+                    && (!filter.EmployeeId.HasValue || external.SourceEmployeeId == filter.EmployeeId.Value)
                     && (!filter.OrderId.HasValue || external.ProductionOrderId == filter.OrderId.Value)
                     && (!filter.OperationId.HasValue || external.ProductionOperationId == filter.OperationId.Value)
-                select new { external, order, operation };
+                select new { external, order, operation, sourceEmployee };
 
             if (filter.ExcludeSundays)
             {
@@ -345,9 +347,13 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
 
             foreach (var item in externalItems)
             {
-                var source = string.IsNullOrWhiteSpace(item.external.SourceName)
-                    ? "Gia công ngoài"
-                    : item.external.SourceName.Trim();
+                var source = item.sourceEmployee?.FullName;
+                if (string.IsNullOrWhiteSpace(source))
+                {
+                    source = string.IsNullOrWhiteSpace(item.external.SourceName)
+                        ? "Gia công ngoài"
+                        : item.external.SourceName.Trim();
+                }
 
                 if (search is not null
                     && !source.Contains(search.Text, StringComparison.OrdinalIgnoreCase)
@@ -361,7 +367,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
 
                 externalRows.Add(new ProductionReportRow(
                     item.external.ReceivedDate,
-                    "__EXTERNAL__",
+                    item.sourceEmployee?.EmployeeCode ?? "__EXTERNAL__",
                     source,
                     item.order.Code,
                     item.order.ProductName,
