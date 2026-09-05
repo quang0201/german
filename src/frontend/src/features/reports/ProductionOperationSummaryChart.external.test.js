@@ -4,6 +4,22 @@ import { renderToString } from "react-dom/server";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ProductionOperationSummaryChart", () => {
+  test("highlights an operation that exceeds the plan tolerance", () => {
+    const html = renderToString(React.createElement(ProductionOperationSummaryChart, {
+      plannedQuantity: 15000,
+      summary: {
+        orderCode: "0417",
+        productName: "Túi 0417",
+        operationCount: 1,
+        operations: [{ operationNumber: 1, name: "Cắt quai", unit: "cái", hcQuantity: 15101, tcQuantity: 0, totalQuantity: 15101 }],
+      },
+    }));
+
+    expect(html).toContain("erp-report-operation-row is-over-plan");
+    expect(html).toContain("Vượt kế hoạch");
+    expect(html).toContain("Kế hoạch 15.000");
+  });
+
   test("renders every operation in one horizontal table and keeps the stacked quantities", () => {
     const html = renderToString(React.createElement(ProductionOperationSummaryChart, {
       summary: {

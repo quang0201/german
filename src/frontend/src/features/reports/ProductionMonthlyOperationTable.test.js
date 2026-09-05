@@ -4,6 +4,26 @@ import { renderToString } from "react-dom/server";
 import { ProductionMonthlyOperationTable } from "./ProductionMonthlyOperationTable.jsx";
 
 describe("ProductionMonthlyOperationTable", () => {
+  test("highlights monthly totals above the plan tolerance", () => {
+    const html = renderToString(React.createElement(ProductionMonthlyOperationTable, {
+      plannedQuantity: 15000,
+      summary: {
+        months: [{ year: 2026, month: 8, monthKey: "2026-08" }],
+        operations: [{
+          operationNumber: 1,
+          name: "Cắt quai",
+          unit: "cái",
+          months: [{ monthKey: "2026-08", hcQuantity: 15101, tcQuantity: 0, totalQuantity: 15101, externalQuantity: 0, combinedTotalQuantity: 15101 }],
+          combinedTotalQuantity: 15101,
+        }],
+      },
+    }));
+
+    expect(html).toContain("erp-report-monthly-metric is-over-plan");
+    expect(html).toContain("Vượt kế hoạch");
+    expect(html).toContain("Kế hoạch 15.000");
+  });
+
   test("renders each month and the accumulated total for every operation", () => {
     const html = renderToString(React.createElement(ProductionMonthlyOperationTable, {
       summary: {
