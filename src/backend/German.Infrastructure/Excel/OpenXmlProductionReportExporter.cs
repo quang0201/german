@@ -18,6 +18,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private const uint TcBodyStyle = 8U;
     private const uint HcHeaderStyle = 9U;
     private const uint TcHeaderStyle = 10U;
+    private const uint ExternalTextStyle = 11U;
+    private const uint ExternalNumberStyle = 12U;
 
     public byte[] Export(ProductionReportData report)
     {
@@ -135,30 +137,31 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     {
         var entries = source.ToArray();
         var first = entries[0];
+        var isExternal = entries.All(item => item.IsExternal);
         var byDay = entries.GroupBy(x => x.WorkDate).ToDictionary(x => x.Key, x => (Hc: x.Sum(y => y.HcQuantity), Tc: x.Sum(y => y.TcQuantity)));
         var hc = entries.Sum(x => x.HcQuantity);
         var tc = entries.Sum(x => x.TcQuantity);
         var cells = new List<Cell>();
-        if (!blankEmployee) cells.Add(At($"A{row}", Text(first.EmployeeName, SectionStyle)));
-        cells.Add(At($"B{row}", Text($"CĐ{first.OperationNumber}")));
-        cells.Add(At($"C{row}", Text(first.Unit, CenterStyle)));
+        if (!blankEmployee) cells.Add(At($"A{row}", Text(first.EmployeeName, isExternal ? ExternalTextStyle : SectionStyle)));
+        cells.Add(At($"B{row}", Text($"CĐ{first.OperationNumber}", isExternal ? ExternalTextStyle : 0U)));
+        cells.Add(At($"C{row}", Text(first.Unit, isExternal ? ExternalTextStyle : CenterStyle)));
         for (var i = 0; i < days.Count; i++)
         {
             var column = 4 + i * 2;
             if (byDay.TryGetValue(days[i], out var quantity))
             {
-                cells.Add(At($"{Col(column)}{row}", HcNum(quantity.Hc)));
-                cells.Add(At($"{Col(column + 1)}{row}", TcNum(quantity.Tc)));
+                cells.Add(At($"{Col(column)}{row}", isExternal ? ExternalNum(quantity.Hc) : HcNum(quantity.Hc)));
+                cells.Add(At($"{Col(column + 1)}{row}", isExternal ? ExternalNum(quantity.Tc) : TcNum(quantity.Tc)));
             }
             else
             {
-                cells.Add(At($"{Col(column)}{row}", Blank(HcBodyStyle)));
-                cells.Add(At($"{Col(column + 1)}{row}", Blank(TcBodyStyle)));
+                cells.Add(At($"{Col(column)}{row}", Blank(isExternal ? ExternalNumberStyle : HcBodyStyle)));
+                cells.Add(At($"{Col(column + 1)}{row}", Blank(isExternal ? ExternalNumberStyle : TcBodyStyle)));
             }
         }
-        cells.Add(At($"{Col(totalStart)}{row}", HcNum(hc)));
-        cells.Add(At($"{Col(totalStart + 1)}{row}", TcNum(tc)));
-        cells.Add(At($"{Col(totalStart + 2)}{row}", Num(hc + tc)));
+        cells.Add(At($"{Col(totalStart)}{row}", isExternal ? ExternalNum(hc) : HcNum(hc)));
+        cells.Add(At($"{Col(totalStart + 1)}{row}", isExternal ? ExternalNum(tc) : TcNum(tc)));
+        cells.Add(At($"{Col(totalStart + 2)}{row}", isExternal ? ExternalNum(hc + tc) : Num(hc + tc)));
         AddCells(data, row, cells.ToArray());
     }
 
@@ -176,8 +179,13 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         foreach (var day in report.ByDay) AddRow(data, row++, Date(day.WorkDate), HcNum(day.HcQuantity), TcNum(day.TcQuantity), Num(day.TotalQuantity));
         AddRow(data, row++, Text("TỔNG", SectionStyle), HcNum(report.Summary.HcQuantity), TcNum(report.Summary.TcQuantity), Num(report.Summary.TotalQuantity)); AddRow(data, row++);
         AddRow(data, row++, Text("TỔNG HỢP THEO NHÂN VIÊN", SectionStyle)); AddRow(data, row++, Text("Mã NV", HeaderStyle), Text("Họ tên", HeaderStyle), Text("HC", HcHeaderStyle), Text("TC", TcHeaderStyle), Text("Tổng", HeaderStyle));
-        foreach (var employee in report.ByEmployee) AddRow(data, row++, Text(employee.EmployeeCode), Text(employee.EmployeeName), HcNum(employee.HcQuantity), TcNum(employee.TcQuantity), Num(employee.TotalQuantity));
-        AddRow(data, row, Text("TỔNG", SectionStyle), Text(string.Empty), HcNum(report.Summary.HcQuantity), TcNum(report.Summary.TcQuantity), Num(report.Summary.TotalQuantity));
+        foreach (var employee in report.ByEmployee)
+        {
+            var style = employee.IsExternal ? ExternalTextStyle : 0U;
+            var numberStyle = employee.IsExternal ? ExternalNumberStyle : NumericStyle;
+            AddRow(data, row++, Text(employee.EmployeeCode, style), Text(employee.EmployeeName, style), Num(employee.HcQuantity, numberStyle), Num(employee.TcQuantity, numberStyle), Num(employee.TotalQuantity, numberStyle));
+        }
+        AddRow(data, row, Text("TỔNG", SectionStyle), Text(string.Empty), Num(report.Summary.HcQuantity), Num(report.Summary.TcQuantity), Num(report.Summary.TotalQuantity));
         return new Worksheet(OverviewColumns(), data);
     }
 
@@ -189,6 +197,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private static Cell Blank(uint style) => new() { StyleIndex = style };
     private static Cell HcNum(decimal value) => Num(value, HcBodyStyle);
     private static Cell TcNum(decimal value) => Num(value, TcBodyStyle);
+    private static Cell ExternalNum(decimal value) => Num(value, ExternalNumberStyle);
     private static Cell Num(int value) => Num((decimal)value);
     private static Cell Date(DateOnly value) => new() { StyleIndex = DateStyle, CellValue = new CellValue(value.ToDateTime(TimeOnly.MinValue).ToOADate().ToString(CultureInfo.InvariantCulture)) };
 
@@ -229,7 +238,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFEAF4FB" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFFFE6CC" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FF9DC3E6" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
-            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFF4B183" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid })) { Count = 7U };
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFF4B183" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFD9D2E9" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid })) { Count = 8U };
         var formatsForCells = new CellFormats(
             new CellFormat(),
             new CellFormat { NumberFormatId = 164U, ApplyNumberFormat = true },
@@ -241,8 +251,10 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new CellFormat { FillId = 3U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
             new CellFormat { FillId = 4U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
             new CellFormat { FontId = 1U, FillId = 5U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
-            new CellFormat { FontId = 1U, FillId = 6U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } })
-        { Count = 11U };
+            new CellFormat { FontId = 1U, FillId = 6U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
+            new CellFormat { FillId = 7U, ApplyFill = true },
+            new CellFormat { FillId = 7U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } })
+        { Count = 13U };
         return new Stylesheet(formats, fonts, fills, new Borders(new Border()) { Count = 1U }, new CellStyleFormats(new CellFormat()) { Count = 1U }, formatsForCells);
     }
 }

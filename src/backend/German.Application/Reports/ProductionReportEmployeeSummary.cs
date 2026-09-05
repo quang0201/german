@@ -5,4 +5,5 @@ public sealed record ProductionReportEmployeeSummary(
     string EmployeeName,
     decimal HcQuantity,
     decimal TcQuantity,
-    decimal TotalQuantity);
+    decimal TotalQuantity,
+    bool IsExternal = false);

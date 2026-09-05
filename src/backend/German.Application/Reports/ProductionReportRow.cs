@@ -16,4 +16,5 @@ public sealed record ProductionReportRow(
     decimal TotalQuantity,
     decimal? OvertimeHours,
     ProductionEntryMode EntryMode,
-    string? Note);
+    string? Note,
+    bool IsExternal = false);

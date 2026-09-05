@@ -1,5 +1,6 @@
 using German.Application.Abstractions;
 using German.Application.Common;
+using German.Domain.Production;
 using Microsoft.EntityFrameworkCore;
 
 namespace German.Application.Reports;
@@ -292,7 +293,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 || entryModes.Contains(item.entry.EntryMode));
         }
 
-        var rows = await query
+        var internalRows = await query
             .OrderBy(item => item.entry.WorkDate)
             .ThenBy(item => item.employee.EmployeeCode)
             .ThenBy(item => item.order.Code)
@@ -313,6 +314,77 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 item.entry.EntryMode,
                 item.entry.Note))
             .ToListAsync(cancellationToken);
+
+        var externalRows = new List<ProductionReportRow>();
+        if (!filter.EmployeeId.HasValue)
+        {
+            var externalQuery =
+                from external in db.ProductionExternalQuantities.AsNoTracking()
+                join order in db.ProductionOrders.AsNoTracking() on external.ProductionOrderId equals order.Id
+                join operation in db.ProductionOperations.AsNoTracking() on external.ProductionOperationId equals operation.Id
+                where external.ReceivedDate >= fromDate
+                    && external.ReceivedDate <= untilDate
+                    && (!filter.OrderId.HasValue || external.ProductionOrderId == filter.OrderId.Value)
+                    && (!filter.OperationId.HasValue || external.ProductionOperationId == filter.OperationId.Value)
+                select new { external, order, operation };
+
+            if (filter.ExcludeSundays)
+            {
+                var sundays = GetSundays(fromDate, untilDate);
+                if (sundays.Length > 0)
+                {
+                    externalQuery = externalQuery.Where(item => !sundays.Contains(item.external.ReceivedDate));
+                }
+            }
+
+            var externalItems = await externalQuery
+                .OrderBy(item => item.external.ReceivedDate)
+                .ThenBy(item => item.order.Code)
+                .ThenBy(item => item.operation.OperationNumber)
+                .ToListAsync(cancellationToken);
+
+            foreach (var item in externalItems)
+            {
+                var source = string.IsNullOrWhiteSpace(item.external.SourceName)
+                    ? "Gia công ngoài"
+                    : $"Gia công ngoài — {item.external.SourceName.Trim()}";
+
+                if (search is not null
+                    && !source.Contains(search.Text, StringComparison.OrdinalIgnoreCase)
+                    && !item.order.Code.Contains(search.Text, StringComparison.OrdinalIgnoreCase)
+                    && !item.order.ProductName.Contains(search.Text, StringComparison.OrdinalIgnoreCase)
+                    && !item.operation.Name.Contains(search.Text, StringComparison.OrdinalIgnoreCase)
+                    && !(item.external.Note?.Contains(search.Text, StringComparison.OrdinalIgnoreCase) ?? false))
+                {
+                    continue;
+                }
+
+                externalRows.Add(new ProductionReportRow(
+                    item.external.ReceivedDate,
+                    "__EXTERNAL__",
+                    source,
+                    item.order.Code,
+                    item.order.ProductName,
+                    item.operation.OperationNumber,
+                    item.operation.Name,
+                    item.operation.Unit,
+                    item.external.Quantity,
+                    0m,
+                    item.external.Quantity,
+                    null,
+                    ProductionEntryMode.Direct,
+                    item.external.Note,
+                    true));
+            }
+        }
+
+        var rows = internalRows
+            .Concat(externalRows)
+            .OrderBy(item => item.WorkDate)
+            .ThenBy(item => item.EmployeeCode, StringComparer.Ordinal)
+            .ThenBy(item => item.ProductionOrderCode, StringComparer.Ordinal)
+            .ThenBy(item => item.OperationNumber)
+            .ToList();
 
         var summary = new ProductionReportSummary(
             rows.Select(row => row.EmployeeCode).Distinct().Count(),
@@ -338,7 +410,8 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 group.Key.EmployeeName,
                 group.Sum(row => row.HcQuantity),
                 group.Sum(row => row.TcQuantity),
-                group.Sum(row => row.TotalQuantity)))
+                group.Sum(row => row.TotalQuantity),
+                group.All(row => row.IsExternal)))
             .ToArray();
 
         return AppResult<ProductionReportData>.Success(

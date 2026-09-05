@@ -48,6 +48,39 @@ public sealed class ProductionReportServiceTests
     }
 
     [TestMethod]
+    public async Task BuildAsync_IncludesExternalQuantityAsColoredReportRow()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        db.Add(new ProductionExternalQuantity
+        {
+            ProductionOrderId = seed.Order.Id,
+            ProductionOperationId = seed.Operation.Id,
+            ReceivedDate = new DateOnly(2026, 8, 12),
+            Quantity = 500m,
+            SourceName = "Xưởng ngoài A",
+            SubmittedByUserId = Guid.NewGuid()
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, seed.Order.Id, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(2, result.Value!.Rows.Count);
+        var external = result.Value.Rows.Single(row => row.IsExternal);
+        Assert.AreEqual("__EXTERNAL__", external.EmployeeCode);
+        Assert.AreEqual("Gia công ngoài — Xưởng ngoài A", external.EmployeeName);
+        Assert.AreEqual(500m, external.HcQuantity);
+        Assert.AreEqual(0m, external.TcQuantity);
+        Assert.AreEqual(500m, external.TotalQuantity);
+        Assert.AreEqual(600, result.Value.Summary.HcQuantity);
+        Assert.AreEqual(620, result.Value.Summary.TotalQuantity);
+        Assert.IsTrue(result.Value.ByEmployee.Single(item => item.IsExternal).IsExternal);
+    }
+
+    [TestMethod]
     public async Task BuildAsync_RejectsReversedDateRange()
     {
         await using var db = CreateDb();

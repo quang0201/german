@@ -91,6 +91,35 @@ public sealed class OpenXmlProductionReportExporterTests
     }
 
     [TestMethod]
+    public void Export_ColorsExternalProductionRowDifferently()
+    {
+        var report = new ProductionReportData(
+            new DateOnly(2026, 8, 12),
+            new DateOnly(2026, 8, 12),
+            new[]
+            {
+                new ProductionReportRow(
+                    new DateOnly(2026, 8, 12), "__EXTERNAL__", "Gia công ngoài — Xưởng A", "0417", "Túi 0417",
+                    11, "May thân", "cái", 500m, 0m, 500m, null, ProductionEntryMode.Direct, null, true)
+            })
+        {
+            Summary = new ProductionReportSummary(1, 1, 500m, 0m, 500m),
+            ByDay = [new ProductionReportDaySummary(new DateOnly(2026, 8, 12), 500m, 0m, 500m)],
+            ByEmployee = [new ProductionReportEmployeeSummary("__EXTERNAL__", "Gia công ngoài — Xưởng A", 500m, 0m, 500m, true)]
+        };
+
+        using var document = OpenWorkbook(report);
+        var rows = GetSheetData(document, "Báo cáo quản lý").Elements<Row>().ToList();
+        var externalRow = rows.Single(row => row.RowIndex!.Value == 6U);
+        Assert.AreEqual("Gia công ngoài — Xưởng A", GetCell(externalRow, "A6").InnerText);
+        Assert.AreEqual("500", GetCell(externalRow, "D6").CellValue!.Text);
+        Assert.AreEqual("500", GetCell(externalRow, "F6").CellValue!.Text);
+        Assert.AreEqual("FFD9D2E9", GetFillColor(document, GetCell(externalRow, "A6")));
+        Assert.AreEqual("FFD9D2E9", GetFillColor(document, GetCell(externalRow, "D6")));
+        Assert.AreEqual("FFD9D2E9", GetFillColor(document, GetCell(externalRow, "F6")));
+    }
+
+    [TestMethod]
     public void Export_WritesOverviewMetadataMetricsAndAggregateTotals()
     {
         using var document = OpenWorkbook(CreateReport());
