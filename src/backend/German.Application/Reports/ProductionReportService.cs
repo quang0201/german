@@ -387,7 +387,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .ToList();
 
         var summary = new ProductionReportSummary(
-            rows.Select(row => row.EmployeeCode).Distinct().Count(),
+            rows.Select(row => new { row.EmployeeCode, row.EmployeeName }).Distinct().Count(),
             rows.Count,
             rows.Sum(row => row.HcQuantity),
             rows.Sum(row => row.TcQuantity),

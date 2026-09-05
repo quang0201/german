@@ -61,6 +61,15 @@ public sealed class ProductionReportServiceTests
             SourceName = "Xưởng ngoài A",
             SubmittedByUserId = Guid.NewGuid()
         });
+        db.Add(new ProductionExternalQuantity
+        {
+            ProductionOrderId = seed.Order.Id,
+            ProductionOperationId = seed.Operation.Id,
+            ReceivedDate = new DateOnly(2026, 8, 12),
+            Quantity = 300m,
+            SourceName = "Xưởng ngoài B",
+            SubmittedByUserId = Guid.NewGuid()
+        });
         await db.SaveChangesAsync();
 
         var result = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
@@ -68,16 +77,19 @@ public sealed class ProductionReportServiceTests
             CancellationToken.None);
 
         Assert.IsTrue(result.IsSuccess, result.Error?.Message);
-        Assert.AreEqual(2, result.Value!.Rows.Count);
-        var external = result.Value.Rows.Single(row => row.IsExternal);
+        Assert.AreEqual(3, result.Value!.Rows.Count);
+        var externalRows = result.Value.Rows.Where(row => row.IsExternal).ToArray();
+        Assert.AreEqual(2, externalRows.Length);
+        var external = externalRows.Single(row => row.EmployeeName.EndsWith("Xưởng ngoài A", StringComparison.Ordinal));
         Assert.AreEqual("__EXTERNAL__", external.EmployeeCode);
         Assert.AreEqual("Gia công ngoài — Xưởng ngoài A", external.EmployeeName);
         Assert.AreEqual(500m, external.HcQuantity);
         Assert.AreEqual(0m, external.TcQuantity);
         Assert.AreEqual(500m, external.TotalQuantity);
-        Assert.AreEqual(600, result.Value.Summary.HcQuantity);
-        Assert.AreEqual(620, result.Value.Summary.TotalQuantity);
-        Assert.IsTrue(result.Value.ByEmployee.Single(item => item.IsExternal).IsExternal);
+        Assert.AreEqual(3, result.Value.Summary.EmployeeCount);
+        Assert.AreEqual(900, result.Value.Summary.HcQuantity);
+        Assert.AreEqual(920, result.Value.Summary.TotalQuantity);
+        Assert.AreEqual(2, result.Value.ByEmployee.Count(item => item.IsExternal));
     }
 
     [TestMethod]
