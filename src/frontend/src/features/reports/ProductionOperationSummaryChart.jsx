@@ -1,5 +1,6 @@
 import React from "react";
 import { isOverProductionPlan, productionPlanLimit } from "./productionPlanStatus.js";
+import { ProductionPlanIndicator } from "./ProductionPlanIndicator.jsx";
 
 function quantity(value) {
   return Number(value || 0).toLocaleString("vi-VN");
@@ -75,8 +76,6 @@ export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity
 
 export function ProductionOperationSummaryChart({ summary, plannedQuantity }) {
   const operations = summary?.operations || [];
-  const planLimit = productionPlanLimit(plannedQuantity);
-  const planned = Number(plannedQuantity || 0);
   const maxByUnit = operations.reduce((maxima, operation) => {
     const unit = operation.unit || "Không xác định";
     maxima[unit] = Math.max(maxima[unit] || 0, operationTotal(operation));
@@ -92,7 +91,7 @@ export function ProductionOperationSummaryChart({ summary, plannedQuantity }) {
         </div>
         <div className="erp-report-summary-card-meta">
           <strong>{summary.operationCount} công đoạn</strong>
-          {planLimit !== null && <span className="erp-report-summary-card-plan">Kế hoạch {quantity(planned)} · cho phép chênh ±100 · vượt từ {quantity(planLimit + 1)}</span>}
+          <ProductionPlanIndicator plannedQuantity={plannedQuantity} />
           <div className="erp-report-operation-legend" aria-label="Chú giải biểu đồ">
             <span><i className="erp-report-operation-legend-swatch erp-report-operation-bar-hc" /> HC</span>
             <span><i className="erp-report-operation-legend-swatch erp-report-operation-bar-tc" /> TC</span>
@@ -122,6 +121,7 @@ export function ProductionOperationSummaryChart({ summary, plannedQuantity }) {
           </div>
         </div>
       </div>
+      <p className="erp-report-table-scroll-hint">Kéo ngang để xem đầy đủ các cột.</p>
     </section>
   );
 }

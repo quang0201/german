@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { isOverProductionPlan, productionPlanLimit } from "./productionPlanStatus.js";
+import { ProductionPlanIndicator } from "./ProductionPlanIndicator.jsx";
 
 function quantity(value) {
   return Number(value || 0).toLocaleString("vi-VN");
@@ -66,8 +67,6 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
   const [showBreakdown, setShowBreakdown] = useState(initialShowBreakdown);
   const months = summary?.months || [];
   const operations = summary?.operations || [];
-  const planLimit = productionPlanLimit(plannedQuantity);
-  const planned = Number(plannedQuantity || 0);
 
   return (
     <section className="erp-report-monthly-card" aria-label="Tổng hợp sản lượng theo tháng">
@@ -78,7 +77,7 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
         </div>
         <div className="erp-report-monthly-toolbar">
           <span>{months.length} tháng · {operations.length} công đoạn</span>
-          {planLimit !== null && <span className="erp-report-summary-card-plan">Kế hoạch {quantity(planned)} · cho phép chênh ±100 · vượt từ {quantity(planLimit + 1)}</span>}
+          <ProductionPlanIndicator plannedQuantity={plannedQuantity} />
           <div className="erp-report-monthly-view-toggle" role="group" aria-label="Cách hiển thị sản lượng">
             <button
               type="button"
@@ -145,6 +144,7 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
           </tbody>
         </table>
       </div>
+      <p className="erp-report-table-scroll-hint">Kéo ngang để xem đầy đủ các cột.</p>
     </section>
   );
 }

@@ -285,13 +285,18 @@
 .erp-report-state { display: grid; min-height: 140px; place-items: center; border: 1px dashed var(--color-border); background: var(--color-surface-soft); color: var(--color-text-muted); padding: 24px; text-align: center; }
 .erp-report-summary-card { display: grid; gap: 20px; margin-top: 20px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 20px; }
 .erp-report-summary-card-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-border); padding: 12px 14px; }
-.erp-report-summary-card-header > div { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.erp-report-summary-card-header > div:first-child { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .erp-report-summary-card-header h2 { margin: 4px 0 0; color: var(--color-text); font-size: 20px; }
-.erp-report-summary-card-meta { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.erp-report-summary-card-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; min-width: 0; }
 .erp-report-summary-card-meta > strong { color: var(--color-primary-strong); white-space: nowrap; }
-.erp-report-summary-card-plan { color: var(--color-error); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.erp-report-plan-indicator { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; border: 1px solid #bfdbfe; border-radius: var(--radius-md); background: var(--color-info-soft); color: var(--color-info); padding: 6px 9px; white-space: nowrap; }
+.erp-report-plan-indicator-icon { display: grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--color-info); color: #fff; font-size: 11px; font-weight: 900; }
+.erp-report-plan-indicator-copy { display: grid; min-width: 0; gap: 1px; }
+.erp-report-plan-indicator-copy strong { color: var(--color-info); font-size: 11px; line-height: 1.2; }
+.erp-report-plan-indicator-copy small { overflow: hidden; color: var(--color-text-muted); text-overflow: ellipsis; font-size: 10px; line-height: 1.2; }
 .erp-report-eyebrow { color: var(--color-text-muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .erp-report-operation-table-wrap { overflow-x: auto; }
+.erp-report-table-scroll-hint { display: none; margin: 6px 0 0; color: var(--color-text-subtle); font-size: 11px; }
 .erp-report-operation-table { min-width: 850px; }
 .erp-report-operation-table-header, .erp-report-operation-row { display: grid; grid-template-columns: minmax(250px, 310px) minmax(280px, 1fr) 110px 110px 120px; gap: 12px; align-items: center; }
 .erp-report-operation-table-header { position: sticky; top: 0; z-index: 2; padding: 8px 12px; background: var(--color-surface-soft); border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
@@ -318,7 +323,8 @@
 .erp-report-number.is-total strong { color: var(--color-primary-strong); font-size: 14px; font-weight: 800; }
 .erp-report-number.is-empty strong { color: var(--color-text-muted); font-weight: 400; }
 .erp-report-number.is-over-plan strong { color: var(--color-error); }
-.erp-report-plan-alert, .erp-report-monthly-plan-alert { display: block; color: var(--color-error); font-size: 9px; font-weight: 800; }
+.erp-report-operation-row.is-over-plan .erp-report-operation-label > strong { background: var(--color-error-soft); color: var(--color-error); }
+.erp-report-plan-alert, .erp-report-monthly-plan-alert { display: inline-flex; width: fit-content; border-radius: 999px; background: var(--color-error-soft); color: var(--color-error); padding: 1px 5px; font-size: 9px; font-weight: 800; }
 .erp-report-monthly-card { display: grid; gap: 16px; margin-top: 20px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 20px; }
 .erp-report-monthly-card-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 14px; }
 .erp-report-monthly-card-header h2 { margin: 4px 0 0; color: var(--color-text); font-size: 20px; }
@@ -337,7 +343,7 @@
 .erp-report-monthly-table th.is-cumulative, .erp-report-monthly-table td.is-cumulative { background: var(--color-primary-soft); }
 .erp-report-monthly-metric { display: grid; gap: 4px; min-width: 130px; white-space: nowrap; }
 .erp-report-monthly-metric.is-emphasized .erp-report-monthly-total { color: var(--color-primary-hover); }
-.erp-report-monthly-metric.is-over-plan { border-radius: var(--radius-sm); background: var(--color-error-soft); padding: 4px; }
+.erp-report-monthly-metric.is-over-plan { border: 1px solid #fecaca; border-radius: var(--radius-sm); background: var(--color-error-soft); padding: 4px; }
 .erp-report-monthly-metric.is-zero .erp-report-monthly-total { color: var(--color-text-muted); font-weight: 600; }
 .erp-report-monthly-metric.is-over-plan .erp-report-monthly-total { color: var(--color-error); }
 .erp-report-monthly-total { color: var(--color-primary-strong); font-size: 16px; white-space: nowrap; }
@@ -499,6 +505,14 @@
   .erp-period-custom-actions .erp-inline-message { margin: 0; }
   .erp-production-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .erp-production-summary > div { padding: 12px; }
+}
+
+@media (max-width: 760px) {
+  .erp-report-table-scroll-hint { display: block; }
+  .erp-report-plan-indicator { width: 100%; white-space: normal; }
+  .erp-report-plan-indicator-copy small { overflow: visible; text-overflow: clip; }
+  .erp-report-summary-card-header > div:first-child, .erp-report-monthly-card-header > div:first-child { flex-wrap: wrap; }
+  .erp-report-summary-card-meta, .erp-report-monthly-toolbar { align-items: flex-start; }
 }
 
 @media (max-width: 640px) {
