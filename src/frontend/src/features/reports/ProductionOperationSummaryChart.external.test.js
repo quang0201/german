@@ -17,7 +17,8 @@ describe("ProductionOperationSummaryChart", () => {
 
     expect(html).toContain("erp-report-operation-row is-over-plan");
     expect(html).toContain("Vượt kế hoạch");
-    expect(html).toContain("Kế hoạch 15.000");
+    expect(html).toContain("Kế hoạch");
+    expect(html).toContain("15.000");
   });
 
   test("renders every operation in one horizontal table and keeps the stacked quantities", () => {

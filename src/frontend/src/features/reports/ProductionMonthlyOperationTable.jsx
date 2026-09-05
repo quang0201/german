@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { isOverProductionPlan, productionPlanLimit } from "./productionPlanStatus.js";
 
 function quantity(value) {
   return Number(value || 0).toLocaleString("vi-VN");
@@ -34,19 +35,23 @@ function externalValue(value) {
   return Number.isFinite(external) ? external : 0;
 }
 
-function QuantityCell({ value, unit, showBreakdown, emphasized = false }) {
+function QuantityCell({ value, unit, showBreakdown, emphasized = false, plannedQuantity }) {
   const total = totalValue(value);
+  const planLimit = productionPlanLimit(plannedQuantity);
+  const isOverPlan = isOverProductionPlan(total, plannedQuantity);
   const className = [
     "erp-report-monthly-metric",
+    isOverPlan ? "is-over-plan" : "",
     total === 0 ? "is-zero" : "",
     emphasized ? "is-emphasized" : "",
   ].filter(Boolean).join(" ");
 
   return (
-    <div className={className}>
+    <div className={className} title={isOverPlan ? `Vượt kế hoạch (ngưỡng ${quantity(planLimit)})` : undefined}>
       <strong className="erp-report-monthly-total">
         {total === 0 ? "—" : quantity(total)} <small>{unit}</small>
       </strong>
+      {isOverPlan && <span className="erp-report-monthly-plan-alert">Vượt kế hoạch</span>}
       {showBreakdown && (
         <span className="erp-report-monthly-split">
           HC {quantity(value.hcQuantity)} · TC {quantity(value.tcQuantity)}
@@ -57,10 +62,12 @@ function QuantityCell({ value, unit, showBreakdown, emphasized = false }) {
   );
 }
 
-export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown = true }) {
+export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown = true, plannedQuantity }) {
   const [showBreakdown, setShowBreakdown] = useState(initialShowBreakdown);
   const months = summary?.months || [];
   const operations = summary?.operations || [];
+  const planLimit = productionPlanLimit(plannedQuantity);
+  const planned = Number(plannedQuantity || 0);
 
   return (
     <section className="erp-report-monthly-card" aria-label="Tổng hợp sản lượng theo tháng">
@@ -71,6 +78,7 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
         </div>
         <div className="erp-report-monthly-toolbar">
           <span>{months.length} tháng · {operations.length} công đoạn</span>
+          {planLimit !== null && <span className="erp-report-summary-card-plan">Kế hoạch {quantity(planned)} · cho phép chênh ±100 · vượt từ {quantity(planLimit + 1)}</span>}
           <div className="erp-report-monthly-view-toggle" role="group" aria-label="Cách hiển thị sản lượng">
             <button
               type="button"
@@ -119,6 +127,7 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
                       unit={operation.unit}
                       showBreakdown={showBreakdown}
                       emphasized={index === months.length - 1}
+                      plannedQuantity={plannedQuantity}
                     />
                   </td>
                 ))}
@@ -128,6 +137,7 @@ export function ProductionMonthlyOperationTable({ summary, initialShowBreakdown 
                     unit={operation.unit}
                     showBreakdown={showBreakdown}
                     emphasized
+                    plannedQuantity={plannedQuantity}
                   />
                 </td>
               </tr>

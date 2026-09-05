@@ -1,4 +1,5 @@
 import React from "react";
+import { isOverProductionPlan, productionPlanLimit } from "./productionPlanStatus.js";
 
 function quantity(value) {
   return Number(value || 0).toLocaleString("vi-VN");
@@ -15,18 +16,23 @@ function progressWidth(value, scale) {
   return Math.max(0, Math.min(100, (value / scale) * 100));
 }
 
-export function Quantity({ value, unit, emptyAsDash = false, total = false }) {
+export function Quantity({ value, unit, emptyAsDash = false, total = false, isOverPlan = false, planLimit = null }) {
   const amount = Number(value || 0);
 
   return (
-    <div className={`erp-report-number ${total ? "is-total" : ""} ${emptyAsDash && amount === 0 ? "is-empty" : ""}`} role="cell">
+    <div
+      className={`erp-report-number ${total ? "is-total" : ""} ${isOverPlan ? "is-over-plan" : ""} ${emptyAsDash && amount === 0 ? "is-empty" : ""}`}
+      role="cell"
+      title={isOverPlan ? `Vượt kế hoạch (ngưỡng ${quantity(planLimit)})` : undefined}
+    >
       <strong>{emptyAsDash && amount === 0 ? "—" : quantity(amount)}</strong>
       {!(emptyAsDash && amount === 0) && <small>{unit}</small>}
+      {isOverPlan && <span className="erp-report-plan-alert">Vượt kế hoạch</span>}
     </div>
   );
 }
 
-export function ProductionOperationRow({ operation, maxQuantity }) {
+export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity }) {
   const hc = Number(operation.hcQuantity || 0);
   const tc = Number(operation.tcQuantity || 0);
   const internal = Number(operation.totalQuantity || 0);
@@ -34,9 +40,11 @@ export function ProductionOperationRow({ operation, maxQuantity }) {
   const total = operationTotal(operation);
   const scale = maxQuantity || 1;
   const unit = operation.unit || "";
+  const planLimit = productionPlanLimit(plannedQuantity);
+  const isOverPlan = isOverProductionPlan(total, plannedQuantity);
 
   return (
-    <div className="erp-report-operation-row" role="row">
+    <div className={`erp-report-operation-row ${isOverPlan ? "is-over-plan" : ""}`} role="row">
       <div className="erp-report-operation-label" role="cell">
         <strong>CĐ{operation.operationNumber}</strong>
         <span title={operation.name}>{operation.name}</span>
@@ -60,13 +68,15 @@ export function ProductionOperationRow({ operation, maxQuantity }) {
 
       <Quantity value={internal} unit={unit} />
       <Quantity value={external} unit={unit} emptyAsDash />
-      <Quantity value={total} unit={unit} total />
+      <Quantity value={total} unit={unit} total isOverPlan={isOverPlan} planLimit={planLimit} />
     </div>
   );
 }
 
-export function ProductionOperationSummaryChart({ summary }) {
+export function ProductionOperationSummaryChart({ summary, plannedQuantity }) {
   const operations = summary?.operations || [];
+  const planLimit = productionPlanLimit(plannedQuantity);
+  const planned = Number(plannedQuantity || 0);
   const maxByUnit = operations.reduce((maxima, operation) => {
     const unit = operation.unit || "Không xác định";
     maxima[unit] = Math.max(maxima[unit] || 0, operationTotal(operation));
@@ -82,6 +92,7 @@ export function ProductionOperationSummaryChart({ summary }) {
         </div>
         <div className="erp-report-summary-card-meta">
           <strong>{summary.operationCount} công đoạn</strong>
+          {planLimit !== null && <span className="erp-report-summary-card-plan">Kế hoạch {quantity(planned)} · cho phép chênh ±100 · vượt từ {quantity(planLimit + 1)}</span>}
           <div className="erp-report-operation-legend" aria-label="Chú giải biểu đồ">
             <span><i className="erp-report-operation-legend-swatch erp-report-operation-bar-hc" /> HC</span>
             <span><i className="erp-report-operation-legend-swatch erp-report-operation-bar-tc" /> TC</span>
@@ -105,6 +116,7 @@ export function ProductionOperationSummaryChart({ summary }) {
                 key={operation.operationId || operation.operationNumber}
                 operation={operation}
                 maxQuantity={maxByUnit[operation.unit || "Không xác định"]}
+                plannedQuantity={plannedQuantity}
               />
             ))}
           </div>

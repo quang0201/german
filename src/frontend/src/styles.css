@@ -289,6 +289,7 @@
 .erp-report-summary-card-header h2 { margin: 4px 0 0; color: var(--color-text); font-size: 20px; }
 .erp-report-summary-card-meta { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .erp-report-summary-card-meta > strong { color: var(--color-primary-strong); white-space: nowrap; }
+.erp-report-summary-card-plan { color: var(--color-error); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .erp-report-eyebrow { color: var(--color-text-muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .erp-report-operation-table-wrap { overflow-x: auto; }
 .erp-report-operation-table { min-width: 850px; }
@@ -297,6 +298,8 @@
 .erp-report-operation-table-header span:nth-child(n + 3) { text-align: right; }
 .erp-report-operation-row { min-height: 46px; padding: 6px 12px; border-bottom: 1px solid var(--color-border); }
 .erp-report-operation-row:hover { background: var(--color-surface-soft); }
+.erp-report-operation-row.is-over-plan { border-left: 3px solid var(--color-error); background: var(--color-error-soft); }
+.erp-report-operation-row.is-over-plan:hover { background: var(--color-error-soft); }
 .erp-report-operation-label { display: flex; align-items: center; min-width: 0; gap: 8px; }
 .erp-report-operation-label strong { flex: 0 0 auto; min-width: 38px; padding: 4px 6px; border-radius: 6px; background: var(--color-surface-soft); color: var(--color-primary-strong); font-size: 11px; text-align: center; }
 .erp-report-operation-label span { min-width: 0; overflow: hidden; color: var(--color-text); text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
@@ -314,6 +317,8 @@
 .erp-report-number small { display: block; margin-top: 1px; color: var(--color-text-muted); font-size: 9px; }
 .erp-report-number.is-total strong { color: var(--color-primary-strong); font-size: 14px; font-weight: 800; }
 .erp-report-number.is-empty strong { color: var(--color-text-muted); font-weight: 400; }
+.erp-report-number.is-over-plan strong { color: var(--color-error); }
+.erp-report-plan-alert, .erp-report-monthly-plan-alert { display: block; color: var(--color-error); font-size: 9px; font-weight: 800; }
 .erp-report-monthly-card { display: grid; gap: 16px; margin-top: 20px; border: 1px solid var(--color-border); background: var(--color-surface); padding: 20px; }
 .erp-report-monthly-card-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-border); padding-bottom: 14px; }
 .erp-report-monthly-card-header h2 { margin: 4px 0 0; color: var(--color-text); font-size: 20px; }
@@ -332,7 +337,9 @@
 .erp-report-monthly-table th.is-cumulative, .erp-report-monthly-table td.is-cumulative { background: var(--color-primary-soft); }
 .erp-report-monthly-metric { display: grid; gap: 4px; min-width: 130px; white-space: nowrap; }
 .erp-report-monthly-metric.is-emphasized .erp-report-monthly-total { color: var(--color-primary-hover); }
+.erp-report-monthly-metric.is-over-plan { border-radius: var(--radius-sm); background: var(--color-error-soft); padding: 4px; }
 .erp-report-monthly-metric.is-zero .erp-report-monthly-total { color: var(--color-text-muted); font-weight: 600; }
+.erp-report-monthly-metric.is-over-plan .erp-report-monthly-total { color: var(--color-error); }
 .erp-report-monthly-total { color: var(--color-primary-strong); font-size: 16px; white-space: nowrap; }
 .erp-report-monthly-total small { color: var(--color-text-muted); font-size: 11px; font-weight: 600; }
 .erp-report-monthly-split { color: var(--color-text-muted); font-size: 11px; }

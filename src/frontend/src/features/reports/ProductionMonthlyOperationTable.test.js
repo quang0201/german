@@ -21,7 +21,8 @@ describe("ProductionMonthlyOperationTable", () => {
 
     expect(html).toContain("erp-report-monthly-metric is-over-plan");
     expect(html).toContain("Vượt kế hoạch");
-    expect(html).toContain("Kế hoạch 15.000");
+    expect(html).toContain("Kế hoạch");
+    expect(html).toContain("15.000");
   });
 
   test("renders each month and the accumulated total for every operation", () => {

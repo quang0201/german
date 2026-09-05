@@ -21,6 +21,7 @@ export function ProductionMonthlyReportPage() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
   const toast = useToast();
+  const selectedOrder = orders.find((item) => String(item.id) === String(orderId));
 
   useEffect(() => {
     let active = true;
@@ -112,7 +113,7 @@ export function ProductionMonthlyReportPage() {
       {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp theo tháng...</div>}
       {!summaryLoading && !summaryError && !orderId && <div className="erp-report-state">Chọn Mã SX và khoảng tháng để xem sản lượng từng công đoạn.</div>}
       {!summaryLoading && !summaryError && orderId && summary && summary.operations.length === 0 && <div className="erp-report-state">Mã SX này chưa có công đoạn.</div>}
-      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionMonthlyOperationTable summary={summary} />}
+      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionMonthlyOperationTable summary={summary} plannedQuantity={selectedOrder?.plannedQuantity} />}
     </div>
   );
 }

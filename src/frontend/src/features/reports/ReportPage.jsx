@@ -39,6 +39,7 @@ export function ReportPage() {
   const [summaryError, setSummaryError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
   const toast = useToast();
+  const selectedOrder = orders.find((item) => String(item.id) === String(orderId));
 
   const refreshing = refreshToken > 0 && (ordersLoading || summaryLoading);
 
@@ -142,7 +143,7 @@ export function ReportPage() {
       {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp sản lượng...</div>}
       {!summaryLoading && !summaryError && !orderId && <div className="erp-report-state">Chọn Mã SX và khoảng ngày để xem sản lượng từng công đoạn.</div>}
       {!summaryLoading && !summaryError && orderId && summary && summary.operations.length === 0 && <div className="erp-report-state">Mã SX này chưa có công đoạn.</div>}
-      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionOperationSummaryChart summary={summary} />}
+      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionOperationSummaryChart summary={summary} plannedQuantity={selectedOrder?.plannedQuantity} />}
     </div>
   );
 }
