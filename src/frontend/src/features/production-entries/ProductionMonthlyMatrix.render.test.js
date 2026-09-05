@@ -119,10 +119,11 @@ describe("ProductionMonthlyMatrix render", () => {
 
   test("highlights only missing operations on production days and suppresses paid leave days", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithMissingOperationWarning()} monthKey="2026-08" excludeSundays />);
+    const cellsOnDate = (date) => [...html.matchAll(new RegExp(`<td data-date="${date}" class="([^"]*)"`, "g"))].map((match) => match[1]);
 
-    expect(html).toContain("erp-month-missing");
-    expect(html).toContain('data-date="2026-08-05"');
-    expect(html).toContain('data-date="2026-08-06"');
+    expect(cellsOnDate("2026-08-05").some((className) => className.includes("erp-month-missing"))).toBe(true);
+    expect(cellsOnDate("2026-08-06").every((className) => !className.includes("erp-month-missing"))).toBe(true);
+    expect(cellsOnDate("2026-08-07").every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(matrixSource).toContain("productionDates");
     expect(matrixSource).toContain("paidLeaveDates");
   });

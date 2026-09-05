@@ -6,7 +6,8 @@ internal static class ProductionMonthlyMatrixBuilder
         DateOnly fromDate,
         DateOnly untilDate,
         ProductionMonthlyMatrixQuery request,
-        IReadOnlyList<ProductionMonthlyMatrixRow> rows)
+        IReadOnlyList<ProductionMonthlyMatrixRow> rows,
+        IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
     {
         var visible = request.ExcludeSundays
             ? rows.Where(row => row.WorkDate.DayOfWeek != DayOfWeek.Sunday).ToList()
@@ -33,7 +34,7 @@ internal static class ProductionMonthlyMatrixBuilder
         var orders = scoped
             .GroupBy(row => (row.OrderId, row.OrderCode, row.ProductName))
             .OrderBy(group => group.Key.OrderCode)
-            .Select(BuildOrder)
+            .Select(group => BuildOrder(group, paidLeaveDates))
             .ToList();
 
         return new ProductionMonthlyMatrixResult(
@@ -41,27 +42,45 @@ internal static class ProductionMonthlyMatrixBuilder
     }
 
     private static ProductionMatrixOrderBlockDto BuildOrder(
-        IGrouping<(Guid OrderId, string OrderCode, string ProductName), ProductionMonthlyMatrixRow> group)
+        IGrouping<(Guid OrderId, string OrderCode, string ProductName), ProductionMonthlyMatrixRow> group,
+        IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
     {
         var employees = group
             .GroupBy(row => (row.EmployeeId, row.EmployeeCode, row.EmployeeName, row.EmployeeIsActive))
             .OrderBy(employeeGroup => employeeGroup.Key.EmployeeCode)
-            .Select(BuildEmployee)
+            .Select(employeeGroup => BuildEmployee(employeeGroup, paidLeaveDates))
             .ToList();
         return new ProductionMatrixOrderBlockDto(
             group.Key.OrderId, group.Key.OrderCode, group.Key.ProductName, employees);
     }
 
     private static ProductionMatrixEmployeeGroupDto BuildEmployee(
-        IGrouping<(Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive), ProductionMonthlyMatrixRow> group)
+        IGrouping<(Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive), ProductionMonthlyMatrixRow> group,
+        IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
     {
         var operations = group
             .GroupBy(row => (row.OperationId, row.OperationNumber, row.OperationName))
             .OrderBy(operationGroup => operationGroup.Key.OperationNumber)
             .Select(BuildOperation)
             .ToList();
+        var productionDates = group
+            .Select(row => row.WorkDate)
+            .Distinct()
+            .OrderBy(date => date)
+            .ToArray();
+        var employeePaidLeaveDates = paidLeaveDates
+            .Where(date => date.EmployeeId == group.Key.EmployeeId)
+            .Select(date => date.WorkDate)
+            .Distinct()
+            .OrderBy(date => date)
+            .ToArray();
+
         return new ProductionMatrixEmployeeGroupDto(
-            group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, operations);
+            group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, operations)
+        {
+            ProductionDates = productionDates,
+            PaidLeaveDates = employeePaidLeaveDates
+        };
     }
 
     private static ProductionMatrixOperationRowDto BuildOperation(

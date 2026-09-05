@@ -1,5 +1,6 @@
 using German.Application.Abstractions;
 using German.Application.Common;
+using German.Domain.Attendance;
 using German.Domain.Production;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,8 +65,21 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
             .ToListAsync(cancellationToken);
 
+        var employeeIds = rows.Select(row => row.EmployeeId).Distinct().ToArray();
+        var paidLeaveDates = employeeIds.Length == 0
+            ? new HashSet<(Guid EmployeeId, DateOnly WorkDate)>()
+            : (await db.AttendanceDays.AsNoTracking()
+                .Where(day => employeeIds.Contains(day.EmployeeId)
+                    && day.WorkDate >= fromDate
+                    && day.WorkDate <= untilDate
+                    && day.Shifts.Any(shift => shift.ValueKind == AttendanceShiftValueKind.PaidLeave))
+                .Select(day => new { day.EmployeeId, day.WorkDate })
+                .ToListAsync(cancellationToken))
+                .Select(day => (day.EmployeeId, day.WorkDate))
+                .ToHashSet();
+
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, request, rows));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, request, rows, paidLeaveDates));
     }
 }
 

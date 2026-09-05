@@ -40,7 +40,11 @@ public sealed record ProductionMatrixEmployeeGroupDto(
     string EmployeeCode,
     string EmployeeName,
     bool IsActive,
-    IReadOnlyList<ProductionMatrixOperationRowDto> Operations);
+    IReadOnlyList<ProductionMatrixOperationRowDto> Operations)
+{
+    public IReadOnlyList<DateOnly> ProductionDates { get; init; } = [];
+    public IReadOnlyList<DateOnly> PaidLeaveDates { get; init; } = [];
+}
 
 public sealed record ProductionMatrixOrderBlockDto(
     Guid OrderId,
