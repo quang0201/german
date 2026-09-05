@@ -82,7 +82,7 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual(2, externalRows.Length);
         var external = externalRows.Single(row => row.EmployeeName.EndsWith("Xưởng ngoài A", StringComparison.Ordinal));
         Assert.AreEqual("__EXTERNAL__", external.EmployeeCode);
-        Assert.AreEqual("Gia công ngoài — Xưởng ngoài A", external.EmployeeName);
+        Assert.AreEqual("Xưởng ngoài A", external.EmployeeName);
         Assert.AreEqual(500m, external.HcQuantity);
         Assert.AreEqual(0m, external.TcQuantity);
         Assert.AreEqual(500m, external.TotalQuantity);

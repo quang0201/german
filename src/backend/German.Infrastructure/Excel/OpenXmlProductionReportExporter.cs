@@ -92,11 +92,15 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                     .OrderBy(x => x.Key.EmployeeCode, StringComparer.Ordinal)
                     .ThenBy(x => x.Key.OperationNumber)
                     .ThenBy(x => x.Key.Unit, StringComparer.Ordinal);
-                string? previousEmployee = null;
+                string? previousEmployeeCode = null;
+                string? previousEmployeeName = null;
                 foreach (var group in groups)
                 {
-                    AddManagementRow(data, row++, group, days, totalStart, previousEmployee == group.Key.EmployeeCode);
-                    previousEmployee = group.Key.EmployeeCode;
+                    var sameEmployee = previousEmployeeCode == group.Key.EmployeeCode
+                        && previousEmployeeName == group.Key.EmployeeName;
+                    AddManagementRow(data, row++, group, days, totalStart, sameEmployee);
+                    previousEmployeeCode = group.Key.EmployeeCode;
+                    previousEmployeeName = group.Key.EmployeeName;
                 }
                 row += 3;
             }

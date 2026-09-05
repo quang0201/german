@@ -347,7 +347,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             {
                 var source = string.IsNullOrWhiteSpace(item.external.SourceName)
                     ? "Gia công ngoài"
-                    : $"Gia công ngoài — {item.external.SourceName.Trim()}";
+                    : item.external.SourceName.Trim();
 
                 if (search is not null
                     && !source.Contains(search.Text, StringComparison.OrdinalIgnoreCase)

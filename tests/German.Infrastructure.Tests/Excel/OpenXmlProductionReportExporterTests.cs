@@ -100,12 +100,15 @@ public sealed class OpenXmlProductionReportExporterTests
             {
                 new ProductionReportRow(
                     new DateOnly(2026, 8, 12), "__EXTERNAL__", "Gia công ngoài — Xưởng A", "0417", "Túi 0417",
-                    11, "May thân", "cái", 500m, 0m, 500m, null, ProductionEntryMode.Direct, null, true)
+                    11, "May thân", "cái", 500m, 0m, 500m, null, ProductionEntryMode.Direct, null, true),
+                new ProductionReportRow(
+                    new DateOnly(2026, 8, 12), "__EXTERNAL__", "Xưởng B", "0417", "Túi 0417",
+                    11, "May thân", "cái", 300m, 0m, 300m, null, ProductionEntryMode.Direct, null, true)
             })
         {
             Summary = new ProductionReportSummary(1, 1, 500m, 0m, 500m),
             ByDay = [new ProductionReportDaySummary(new DateOnly(2026, 8, 12), 500m, 0m, 500m)],
-            ByEmployee = [new ProductionReportEmployeeSummary("__EXTERNAL__", "Gia công ngoài — Xưởng A", 500m, 0m, 500m, true)]
+            ByEmployee = [new ProductionReportEmployeeSummary("__EXTERNAL__", "Xưởng A", 500m, 0m, 500m, true)]
         };
 
         using var document = OpenWorkbook(report);
@@ -117,6 +120,9 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual("FFD9D2E9", GetFillColor(document, GetCell(externalRow, "A6")));
         Assert.AreEqual("FFD9D2E9", GetFillColor(document, GetCell(externalRow, "D6")));
         Assert.AreEqual("FFD9D2E9", GetFillColor(document, GetCell(externalRow, "F6")));
+        var secondExternalRow = rows.Single(row => row.RowIndex!.Value == 7U);
+        Assert.AreEqual("Xưởng B", GetCell(secondExternalRow, "A7").InnerText);
+        Assert.AreEqual("300", GetCell(secondExternalRow, "D7").CellValue!.Text);
     }
 
     [TestMethod]
