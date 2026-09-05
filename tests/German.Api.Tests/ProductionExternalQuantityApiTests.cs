@@ -94,6 +94,78 @@ public sealed class ProductionExternalQuantityApiTests
     }
 
     [TestMethod]
+    public async Task ManagerCanSummarizeExternalQuantitiesBySourceAcrossOperations()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid orderId = Guid.Empty;
+        Guid operationId = Guid.Empty;
+        await SeedAsync(factory, UserRole.Manager, "external-summary", "M902", seedProduction: true, ids =>
+        {
+            orderId = ids.OrderId;
+            operationId = ids.OperationId;
+        });
+
+        var secondOperationId = Guid.NewGuid();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            db.Add(new ProductionOperation
+            {
+                Id = secondOperationId,
+                ProductionOrderId = orderId,
+                OperationNumber = 11,
+                Name = "May thân",
+                Unit = "cái",
+                SortOrder = 2
+            });
+            db.AddRange(
+                new ProductionExternalQuantity
+                {
+                    ProductionOrderId = orderId,
+                    ProductionOperationId = operationId,
+                    ReceivedDate = new DateOnly(2026, 8, 22),
+                    Quantity = 100m,
+                    SourceName = " Xưởng A ",
+                    SubmittedByUserId = Guid.NewGuid()
+                },
+                new ProductionExternalQuantity
+                {
+                    ProductionOrderId = orderId,
+                    ProductionOperationId = secondOperationId,
+                    ReceivedDate = new DateOnly(2026, 8, 23),
+                    Quantity = 250m,
+                    SourceName = "xưởng a",
+                    SubmittedByUserId = Guid.NewGuid()
+                },
+                new ProductionExternalQuantity
+                {
+                    ProductionOrderId = orderId,
+                    ProductionOperationId = operationId,
+                    ReceivedDate = new DateOnly(2026, 8, 22),
+                    Quantity = 50m,
+                    SourceName = "Xưởng B",
+                    SubmittedByUserId = Guid.NewGuid()
+                });
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "external-summary", "secret");
+        var response = await client.GetAsync($"/api/production-external-quantities/summary?orderId={orderId}");
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var summaries = json.RootElement.EnumerateArray().ToArray();
+        Assert.AreEqual(2, summaries.Length);
+
+        var sourceA = summaries.Single(item => item.GetProperty("sourceName").GetString() == "Xưởng A");
+        Assert.AreEqual(350m, sourceA.GetProperty("totalQuantity").GetDecimal());
+        Assert.AreEqual(2, sourceA.GetProperty("operations").GetArrayLength());
+        Assert.AreEqual(1, sourceA.GetProperty("totalsByUnit").GetArrayLength());
+        Assert.AreEqual(350m, sourceA.GetProperty("totalsByUnit")[0].GetProperty("quantity").GetDecimal());
+    }
+
+    [TestMethod]
     public async Task ManagerCannotCreateNonPositiveExternalQuantity()
     {
         await using var factory = new GermanApiFactory();

@@ -4,6 +4,12 @@
 .erp-production-external-summary { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:14px; padding:10px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface-soft); color:var(--color-text-muted); font-size:13px; }
 .erp-production-external-fields { display:grid; gap:14px; margin-top:16px; }
 .erp-production-external-history { display:grid; gap:8px; padding:10px 12px; background:var(--color-surface-soft); border-top:1px solid var(--color-border); }
+.erp-production-external-summary-row > th, .erp-production-external-summary-row > td { background: #faf8ff; }
+.erp-production-external-source { color: #6750a4; font-weight: 800; }
+.erp-production-external-operation-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.erp-production-external-operation-chip { display: inline-flex; align-items: center; border: 1px solid #d8ccf2; border-radius: 999px; background: #f1edfb; color: #5b468e; padding: 4px 8px; font-size: 12px; white-space: nowrap; }
+.erp-production-external-total { color: #6750a4; font-weight: 800; white-space: nowrap; }
+.erp-production-external-total span { display: block; }
 .erp-production-external-history-title { font-size:13px; font-weight:700; color:var(--color-text); }
 .erp-production-external-history-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:13px; }
 .erp-production-external-history-meta { display:flex; flex-wrap:wrap; gap:6px 14px; color:var(--color-text-muted); }

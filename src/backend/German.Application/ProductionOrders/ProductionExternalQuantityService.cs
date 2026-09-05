@@ -49,6 +49,75 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         return AppResult<IReadOnlyList<ProductionExternalQuantityDto>>.Success(items);
     }
 
+    public async Task<AppResult<IReadOnlyList<ProductionExternalQuantitySummaryDto>>> SummarizeAsync(
+        Guid orderId,
+        Guid? operationId,
+        DateOnly? fromDate,
+        DateOnly? untilDate,
+        CancellationToken cancellationToken)
+    {
+        if (fromDate.HasValue && untilDate.HasValue && fromDate > untilDate)
+        {
+            return AppResult<IReadOnlyList<ProductionExternalQuantitySummaryDto>>.Failure(
+                "production_external_quantity.invalid_date_range",
+                "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+        }
+
+        var query =
+            from external in db.ProductionExternalQuantities.AsNoTracking()
+            join operation in db.ProductionOperations.AsNoTracking()
+                on external.ProductionOperationId equals operation.Id
+            where external.ProductionOrderId == orderId
+                && (!operationId.HasValue || external.ProductionOperationId == operationId.Value)
+                && (!fromDate.HasValue || external.ReceivedDate >= fromDate.Value)
+                && (!untilDate.HasValue || external.ReceivedDate <= untilDate.Value)
+            select new
+            {
+                external.SourceName,
+                external.Quantity,
+                external.ProductionOperationId,
+                operation.OperationNumber,
+                OperationName = operation.Name,
+                operation.Unit
+            };
+
+        var items = await query
+            .OrderBy(item => item.SourceName)
+            .ThenBy(item => item.OperationNumber)
+            .ToListAsync(cancellationToken);
+
+        var summaries = items
+            .GroupBy(item => NormalizeSource(item.SourceName), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new ProductionExternalQuantitySummaryDto(
+                group.Key,
+                group.Sum(item => item.Quantity),
+                group
+                    .GroupBy(item => new
+                    {
+                        item.ProductionOperationId,
+                        item.OperationNumber,
+                        item.OperationName,
+                        item.Unit
+                    })
+                    .OrderBy(operation => operation.Key.OperationNumber)
+                    .Select(operation => new ProductionExternalQuantityOperationSummaryDto(
+                        operation.Key.ProductionOperationId,
+                        operation.Key.OperationNumber,
+                        operation.Key.OperationName,
+                        operation.Key.Unit,
+                        operation.Sum(item => item.Quantity)))
+                    .ToArray(),
+                group
+                    .GroupBy(item => item.Unit, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(unit => unit.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(unit => new ProductionExternalQuantityUnitSummaryDto(unit.Key, unit.Sum(item => item.Quantity)))
+                    .ToArray()))
+            .ToArray();
+
+        return AppResult<IReadOnlyList<ProductionExternalQuantitySummaryDto>>.Success(summaries);
+    }
+
     public async Task<AppResult<ProductionExternalQuantityDto>> CreateAsync(CurrentActor actor, CreateProductionExternalQuantityCommand command, CancellationToken cancellationToken)
     {
         var authorization = EnsureManagerOrAdmin(actor);
@@ -141,6 +210,12 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
     {
         var trimmed = value?.Trim();
         return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+    }
+
+    private static string NormalizeSource(string? value)
+    {
+        var normalized = Normalize(value);
+        return string.IsNullOrWhiteSpace(normalized) ? "Không ghi nguồn" : normalized;
     }
 
     private static Expression<Func<ProductionExternalQuantity, ProductionExternalQuantityDto>> ToProjection() => item => new ProductionExternalQuantityDto(

@@ -11,6 +11,18 @@ public static class ProductionExternalQuantityEndpoints
         var group = endpoints.MapGroup("/api/production-external-quantities")
             .RequireAuthorization("ManagerOrAdmin");
 
+        group.MapGet("/summary", async (
+            Guid orderId,
+            Guid? operationId,
+            DateOnly? fromDate,
+            DateOnly? untilDate,
+            ProductionExternalQuantityService service,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await service.SummarizeAsync(orderId, operationId, fromDate, untilDate, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
+        });
+
         group.MapGet("/", async (
             Guid orderId,
             Guid? operationId,

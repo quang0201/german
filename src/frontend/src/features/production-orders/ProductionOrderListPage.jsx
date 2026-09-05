@@ -40,14 +40,19 @@ export function ProductionOrderListPage({ params, pathname }) {
   const [externalError, setExternalError] = useState("");
   const [externalDialog, setExternalDialog] = useState(null);
   const [externalDeleteItem, setExternalDeleteItem] = useState(null);
+  const [externalSourceGroups, setExternalSourceGroups] = useState([]);
 
   async function loadExternalQuantities(orderId = selected?.id) {
     if (!orderId) return;
     setExternalLoading(true);
     setExternalError("");
     try {
-      const items = await api.get(`/api/production-external-quantities?orderId=${orderId}`);
+      const [items, summaries] = await Promise.all([
+        api.get(`/api/production-external-quantities?orderId=${orderId}`),
+        api.get(`/api/production-external-quantities/summary?orderId=${orderId}`),
+      ]);
       setExternalQuantities(items);
+      setExternalSourceGroups(summaries);
     } catch (requestError) {
       setExternalError(requestError.message || "Không thể tải lịch sử sản lượng ngoài.");
     } finally {
@@ -89,6 +94,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setExternalDialog(null);
     setExternalDeleteItem(null);
     setExternalQuantities([]);
+    setExternalSourceGroups([]);
     if (selected?.id) loadExternalQuantities(selected.id);
   }, [selected?.id]);
 
@@ -338,6 +344,22 @@ export function ProductionOrderListPage({ params, pathname }) {
             </tbody></table></div>
             <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => openDetailOperationDialog("create")}>+ Thêm công đoạn</button></div>
           </FormSection>
+          {externalSourceGroups.length > 0 && <FormSection title="Tổng hợp gia công ngoài" description="Cùng một người được gom chung; chi tiết từng công đoạn vẫn được giữ ở bảng phía trên.">
+            <div className="erp-field-wide erp-table-wrap">
+              <table className="erp-table erp-production-external-summary-table">
+                <thead><tr><th>Người / nguồn</th><th>Công đoạn</th><th>Tổng</th></tr></thead>
+                <tbody>
+                  {externalSourceGroups.map((group) => (
+                    <tr key={group.sourceName} className="erp-production-external-summary-row">
+                      <th scope="row"><span className="erp-production-external-source">{group.sourceName}</span></th>
+                      <td><div className="erp-production-external-operation-list">{group.operations.map((operation) => <span className="erp-production-external-operation-chip" key={`${operation.productionOperationId}-${operation.unit}`}>CĐ{operation.operationNumber}: {Number(operation.quantity).toLocaleString("vi-VN")} {operation.unit}</span>)}</div></td>
+                      <td className="erp-production-external-total">{group.totalsByUnit.map((total) => <span key={total.unit}>{Number(total.quantity).toLocaleString("vi-VN")} {total.unit}</span>)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </FormSection>}
         </>}
       </>}
       <ProductionOperationDialog
