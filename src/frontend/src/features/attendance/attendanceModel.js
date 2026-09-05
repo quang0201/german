@@ -37,6 +37,10 @@ export function activeAttendanceEmployees(employees = [], monthKey = "") {
   return employees.filter((employee) => employeeVisibleForMonth(employee, monthKey));
 }
 
+export function attendanceEntryEmployees(employees = []) {
+  return employees.filter((employee) => employee?.isActive !== false);
+}
+
 export function isCurrentAttendanceRequest(requestedMonthKey, currentMonthKey, requestedGeneration, currentGeneration) {
   return requestedMonthKey === currentMonthKey && requestedGeneration === currentGeneration;
 }
@@ -147,7 +151,10 @@ function placeholderDays(year, month, dayFrom, dayTo) {
 export function buildAttendanceRenderData(cache, monthKey, renderedBlockStarts) {
   const [year, month] = monthKey.split("-").map(Number);
   const selectedBlocks = attendanceDayBlocks(year, month).filter((block) => renderedBlockStarts.includes(block.dayFrom));
-  const employees = cache.batches.flatMap((batch) => batch.employeeIds.map((employeeId) => {
+  const employeeIds = cache.batches.flatMap((batch) => batch.employeeIds)
+    .filter((employeeId) => cache.employeesById[employeeId]?.isActive !== false);
+  const employees = employeeIds.map((employeeId) => {
+    const batch = cache.batches.find((item) => item.employeeIds.includes(employeeId));
     const identity = cache.employeesById[employeeId];
     const allDays = [];
     const renderedDays = [];
@@ -160,7 +167,7 @@ export function buildAttendanceRenderData(cache, monthKey, renderedBlockStarts) 
       renderedDays.push(...(cached?.daysByEmployee?.[employeeId] ?? placeholderDays(year, month, block.dayFrom, block.dayTo)));
     }
     return { ...identity, days: renderedDays, loadedDays: allDays };
-  }));
+  });
   const lastBatch = cache.batches.at(-1);
   const lastBlock = selectedBlocks.at(-1);
   return {

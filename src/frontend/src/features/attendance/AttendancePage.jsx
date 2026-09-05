@@ -8,7 +8,7 @@ import {
   attendanceBlockIndexForMonth,
   attendanceDayBlocks,
   attendanceDayKey,
-  activeAttendanceEmployees,
+  attendanceEntryEmployees,
   buildAttendanceDrafts,
   buildAttendanceRenderData,
   buildAttendanceSaveData,
@@ -94,8 +94,8 @@ export function AttendancePage() {
   const data = useMemo(() => buildAttendanceRenderData(cache, monthKey, renderedBlockStarts), [cache, monthKey, activeBlock?.dayFrom]);
   const saveData = useMemo(() => buildAttendanceSaveData(cache), [cache]);
   const selectableEmployees = useMemo(
-    () => activeAttendanceEmployees(Object.values(cache.employeesById), monthKey),
-    [cache.employeesById, monthKey],
+    () => attendanceEntryEmployees(Object.values(cache.employeesById)),
+    [cache.employeesById],
   );
   useEffect(() => {
     if (employeeId && !selectableEmployees.some((employee) => String(employee.employeeId) === String(employeeId))) {
@@ -106,6 +106,10 @@ export function AttendancePage() {
     ...data,
     employees: employeeId ? data.employees.filter((employee) => employee.employeeId === employeeId) : data.employees,
   }), [data, employeeId]);
+
+  useEffect(() => {
+    if (!loading && !data.employees.length && data.hasMoreEmployees) loadMoreEmployees();
+  }, [cache.batches.length, data.employees.length, data.hasMoreEmployees, loading]);
 
   function updateDirty(key, updater) {
     setDirtyDayKeys((previous) => {
@@ -293,7 +297,7 @@ export function AttendancePage() {
     }
   }
 
-  const totalEmployees = cache.batches.reduce((total, batch) => total + batch.employeeIds.length, 0);
+  const totalEmployees = selectableEmployees.length;
   const dirty = dirtyDayKeys.size > 0;
 
   return (

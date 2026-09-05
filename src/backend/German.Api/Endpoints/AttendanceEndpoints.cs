@@ -12,9 +12,11 @@ public static class AttendanceEndpoints
         group.MapGet("/export", async (
             int year,
             int month,
+            HttpContext httpContext,
             AttendanceExportService service,
             CancellationToken ct) =>
         {
+            SetNoStoreHeaders(httpContext);
             try
             {
                 var bytes = await service.ExportAsync(year, month, ct);
@@ -37,19 +39,22 @@ public static class AttendanceEndpoints
             int? employeeLimit,
             int? dayFrom,
             int? dayCount,
+            HttpContext httpContext,
             AttendanceService service,
             CancellationToken ct) =>
         {
+            SetNoStoreHeaders(httpContext);
             try
             {
-                return Results.Ok(await service.GetMonthAsync(new AttendanceMonthlyQuery(
+                var result = await service.GetMonthAsync(new AttendanceMonthlyQuery(
                     year,
                     month,
                     employeeId,
                     employeeCursor,
                     employeeLimit ?? 20,
                     DayFrom: dayFrom ?? 1,
-                    DayCount: dayCount ?? 7), ct));
+                    DayCount: dayCount ?? 7), ct);
+                return Results.Ok(result);
             }
             catch (ArgumentOutOfRangeException exception)
             {
@@ -92,5 +97,12 @@ public static class AttendanceEndpoints
         });
 
         return endpoints;
+    }
+
+    private static void SetNoStoreHeaders(HttpContext httpContext)
+    {
+        httpContext.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+        httpContext.Response.Headers.Pragma = "no-cache";
+        httpContext.Response.Headers.Expires = "0";
     }
 }

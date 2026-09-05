@@ -35,6 +35,7 @@ async function request(path, options = {}) {
     ...options,
     headers,
     credentials: "include",
+    cache: "no-store",
   });
 
   if (response.status === 204) {
