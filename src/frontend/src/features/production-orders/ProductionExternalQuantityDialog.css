@@ -14,3 +14,8 @@
 .erp-production-external-history-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:13px; }
 .erp-production-external-history-meta { display:flex; flex-wrap:wrap; gap:6px 14px; color:var(--color-text-muted); }
 .erp-production-external-history-actions { display:flex; gap:6px; }
+.erp-production-external-history-groups { display:grid; gap:8px; }
+.erp-production-external-history-group { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; background:var(--color-surface-soft); }
+.erp-production-external-history-group summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; cursor:pointer; list-style-position:inside; color:var(--color-text-muted); }
+.erp-production-external-history-group summary::marker { color:#6750a4; }
+.erp-production-external-history-group-body { display:grid; gap:8px; padding:10px 12px; border-top:1px solid var(--color-border); background:var(--color-surface); }

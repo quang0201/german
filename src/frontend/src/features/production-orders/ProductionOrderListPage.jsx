@@ -12,6 +12,7 @@ import { emptyProductionOperation, productionOperationForm, productionOperationP
 import { ProductionOperationDialog } from "./ProductionOperationDialog.jsx";
 import { ProductionExternalQuantityDialog } from "./ProductionExternalQuantityDialog.jsx";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
+import { groupProductionExternalHistory } from "./productionExternalHistory.js";
 
 const STATUSES = ["Draft", "InProduction", "Completed", "Cancelled"];
 
@@ -41,6 +42,7 @@ export function ProductionOrderListPage({ params, pathname }) {
   const [externalDialog, setExternalDialog] = useState(null);
   const [externalDeleteItem, setExternalDeleteItem] = useState(null);
   const [externalSourceGroups, setExternalSourceGroups] = useState([]);
+  const externalHistoryGroups = groupProductionExternalHistory(externalQuantities, selected?.operations ?? []);
 
   async function loadExternalQuantities(orderId = selected?.id) {
     if (!orderId) return;
@@ -339,11 +341,24 @@ export function ProductionOrderListPage({ params, pathname }) {
           </FormSection>
           <FormSection title="Công đoạn" description="Tắt để giữ lịch sử. Có thể ghi nhận riêng sản lượng nhận từ bên ngoài.">
             <div className="erp-field-wide erp-table-wrap"><table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên</th><th>ĐVT</th><th>Giá cố định</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-              {selected.operations.map((item) => { const isCleanupTarget = selected.code === "0417" && item.operationNumber === 567; const history = externalQuantities.filter((entry) => entry.productionOperationId === item.id); return <React.Fragment key={item.id}><tr><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openExternalDialog(item)}>+ Bổ sung ngoài</button> <button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button>{isCleanupTarget && (operationDeleteId === item.id ? <><span className="erp-inline-message erp-inline-error">Xóa dữ liệu CĐ567 của Mã SX 0417</span> <button type="button" className="erp-button erp-button-danger" onClick={() => cleanupTargetOperation(item)} disabled={saving}>Xác nhận xóa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationDeleteId("")} disabled={saving}>Hủy</button></> : <button type="button" className="erp-button erp-button-link" onClick={() => cleanupTargetOperation(item)} disabled={saving}>Xóa dữ liệu CĐ567</button>)}</td></tr>{history.length > 0 && <tr><td colSpan="6"><div className="erp-production-external-history"><span className="erp-production-external-history-title">Lịch sử nhận ngoài{externalLoading ? " — đang tải..." : ""}</span>{history.map((entry) => <div className="erp-production-external-history-row" key={entry.id}><div className="erp-production-external-history-meta"><span>{entry.receivedDate}</span><strong>{Number(entry.quantity).toLocaleString("vi-VN")} {item.unit}</strong><span>{entry.sourceName || "Không ghi nguồn"}</span>{entry.note && <span>{entry.note}</span>}</div><div className="erp-production-external-history-actions"><button type="button" className="erp-button erp-button-link" onClick={() => openExternalDialog(item, entry)}>Sửa</button><button type="button" className="erp-button erp-button-link" onClick={() => setExternalDeleteItem(entry)}>Xóa</button></div></div>)}</div></td></tr>}</React.Fragment>; })}
+              {selected.operations.map((item) => { const isCleanupTarget = selected.code === "0417" && item.operationNumber === 567; return <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openExternalDialog(item)}>+ Bổ sung ngoài</button> <button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button>{isCleanupTarget && (operationDeleteId === item.id ? <><span className="erp-inline-message erp-inline-error">Xóa dữ liệu CĐ567 của Mã SX 0417</span> <button type="button" className="erp-button erp-button-danger" onClick={() => cleanupTargetOperation(item)} disabled={saving}>Xác nhận xóa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationDeleteId("")} disabled={saving}>Hủy</button></> : <button type="button" className="erp-button erp-button-link" onClick={() => cleanupTargetOperation(item)}>Xóa dữ liệu CĐ567</button>)}</td></tr>; })}
               {!selected.operations.length && <tr><td colSpan="6">Chưa có công đoạn.</td></tr>}
             </tbody></table></div>
             <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => openDetailOperationDialog("create")}>+ Thêm công đoạn</button></div>
           </FormSection>
+          {externalHistoryGroups.length > 0 && <FormSection title={`Chi tiết nhận ngoài (${externalQuantities.length} bản ghi)`} description="Các bản ghi được gom theo từng nguồn; mở từng nhóm khi cần sửa hoặc xóa.">
+            <div className="erp-field-wide erp-production-external-history-groups">
+              {externalHistoryGroups.map((group) => <details className="erp-production-external-history-group" key={group.key}>
+                <summary><span className="erp-production-external-source">{group.sourceName}</span><span>{group.entries.length} bản ghi</span></summary>
+                <div className="erp-production-external-history-group-body">
+                  {group.entries.map((entry) => <div className="erp-production-external-history-row" key={entry.id}>
+                    <div className="erp-production-external-history-meta"><strong>CĐ{entry.operation?.operationNumber ?? "?"}</strong><span>{entry.receivedDate}</span><strong>{Number(entry.quantity).toLocaleString("vi-VN")} {entry.operation?.unit || "cái"}</strong>{entry.note && <span>{entry.note}</span>}</div>
+                    <div className="erp-production-external-history-actions"><button type="button" className="erp-button erp-button-link" onClick={() => entry.operation && openExternalDialog(entry.operation, entry)}>Sửa</button><button type="button" className="erp-button erp-button-link" onClick={() => setExternalDeleteItem(entry)}>Xóa</button></div>
+                  </div>)}
+                </div>
+              </details>)}
+            </div>
+          </FormSection>}
           {externalSourceGroups.length > 0 && <FormSection title="Tổng hợp gia công ngoài" description="Cùng một người được gom chung; chi tiết từng công đoạn vẫn được giữ ở bảng phía trên.">
             <div className="erp-field-wide erp-table-wrap">
               <table className="erp-table erp-production-external-summary-table">
