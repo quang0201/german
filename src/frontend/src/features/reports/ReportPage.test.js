@@ -21,7 +21,9 @@ describe("ReportPage", () => {
     expect(html).toContain('type="date"');
     expect(html).not.toContain("Từ tháng");
     expect(html).toContain("Xuất Excel");
-    expect(html).toContain("Làm mới dữ liệu");
+    expect(html).toContain('aria-label="Làm mới dữ liệu"');
+    expect(html).toContain("erp-report-toolbar-actions");
+    expect(html).toContain("erp-report-refresh-button");
   });
 
   test("builds a stable export URL from the selected date range", () => {

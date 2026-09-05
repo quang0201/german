@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
-import { PageHeader } from "../../components/erp/PageHeader.jsx";
+import { Icon } from "../../components/erp/Icon.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { productionExportFileName } from "../production-entries/productionExport.js";
@@ -121,11 +121,6 @@ export function ReportPage() {
 
   return (
     <div className="erp-feature-page">
-      <PageHeader actions={(
-        <button className="erp-button erp-button-secondary" type="button" onClick={refreshData} disabled={refreshing}>
-          {refreshing ? "Đang làm mới..." : "Làm mới dữ liệu"}
-        </button>
-      )} />
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
       <div className="erp-report-toolbar">
@@ -137,7 +132,20 @@ export function ReportPage() {
         </Field>
         <Field label="Từ ngày"><input className="erp-control" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></Field>
         <Field label="Đến ngày"><input className="erp-control" type="date" value={untilDate} onChange={(event) => setUntilDate(event.target.value)} /></Field>
-        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
+        <div className="erp-report-toolbar-actions">
+          <button
+            className={`erp-button erp-button-secondary erp-report-refresh-button${refreshing ? " is-refreshing" : ""}`}
+            type="button"
+            onClick={refreshData}
+            disabled={refreshing}
+            aria-label="Làm mới dữ liệu"
+            title={refreshing ? "Đang làm mới dữ liệu" : "Làm mới dữ liệu"}
+            aria-busy={refreshing}
+          >
+            <Icon name="refresh" size={18} />
+          </button>
+          <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
+        </div>
       </div>
       {summaryError && <Alert variant="error" title="Không thể tải báo cáo công đoạn.">{summaryError}</Alert>}
       {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp sản lượng...</div>}
