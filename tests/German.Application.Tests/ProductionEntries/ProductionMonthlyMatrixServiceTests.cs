@@ -1,4 +1,5 @@
 using German.Application.ProductionEntries;
+using German.Domain.Attendance;
 using German.Domain.Employees;
 using German.Domain.Production;
 using German.Infrastructure.Persistence;
@@ -118,6 +119,43 @@ public sealed class ProductionMonthlyMatrixServiceTests
         Assert.AreEqual(3, cell.Records.Single(x => x.Id == first.Id).Version);
         Assert.AreEqual(ProductionEntryMode.ByShift, cell.Records.Single(x => x.Id == second.Id).EntryMode);
         Assert.AreEqual("shift", cell.Records.Single(x => x.Id == second.Id).Note);
+    }
+
+    [TestMethod]
+    public async Task GetAsync_ReturnsProductionDatesAndPaidLeaveDatesForMissingOperationWarnings()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E005", FullName = "Bùi Thị Hòe" };
+        var order = NewOrder("0417", "Mã hàng 0417");
+        var operation = NewOperation(order, 14, "May quai");
+        db.AddRange(employee, order, operation);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 8, 5), 100m, 0m);
+
+        var paidLeaveDay = new AttendanceDay
+        {
+            EmployeeId = employee.Id,
+            WorkDate = new DateOnly(2026, 8, 6)
+        };
+        paidLeaveDay.Shifts.Add(new AttendanceShiftEntry
+        {
+            SlotNumber = 1,
+            ValueKind = AttendanceShiftValueKind.PaidLeave
+        });
+        db.Add(paidLeaveDay);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 8, null, null, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var matrixEmployee = result.Value!.Orders.Single().Employees.Single();
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 8, 5) },
+            matrixEmployee.ProductionDates.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 8, 6) },
+            matrixEmployee.PaidLeaveDates.ToArray());
     }
 
     [TestMethod]

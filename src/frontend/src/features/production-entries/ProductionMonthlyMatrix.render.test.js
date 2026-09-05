@@ -33,6 +33,13 @@ function dataWithOneOrder() {
   };
 }
 
+function dataWithMissingOperationWarning() {
+  const data = dataWithOneOrder();
+  data.orders[0].employees[0].productionDates = ["2026-08-05", "2026-08-06"];
+  data.orders[0].employees[0].paidLeaveDates = ["2026-08-06"];
+  return data;
+}
+
 describe("ProductionMonthlyMatrix render", () => {
   test("renders one shared day axis, order block and rowspan employee", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" excludeSundays />);
@@ -108,5 +115,15 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("erp-month-inactive");
     expect(html).toContain("Đã tắt");
     expect(html).toMatch(/button[^>]*disabled=""[^>]*aria-label="Bạch Thị Đào CĐ4 01\/08 HC"/);
+  });
+
+  test("highlights only missing operations on production days and suppresses paid leave days", () => {
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithMissingOperationWarning()} monthKey="2026-08" excludeSundays />);
+
+    expect(html).toContain("erp-month-missing");
+    expect(html).toContain('data-date="2026-08-05"');
+    expect(html).toContain('data-date="2026-08-06"');
+    expect(matrixSource).toContain("productionDates");
+    expect(matrixSource).toContain("paidLeaveDates");
   });
 });
