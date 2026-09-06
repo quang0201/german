@@ -9,7 +9,16 @@ public sealed record ProductionOperationSummary(
     decimal TcQuantity,
     decimal TotalQuantity,
     decimal ExternalQuantity,
-    decimal CombinedTotalQuantity);
+    decimal CombinedTotalQuantity,
+    IReadOnlyList<ProductionOperationEmployeeSummary> Contributors);
+
+public sealed record ProductionOperationEmployeeSummary(
+    string EmployeeCode,
+    string EmployeeName,
+    decimal HcQuantity,
+    decimal TcQuantity,
+    decimal TotalQuantity,
+    bool IsExternal = false);
 
 public sealed record ProductionOperationSummaryReport(
     Guid OrderId,

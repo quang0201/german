@@ -17,6 +17,10 @@ function progressWidth(value, scale) {
   return Math.max(0, Math.min(100, (value / scale) * 100));
 }
 
+function operationKey(operation) {
+  return String(operation.operationId || operation.operationNumber);
+}
+
 export function Quantity({ value, unit, emptyAsDash = false, total = false, isOverPlan = false, planLimit = null }) {
   const amount = Number(value || 0);
 
@@ -33,7 +37,7 @@ export function Quantity({ value, unit, emptyAsDash = false, total = false, isOv
   );
 }
 
-export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity }) {
+export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity, expanded = false, onToggle }) {
   const hc = Number(operation.hcQuantity || 0);
   const tc = Number(operation.tcQuantity || 0);
   const internal = Number(operation.totalQuantity || 0);
@@ -45,10 +49,21 @@ export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity
   const isOverPlan = isOverProductionPlan(total, plannedQuantity);
 
   return (
-    <div className={`erp-report-operation-row ${isOverPlan ? "is-over-plan" : ""}`} role="row">
+    <>
+      <div className={`erp-report-operation-row ${isOverPlan ? "is-over-plan" : ""}`} role="row">
       <div className="erp-report-operation-label" role="cell">
-        <strong>CĐ{operation.operationNumber}</strong>
-        <span title={operation.name}>{operation.name}</span>
+          <button
+            className="erp-report-operation-detail-toggle"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={`erp-report-operation-details-${operationKey(operation)}`}
+            aria-label={`${expanded ? "Ẩn chi tiết" : "Xem chi tiết"} CĐ${operation.operationNumber}`}
+            onClick={onToggle}
+          >
+            <strong>CĐ{operation.operationNumber}</strong>
+            <span title={operation.name}>{operation.name}</span>
+            <small>{expanded ? "Ẩn chi tiết" : "Xem chi tiết"}</small>
+          </button>
       </div>
 
       <div className="erp-report-operation-progress" role="cell">
@@ -70,12 +85,45 @@ export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity
       <Quantity value={internal} unit={unit} />
       <Quantity value={external} unit={unit} emptyAsDash />
       <Quantity value={total} unit={unit} total isOverPlan={isOverPlan} planLimit={planLimit} />
+      </div>
+      {expanded && <ProductionOperationDetails operation={operation} />}
+    </>
+  );
+}
+
+export function ProductionOperationDetails({ operation }) {
+  const contributors = operation?.contributors || [];
+  const total = contributors.reduce((sum, item) => sum + Number(item.totalQuantity || 0), 0);
+  const unit = operation?.unit || "";
+
+  return (
+    <div className="erp-report-operation-details" id={`erp-report-operation-details-${operationKey(operation)}`} role="region" aria-label={`Chi tiết CĐ${operation.operationNumber}`}>
+      <div className="erp-report-operation-details-header">
+        <strong>Công nhân / gia công</strong>
+        <span>HC</span>
+        <span>TC</span>
+        <span>Tổng</span>
+      </div>
+      {contributors.length === 0 && <p className="erp-report-operation-details-empty">Chưa có dữ liệu từng người.</p>}
+      {contributors.map((item) => (
+        <div className="erp-report-operation-details-row" role="row" key={`${item.employeeCode}-${item.employeeName}`}>
+          <div>
+            <strong>{item.employeeName}</strong>
+            <small>{item.isExternal ? "Gia công" : item.employeeCode}</small>
+          </div>
+          <span>{item.isExternal ? "—" : quantity(item.hcQuantity)}</span>
+          <span>{item.isExternal ? "—" : quantity(item.tcQuantity)}</span>
+          <span><strong>{quantity(item.totalQuantity)}</strong> {unit}</span>
+        </div>
+      ))}
+      {contributors.length > 0 && <div className="erp-report-operation-details-total"><strong>Tổng CĐ{operation.operationNumber}</strong><strong>{quantity(total)} {unit}</strong></div>}
     </div>
   );
 }
 
 export function ProductionOperationSummaryChart({ summary, plannedQuantity }) {
   const operations = summary?.operations || [];
+  const [expandedOperationId, setExpandedOperationId] = React.useState(null);
   const maxByUnit = operations.reduce((maxima, operation) => {
     const unit = operation.unit || "Không xác định";
     maxima[unit] = Math.max(maxima[unit] || 0, operationTotal(operation));
@@ -112,10 +160,12 @@ export function ProductionOperationSummaryChart({ summary, plannedQuantity }) {
           <div role="rowgroup">
             {operations.map((operation) => (
               <ProductionOperationRow
-                key={operation.operationId || operation.operationNumber}
+                key={operationKey(operation)}
                 operation={operation}
                 maxQuantity={maxByUnit[operation.unit || "Không xác định"]}
                 plannedQuantity={plannedQuantity}
+                expanded={expandedOperationId === operationKey(operation)}
+                onToggle={() => setExpandedOperationId((current) => current === operationKey(operation) ? null : operationKey(operation))}
               />
             ))}
           </div>

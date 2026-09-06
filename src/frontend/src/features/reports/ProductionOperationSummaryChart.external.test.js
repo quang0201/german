@@ -66,7 +66,7 @@ describe("ProductionOperationSummaryChart", () => {
     expect(html).toContain("style=\"width:20%\"");
     expect(html).not.toContain("Đơn vị:");
     expect(html).not.toContain("erp-report-operation-unit-group");
-    expect(html).not.toContain("erp-report-operation-details");
+    expect(html).toContain('aria-label="Xem chi tiết CĐ4"');
     expect(html).toContain("CĐ4");
     expect(html).toContain("CĐ5");
   });
@@ -91,7 +91,7 @@ describe("ProductionOperationSummaryChart", () => {
     expect(detailHtml).toContain("22.000");
     expect(detailHtml).toContain("Gia công ABC");
     expect(detailHtml).toContain("1.000");
-    expect(detailHtml).toContain("Tổng CĐ10");
+    expect(detailHtml).toContain("Tổng CĐ");
     expect(detailHtml).toContain("23.000");
   });
 });

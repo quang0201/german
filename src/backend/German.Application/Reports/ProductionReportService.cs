@@ -206,12 +206,82 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             })
             .ToListAsync(cancellationToken);
         var externalByOperation = externalAggregates.ToDictionary(item => item.OperationId, item => item.Quantity);
+        var internalContributorRows = await (
+            from entry in db.ProductionEntries.AsNoTracking()
+            join employee in db.Employees.AsNoTracking() on entry.EmployeeId equals employee.Id
+            where !entry.IsDeleted
+                && entry.ProductionOrderId == orderId
+                && entry.WorkDate >= rangeFrom
+                && entry.WorkDate <= rangeUntil
+            select new
+            {
+                entry.ProductionOperationId,
+                employee.EmployeeCode,
+                EmployeeName = employee.FullName,
+                entry.HcQuantity,
+                entry.TcQuantity,
+                entry.TotalQuantity
+            }).ToListAsync(cancellationToken);
+
+        var externalContributorRows = await (
+            from external in db.ProductionExternalQuantities.AsNoTracking()
+            join sourceEmployee in db.Employees.AsNoTracking() on external.SourceEmployeeId equals sourceEmployee.Id into sourceEmployees
+            from sourceEmployee in sourceEmployees.DefaultIfEmpty()
+            join externalSource in db.ProductionExternalSources.AsNoTracking() on external.ExternalSourceId equals externalSource.Id into externalSources
+            from externalSource in externalSources.DefaultIfEmpty()
+            where external.ProductionOrderId == orderId
+                && external.ReceivedDate >= rangeFrom
+                && external.ReceivedDate <= rangeUntil
+            select new
+            {
+                external.ProductionOperationId,
+                SourceEmployeeCode = sourceEmployee == null ? null : sourceEmployee.EmployeeCode,
+                SourceEmployeeName = sourceEmployee == null ? null : sourceEmployee.FullName,
+                ExternalSourceName = externalSource == null ? null : externalSource.Name,
+                external.SourceName,
+                external.Quantity
+            }).ToListAsync(cancellationToken);
+
+        var contributorRows = internalContributorRows
+            .Select(item => (
+                OperationId: item.ProductionOperationId,
+                EmployeeCode: item.EmployeeCode,
+                EmployeeName: item.EmployeeName,
+                HcQuantity: item.HcQuantity,
+                TcQuantity: item.TcQuantity,
+                TotalQuantity: item.TotalQuantity,
+                IsExternal: false))
+            .Concat(externalContributorRows.Select(item => (
+                OperationId: item.ProductionOperationId,
+                EmployeeCode: item.SourceEmployeeCode ?? "__EXTERNAL__",
+                EmployeeName: ResolveExternalSourceName(item.ExternalSourceName, item.SourceEmployeeName, item.SourceName),
+                HcQuantity: 0m,
+                TcQuantity: 0m,
+                TotalQuantity: item.Quantity,
+                IsExternal: true)))
+            .Where(item => item.HcQuantity != 0m || item.TcQuantity != 0m || item.TotalQuantity != 0m)
+            .GroupBy(item => new { item.OperationId, item.EmployeeCode, item.EmployeeName, item.IsExternal })
+            .ToLookup(
+                group => group.Key.OperationId,
+                group => new ProductionOperationEmployeeSummary(
+                    group.Key.EmployeeCode,
+                    group.Key.EmployeeName,
+                    group.Sum(item => item.HcQuantity),
+                    group.Sum(item => item.TcQuantity),
+                    group.Sum(item => item.TotalQuantity),
+                    group.Key.IsExternal));
+
         var summaries = operations
             .Select(operation =>
             {
                 aggregateByOperation.TryGetValue(operation.Id, out var aggregate);
                 externalByOperation.TryGetValue(operation.Id, out var externalQuantity);
                 var totalQuantity = aggregate?.TotalQuantity ?? 0m;
+                var contributors = contributorRows[operation.Id]
+                    .OrderBy(item => item.IsExternal)
+                    .ThenBy(item => item.EmployeeCode, StringComparer.Ordinal)
+                    .ThenBy(item => item.EmployeeName, StringComparer.Ordinal)
+                    .ToArray();
                 return new ProductionOperationSummary(
                     operation.Id,
                     operation.OperationNumber,
@@ -221,7 +291,8 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                     aggregate?.TcQuantity ?? 0m,
                     totalQuantity,
                     externalQuantity,
-                    totalQuantity + externalQuantity);
+                    totalQuantity + externalQuantity,
+                    contributors);
             })
             .ToArray();
 
@@ -508,4 +579,11 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
     }
 
     private static string MonthKey(DateOnly month) => $"{month.Year:0000}-{month.Month:00}";
+
+    private static string ResolveExternalSourceName(string? externalSourceName, string? sourceEmployeeName, string? sourceName)
+    {
+        if (!string.IsNullOrWhiteSpace(externalSourceName)) return externalSourceName;
+        if (!string.IsNullOrWhiteSpace(sourceEmployeeName)) return sourceEmployeeName;
+        return string.IsNullOrWhiteSpace(sourceName) ? "Gia công ngoài" : sourceName.Trim();
+    }
 }

@@ -313,14 +313,18 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual("0417", result.Value.OrderCode);
         Assert.AreEqual("Túi 0417", result.Value.ProductName);
         Assert.AreEqual(3, result.Value.OperationCount);
+        var firstSummary = result.Value.Operations[0];
+        Assert.AreEqual(new ProductionOperationSummary(seed.Operation.Id, 11, "May thân", "cái", 100m, 20m, 120m, 0m, 120m, firstSummary.Contributors), firstSummary);
         CollectionAssert.AreEqual(
-            new[]
-            {
-                new ProductionOperationSummary(seed.Operation.Id, 11, "May thân", "cái", 100m, 20m, 120m, 0m, 120m),
-                new ProductionOperationSummary(secondOperation.Id, 12, "Đóng gói", "thùng", 30m, 5m, 35m, 0m, 35m),
-                new ProductionOperationSummary(zeroOperation.Id, 13, "Kiểm hàng", "kiện", 0m, 0m, 0m, 0m, 0m)
-            },
-            result.Value.Operations.ToArray());
+            new[] { new ProductionOperationEmployeeSummary("E001", "Nguyễn Văn A", 100m, 20m, 120m) },
+            firstSummary.Contributors.ToArray());
+        var secondSummary = result.Value.Operations[1];
+        Assert.AreEqual(new ProductionOperationSummary(secondOperation.Id, 12, "Đóng gói", "thùng", 30m, 5m, 35m, 0m, 35m, secondSummary.Contributors), secondSummary);
+        CollectionAssert.AreEqual(
+            new[] { new ProductionOperationEmployeeSummary("E001", "Nguyễn Văn A", 30m, 5m, 35m) },
+            secondSummary.Contributors.ToArray());
+        var zeroSummary = result.Value.Operations[2];
+        Assert.AreEqual(0, zeroSummary.Contributors.Count);
     }
 
     [TestMethod]

@@ -31,3 +31,14 @@ Coverage: `bun test --coverage` reported 88.40% lines and 76.59% functions acros
 RED evidence: the new regression test expected `orderId` in the export URL but the existing implementation exported only `fromDate` and `untilDate`.
 
 GREEN evidence: the selected order ID is now passed to `/api/reports/production/export.xlsx`; the full frontend suite passed 252 tests and the production build completed successfully.
+
+## Production report operation drilldown
+
+| Guarantee | Test | Result |
+|---|---|---|
+| Each operation can be expanded to show internal workers and external processing sources with HC, TC, and total quantities. | `src/frontend/src/features/reports/ProductionOperationSummaryChart.external.test.js` | PASS, 3 tests |
+| Operation summary data groups internal production by worker and external quantities by source, while preserving operation totals. | `tests/German.Application.Tests/Reports/ProductionReportServiceTests.cs` | PASS, 20 tests |
+
+RED evidence: the new tests initially failed because the operation summary had no contributor data or detail component.
+
+GREEN evidence: the API now returns `contributors` per operation, and the report renders a `Xem chi tiết CĐ...` button. Full validation passed with 253 frontend tests, 9 domain tests, 113 application tests, 21 infrastructure tests, 67 API tests, coverage at 88.40% lines, and a successful production build.
