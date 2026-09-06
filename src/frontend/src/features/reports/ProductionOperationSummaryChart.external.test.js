@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
+import { ProductionOperationDetails, ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ProductionOperationSummaryChart", () => {
   test("highlights an operation that exceeds the plan tolerance", () => {
@@ -69,5 +69,29 @@ describe("ProductionOperationSummaryChart", () => {
     expect(html).not.toContain("erp-report-operation-details");
     expect(html).toContain("CĐ4");
     expect(html).toContain("CĐ5");
+  });
+
+  test("offers operation details for workers and external processing", () => {
+    const operation = {
+      operationNumber: 10,
+      name: "May dài khóa với thân trước",
+      unit: "cái",
+      contributors: [
+        { employeeCode: "0417-BTD", employeeName: "Bạch Thị Đào", hcQuantity: 16268, tcQuantity: 5732, totalQuantity: 22000, isExternal: false },
+        { employeeCode: "__EXTERNAL__", employeeName: "Gia công ABC", hcQuantity: 0, tcQuantity: 0, totalQuantity: 1000, isExternal: true },
+      ],
+    };
+    const buttonHtml = renderToString(React.createElement(ProductionOperationSummaryChart, {
+      summary: { orderCode: "4004 đỏ", productName: "Túi 4004 đỏ", operationCount: 1, operations: [operation] },
+    }));
+    const detailHtml = renderToString(React.createElement(ProductionOperationDetails, { operation }));
+
+    expect(buttonHtml).toContain('aria-label="Xem chi tiết CĐ10"');
+    expect(detailHtml).toContain("Bạch Thị Đào");
+    expect(detailHtml).toContain("22.000");
+    expect(detailHtml).toContain("Gia công ABC");
+    expect(detailHtml).toContain("1.000");
+    expect(detailHtml).toContain("Tổng CĐ10");
+    expect(detailHtml).toContain("23.000");
   });
 });

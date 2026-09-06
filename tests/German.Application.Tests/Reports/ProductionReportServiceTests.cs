@@ -367,6 +367,42 @@ public sealed class ProductionReportServiceTests
     }
 
     [TestMethod]
+    public async Task BuildOperationSummaryAsync_ListsWorkersAndExternalProcessingByOperation()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var employee2 = new Employee { EmployeeCode = "E002", FullName = "Công nhân B" };
+        db.Add(employee2);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, seed.Employee, seed.Order, seed.Operation, new DateOnly(2026, 8, 13), 16268m, 5732m);
+        await AddEntryAsync(db, employee2, seed.Order, seed.Operation, new DateOnly(2026, 8, 13), 700m, 300m);
+        db.Add(new ProductionExternalQuantity
+        {
+            ProductionOrderId = seed.Order.Id,
+            ProductionOperationId = seed.Operation.Id,
+            ReceivedDate = new DateOnly(2026, 8, 13),
+            Quantity = 1000m,
+            SourceName = "Gia công ABC",
+            SubmittedByUserId = Guid.NewGuid()
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildOperationSummaryAsync(
+            seed.Order.Id, new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 13), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var contributors = result.Value!.Operations[0].Contributors.ToArray();
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new ProductionOperationEmployeeSummary("E001", "Nguyễn Văn A", 16368m, 5752m, 22120m),
+                new ProductionOperationEmployeeSummary("E002", "Công nhân B", 700m, 300m, 1000m),
+                new ProductionOperationEmployeeSummary("__EXTERNAL__", "Gia công ABC", 0m, 0m, 1000m, true)
+            },
+            contributors);
+    }
+
+    [TestMethod]
     public async Task BuildOperationSummaryAsync_FiltersOrderAndDateRange()
     {
         await using var db = CreateDb();
