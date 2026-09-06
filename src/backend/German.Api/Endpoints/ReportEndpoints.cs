@@ -26,6 +26,7 @@ public static class ReportEndpoints
         string? fromMonth,
         string? untilMonth,
         ProductionReportService service,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
         if (!TryParseMonth(fromMonth, out var rangeFrom)
@@ -42,6 +43,7 @@ public static class ReportEndpoints
             rangeUntil.AddMonths(1).AddDays(-1),
             cancellationToken);
 
+        SetNoStoreHeaders(httpContext);
         return result.IsSuccess
             ? Results.Ok(result.Value)
             : ApiResultMapper.Error(result.Error!);
@@ -103,6 +105,7 @@ public static class ReportEndpoints
         DateOnly? fromDate,
         DateOnly? untilDate,
         ProductionReportService service,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
         var result = await service.BuildOperationSummaryAsync(
@@ -111,6 +114,7 @@ public static class ReportEndpoints
             untilDate,
             cancellationToken);
 
+        SetNoStoreHeaders(httpContext);
         return result.IsSuccess
             ? Results.Ok(result.Value)
             : ApiResultMapper.Error(result.Error!);

@@ -228,6 +228,8 @@ public sealed class ReportExportApiTests
             $"/api/reports/production/summary?orderId={orderId}&fromDate=2026-08-12&untilDate=2026-08-12");
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(response.Headers.CacheControl?.NoStore == true);
+        Assert.IsTrue(response.Headers.CacheControl?.NoCache == true);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var root = json.RootElement;
         Assert.AreEqual("0417", root.GetProperty("orderCode").GetString());
