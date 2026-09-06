@@ -14,8 +14,9 @@ export function currentReportMonthRange(today = new Date()) {
   return { fromDate: localIsoDate(first), untilDate: localIsoDate(last) };
 }
 
-export function buildProductionReportExportUrl(fromDate, untilDate) {
+export function buildProductionReportExportUrl(fromDate, untilDate, orderId = "") {
   const params = new URLSearchParams({ fromDate, untilDate });
+  if (orderId) params.set("orderId", orderId);
   return `/api/reports/production/export.xlsx?${params.toString()}`;
 }
 
@@ -110,7 +111,7 @@ export function ReportPage() {
     }
     setExporting(true);
     try {
-      await api.download(buildProductionReportExportUrl(fromDate, untilDate), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
+      await api.download(buildProductionReportExportUrl(fromDate, untilDate, orderId), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
       toast.success("Đã tải báo cáo sản lượng.");
     } catch (requestError) {
       setError(requestError.message || "Không thể xuất báo cáo.");

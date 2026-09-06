@@ -33,6 +33,12 @@ describe("ReportPage", () => {
     expect(typeof api.download).toBe("function");
   });
 
+  test("keeps the selected production order in the export URL", () => {
+    expect(buildProductionReportExportUrl("2026-08-01", "2026-09-30", "order-4004-red")).toBe(
+      "/api/reports/production/export.xlsx?fromDate=2026-08-01&untilDate=2026-09-30&orderId=order-4004-red",
+    );
+  });
+
   test("renders the production order selector and operation summary details", () => {
     const pageHtml = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
     expect(pageHtml).toContain("Chọn Mã SX");
