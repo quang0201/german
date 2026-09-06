@@ -8,6 +8,13 @@ public sealed record CreateUserAccountCommand(
     UserRole Role,
     Guid? EmployeeId);
 
+public sealed record UpdateUserAccountCommand(
+    string Username,
+    string? Password,
+    UserRole Role,
+    Guid? EmployeeId,
+    bool IsActive);
+
 public sealed record UserAccountDto(
     Guid Id,
     string Username,

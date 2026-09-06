@@ -25,6 +25,21 @@ public static class UserAccountAdminEndpoints
                 : ApiResultMapper.Error(result.Error!);
         });
 
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateUserAccountRequest request,
+            UserAccountService service,
+            CancellationToken ct) =>
+        {
+            var result = await service.UpdateAsync(
+                id,
+                new UpdateUserAccountCommand(request.Username, request.Password, request.Role, request.EmployeeId, request.IsActive),
+                ct);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ApiResultMapper.Error(result.Error!);
+        });
+
         return endpoints;
     }
 }

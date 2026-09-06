@@ -25,6 +25,7 @@ public static class ApiResultMapper
             "production_external_quantity.order_not_found" => StatusCodes.Status404NotFound,
             "production_external_quantity.operation_not_found" => StatusCodes.Status404NotFound,
             "production_external_quantity.forbidden" => StatusCodes.Status403Forbidden,
+            "user_account.not_found" => StatusCodes.Status404NotFound,
             "production_operation.not_found" => StatusCodes.Status404NotFound,
             "user_account.employee_not_found" => StatusCodes.Status404NotFound,
             "employee.not_found" => StatusCodes.Status404NotFound,

@@ -98,6 +98,89 @@ public sealed class UserAccountService(IGermanDbContext db, IPasswordService pas
         return AppResult<UserAccountDto>.Success(ToDto(account, employee));
     }
 
+    public async Task<AppResult<UserAccountDto>> UpdateAsync(
+        Guid id,
+        UpdateUserAccountCommand command,
+        CancellationToken cancellationToken)
+    {
+        var account = await db.UserAccounts.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (account is null)
+        {
+            return AppResult<UserAccountDto>.Failure(
+                "user_account.not_found",
+                "Không tìm thấy tài khoản.");
+        }
+
+        var username = command.Username?.Trim() ?? string.Empty;
+        var normalizedUsername = username.ToUpperInvariant();
+        if (username.Length == 0)
+        {
+            return AppResult<UserAccountDto>.Failure(
+                "user_account.invalid_input",
+                "Tên đăng nhập là bắt buộc.");
+        }
+
+        if (await db.UserAccounts.AnyAsync(
+                x => x.Id != id && x.NormalizedUsername == normalizedUsername,
+                cancellationToken))
+        {
+            return AppResult<UserAccountDto>.Failure(
+                "user_account.duplicate_username",
+                "Tên đăng nhập đã tồn tại.");
+        }
+
+        if (command.Role == UserRole.Worker && !command.EmployeeId.HasValue)
+        {
+            return AppResult<UserAccountDto>.Failure(
+                "user_account.worker_requires_employee",
+                "Tài khoản công nhân phải gắn với một nhân viên.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.Password) && command.Password.Length < 8)
+        {
+            return AppResult<UserAccountDto>.Failure(
+                "user_account.invalid_input",
+                "Mật khẩu mới phải có ít nhất 8 ký tự.");
+        }
+
+        Employee? employee = null;
+        if (command.EmployeeId.HasValue)
+        {
+            employee = await db.Employees.FirstOrDefaultAsync(
+                x => x.Id == command.EmployeeId.Value && x.IsActive,
+                cancellationToken);
+            if (employee is null)
+            {
+                return AppResult<UserAccountDto>.Failure(
+                    "user_account.employee_not_found",
+                    "Không tìm thấy nhân viên đang hoạt động.");
+            }
+
+            if (await db.UserAccounts.AnyAsync(
+                    x => x.Id != id && x.EmployeeId == employee.Id,
+                    cancellationToken))
+            {
+                return AppResult<UserAccountDto>.Failure(
+                    "user_account.employee_already_linked",
+                    "Nhân viên đã được gắn với một tài khoản khác.");
+            }
+        }
+
+        account.Username = username;
+        account.NormalizedUsername = normalizedUsername;
+        account.Role = command.Role;
+        account.EmployeeId = command.EmployeeId;
+        account.IsActive = command.IsActive;
+        account.UpdatedAt = DateTimeOffset.UtcNow;
+        if (!string.IsNullOrWhiteSpace(command.Password))
+        {
+            account.PasswordHash = passwordService.HashPassword(account, command.Password);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult<UserAccountDto>.Success(ToDto(account, employee));
+    }
+
     private static UserAccountDto ToDto(UserAccount account, Employee? employee) =>
         new(
             account.Id,

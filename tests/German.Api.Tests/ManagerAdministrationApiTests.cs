@@ -483,6 +483,40 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Admin_CanUpdateUserAccount()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "admin-update-account", "A002", UserRole.Admin, "admin-secret");
+            await AddAccountAsync(services, db, "worker-to-update", "E402", UserRole.Worker, "worker-secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "admin-update-account", "admin-secret");
+        var accounts = await client.GetFromJsonAsync<JsonElement[]>("/api/admin/user-accounts");
+        var account = accounts!.Single(item => item.GetProperty("username").GetString() == "worker-to-update");
+
+        var response = await client.PutAsJsonAsync($"/api/admin/user-accounts/{account.GetProperty("id").GetGuid()}", new
+        {
+            username = "worker-updated",
+            password = (string?)null,
+            role = "Manager",
+            employeeId = (Guid?)null,
+            isActive = false
+        });
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual("worker-updated", json.RootElement.GetProperty("username").GetString());
+        Assert.AreEqual("Manager", json.RootElement.GetProperty("role").GetString());
+        Assert.IsFalse(json.RootElement.GetProperty("isActive").GetBoolean());
+        Assert.IsNull(json.RootElement.GetProperty("employeeId").GetString());
+    }
+
+    [TestMethod]
     public async Task Worker_CannotAccessManagerAdministrationEndpoints()
     {
         await using var factory = new GermanApiFactory();

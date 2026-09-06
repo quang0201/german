@@ -31,7 +31,6 @@ describe("frontend runtime safety", () => {
     const cases = [
       ["src/features/production-orders/ProductionOrderListPage.jsx", "order-create", 5],
       ["src/features/shifts/ShiftListPage.jsx", "shift-create", 2],
-      ["src/features/admin/UserAccountPage.jsx", "account-create", 5],
     ];
 
     for (const [path, formId, expectedAssociations] of cases) {
@@ -44,5 +43,9 @@ describe("frontend runtime safety", () => {
 
     const employeeSource = read("src/features/employees/EmployeeListPage.jsx");
     expect(employeeSource).toContain('<EmployeeDialog mode="create"');
+
+    const accountSource = read("src/features/admin/UserAccountPage.jsx");
+    expect(accountSource).toContain('<UserAccountDialog mode="create"');
+    expect(accountSource).toContain('<UserAccountDialog mode="edit"');
   });
 });
