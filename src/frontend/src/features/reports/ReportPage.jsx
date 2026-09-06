@@ -20,8 +20,9 @@ export function buildProductionReportExportUrl(fromDate, untilDate, orderId = ""
   return `/api/reports/production/export.xlsx?${params.toString()}`;
 }
 
-export function buildProductionReportSummaryUrl(orderId, fromDate, untilDate) {
+export function buildProductionReportSummaryUrl(orderId, fromDate, untilDate, refresh = "") {
   const params = new URLSearchParams({ orderId, fromDate, untilDate });
+  if (refresh) params.set("refresh", refresh);
   return `/api/reports/production/summary?${params.toString()}`;
 }
 
@@ -78,7 +79,7 @@ export function ReportPage() {
     let active = true;
     setSummaryLoading(true);
     setSummaryError("");
-    api.get(buildProductionReportSummaryUrl(orderId, fromDate, untilDate))
+    api.get(buildProductionReportSummaryUrl(orderId, fromDate, untilDate, Date.now().toString()))
       .then((result) => {
         if (active) setSummary(result);
       })

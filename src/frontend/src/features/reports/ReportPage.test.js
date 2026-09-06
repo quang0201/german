@@ -71,6 +71,12 @@ describe("ReportPage", () => {
     );
   });
 
+  test("adds a refresh key when loading a report after a cacheable response", () => {
+    expect(buildProductionReportSummaryUrl("order-1", "2026-08-01", "2026-08-10", "177")).toBe(
+      "/api/reports/production/summary?orderId=order-1&fromDate=2026-08-01&untilDate=2026-08-10&refresh=177",
+    );
+  });
+
   test("keeps operation bars scaled by unit without rendering unit groups", () => {
     const chartHtml = renderToString(React.createElement(ProductionOperationSummaryChart, {
       summary: {
