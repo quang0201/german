@@ -65,6 +65,32 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetWeeklyAsync_ReturnsOnlyEntriesInsideMondayToSundayRange()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E006", FullName = "Bạch Thị Nương" };
+        var order = NewOrder("0417", "Mã hàng 0417");
+        var operation = NewOperation(order, 14, "May quai");
+        db.AddRange(employee, order, operation);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 8, 31), 100m, 0m);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 9, 6), 200m, 0m);
+        AddEntry(db, employee, order, operation, new DateOnly(2026, 9, 7), 300m, 0m);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetWeeklyAsync(
+            new ProductionWeeklyMatrixQuery(new DateOnly(2026, 8, 31), new DateOnly(2026, 9, 6), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(new DateOnly(2026, 8, 31), result.Value!.FromDate);
+        Assert.AreEqual(new DateOnly(2026, 9, 6), result.Value.UntilDate);
+        Assert.AreEqual(2, result.Value.Summary.EntryCount);
+        CollectionAssert.AreEquivalent(
+            new[] { new DateOnly(2026, 8, 31), new DateOnly(2026, 9, 6) },
+            result.Value.Orders.Single().Employees.Single().Operations.Single().Cells.Select(cell => cell.WorkDate).ToArray());
+    }
+
+    [TestMethod]
     public async Task GetAsync_ExcludesSundayBeforeSummaryAndCells()
     {
         await using var db = CreateDb();

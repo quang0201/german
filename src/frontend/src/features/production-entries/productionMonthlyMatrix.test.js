@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildProductionMonthlyMatrixUrl,
+  buildProductionWeeklyMatrixUrl,
   currentMonthKey,
   matrixCellAction,
   monthBounds,
   monthDateAxis,
   monthLabel,
   shiftMonth,
+  weekDateAxis,
 } from "./productionMonthlyMatrix.js";
 
 describe("production monthly matrix helpers", () => {
@@ -33,6 +35,18 @@ describe("production monthly matrix helpers", () => {
     expect(workingAxis.length).toBeLessThan(fullAxis.length);
   });
 
+  test("builds a Monday through Sunday axis across month boundaries", () => {
+    expect(weekDateAxis("2026-08-31", "2026-09-06")).toEqual([
+      { isoDate: "2026-08-31", weekdayLabel: "T2", displayDate: "31/08", isSunday: false },
+      { isoDate: "2026-09-01", weekdayLabel: "T3", displayDate: "01/09", isSunday: false },
+      { isoDate: "2026-09-02", weekdayLabel: "T4", displayDate: "02/09", isSunday: false },
+      { isoDate: "2026-09-03", weekdayLabel: "T5", displayDate: "03/09", isSunday: false },
+      { isoDate: "2026-09-04", weekdayLabel: "T6", displayDate: "04/09", isSunday: false },
+      { isoDate: "2026-09-05", weekdayLabel: "T7", displayDate: "05/09", isSunday: false },
+      { isoDate: "2026-09-06", weekdayLabel: "CN", displayDate: "06/09", isSunday: true },
+    ]);
+  });
+
   test("serializes filters and defaults Sunday exclusion to true", () => {
     const url = buildProductionMonthlyMatrixUrl({
       monthKey: "2026-08",
@@ -53,6 +67,22 @@ describe("production monthly matrix helpers", () => {
 
     const sundayUrl = new URL(buildProductionMonthlyMatrixUrl({ monthKey: "2026-08", excludeSundays: false }), "http://local.test");
     expect(sundayUrl.searchParams.get("excludeSundays")).toBe("false");
+  });
+
+  test("serializes a weekly matrix date range and keeps Sunday visible", () => {
+    const url = buildProductionWeeklyMatrixUrl({
+      fromDate: "2026-08-31",
+      untilDate: "2026-09-06",
+      employeeId: "employee-1",
+      orderId: "order-1",
+    });
+    const parsed = new URL(url, "http://local.test");
+    expect(parsed.pathname).toBe("/api/production-entries/weekly-matrix");
+    expect(parsed.searchParams.get("fromDate")).toBe("2026-08-31");
+    expect(parsed.searchParams.get("untilDate")).toBe("2026-09-06");
+    expect(parsed.searchParams.get("employeeId")).toBe("employee-1");
+    expect(parsed.searchParams.get("orderId")).toBe("order-1");
+    expect(parsed.searchParams.get("excludeSundays")).toBe("false");
   });
 
   test("selects safe interaction for empty, single and multi-record cells", () => {
