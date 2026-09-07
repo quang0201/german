@@ -9,6 +9,7 @@ import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
 import { Pagination } from "../../components/erp/Pagination.jsx";
 import { buildProductionEntryListQuery, buildProductionExportUrl, normalizeProductionEntryListResponse } from "./productionEntryQuery.js";
 import { ProductionEntryDetailPage } from "./ProductionEntryDetailPage.jsx";
+import { ProductionEntryDialog } from "./ProductionEntryDialog.jsx";
 import { ProductionEntryGroupedTable } from "./ProductionEntryGroupedTable.jsx";
 import { PeriodSelector } from "./PeriodSelector.jsx";
 import { ProductionSummary } from "./ProductionSummary.jsx";
@@ -40,6 +41,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
   const [customDraft, setCustomDraft] = useState(() => ({ fromDate: today, untilDate: today }));
   const [isCustomEditing, setIsCustomEditing] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [filters, setFilters] = useState(() => initialFilters(today));
   const [draft, setDraft] = useState(emptyBusinessFilters);
   const [employees, setEmployees] = useState([]);
@@ -168,7 +170,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
       <PageHeader
         title="Sản lượng"
         description="Theo dõi và quản lý sản lượng sản xuất"
-        actions={!isWorker && <><button type="button" className="erp-button erp-button-secondary" onClick={openExportDialog}>{exportLabel(appliedPeriod.periodMode)}</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>}
+        actions={!isWorker && <><button type="button" className="erp-button erp-button-secondary" onClick={openExportDialog}>{exportLabel(appliedPeriod.periodMode)}</button><button type="button" className="erp-button erp-button-primary" onClick={() => setCreateOpen(true)}>+ Nhập sản lượng</button></>}
       />
       <PeriodSelector
         periodMode={appliedPeriod.periodMode}
@@ -204,6 +206,7 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
         onClose={() => setExportDialogOpen(false)}
         onExport={exportRows}
       />
+      <ProductionEntryDialog open={createOpen} session={session} onClose={() => setCreateOpen(false)} onSaved={() => { setCreateOpen(false); setReloadKey((value) => value + 1); }} />
       <DetailPanel open={Boolean(panelEntryId)} title="Chi tiết sản lượng" onClose={onPanelClose}>
         {panelEntryId && <ProductionEntryDetailPage session={session} entryId={panelEntryId} inPanel onClose={onPanelClose} onChanged={() => setReloadKey((value) => value + 1)} />}
       </DetailPanel>

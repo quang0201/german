@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { DataTable } from "../../components/erp/DataTable.jsx";
-import { Field } from "../../components/erp/Field.jsx";
 import { FormSection } from "../../components/erp/FormSection.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { navigate } from "../../app/navigation.js";
@@ -11,10 +10,9 @@ import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDe
 import { emptyProductionOperation, productionOperationForm, productionOperationPayload } from "./productionOperationDialog.js";
 import { ProductionOperationDialog } from "./ProductionOperationDialog.jsx";
 import { ProductionExternalQuantityDialog } from "./ProductionExternalQuantityDialog.jsx";
+import { ProductionOrderDialog } from "./ProductionOrderDialog.jsx";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { groupProductionExternalHistory } from "./productionExternalHistory.js";
-
-const STATUSES = ["Draft", "InProduction", "Completed", "Cancelled"];
 
 function emptyOrder() {
   return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", operations: [] };
@@ -31,7 +29,8 @@ export function ProductionOrderListPage({ params, pathname }) {
   const [form, setForm] = useState(emptyOrder);
   const [detail, setDetail] = useState(emptyOrder);
   const [operationDialog, setOperationDialog] = useState(null);
-  const [operationDeleteId, setOperationDeleteId] = useState("");
+  const [editingOrder, setEditingOrder] = useState(false);
+  const [cleanupTarget, setCleanupTarget] = useState(null);
   const [operationError, setOperationError] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -84,7 +83,8 @@ export function ProductionOrderListPage({ params, pathname }) {
     if (shouldResetProductionOrderCreateDraft(previousViewRef.current, view)) {
       setForm(emptyOrder());
       setOperationDialog(null);
-      setOperationDeleteId("");
+      setEditingOrder(false);
+      setCleanupTarget(null);
       setOperationError("");
       setError("");
     }
@@ -99,11 +99,6 @@ export function ProductionOrderListPage({ params, pathname }) {
     setExternalSourceGroups([]);
     if (selected?.id) loadExternalQuantities(selected.id);
   }, [selected?.id]);
-
-  function updateForm(key, value) {
-    setForm((current) => ({ ...current, [key]: value }));
-    setError("");
-  }
 
   function removeCreateOperation(index) {
     setForm((current) => ({ ...current, operations: current.operations.filter((_, itemIndex) => itemIndex !== index) }));
@@ -165,12 +160,11 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
-  async function createOrder(event) {
-    event.preventDefault();
+  async function createOrder(orderDraft) {
     setSaving(true);
     setError("");
     try {
-      const created = await api.post("/api/production-orders", buildProductionOrderPayload(form));
+      const created = await api.post("/api/production-orders", buildProductionOrderPayload(orderDraft));
       setForm(emptyOrder());
       navigate(`/orders/${created.id}`);
     } catch (requestError) {
@@ -180,18 +174,13 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
-  async function updateOrder(event) {
-    event.preventDefault();
+  async function updateOrder(orderDraft) {
     if (!selected) return;
     setSaving(true);
     setError("");
     try {
-      await api.put(`/api/production-orders/${selected.id}`, {
-        ...detail,
-        plannedQuantity: Number(detail.plannedQuantity),
-        startDate: detail.startDate || null,
-        endDate: detail.endDate || null,
-      });
+      await api.put(`/api/production-orders/${selected.id}`, { ...orderDraft, plannedQuantity: Number(orderDraft.plannedQuantity), startDate: orderDraft.startDate || null, endDate: orderDraft.endDate || null });
+      setEditingOrder(false);
       await load();
     } catch (requestError) {
       setError(requestError.message || "Không thể cập nhật mã sản xuất.");
@@ -214,19 +203,14 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
-  async function cleanupTargetOperation(item) {
+  async function cleanupTargetOperation() {
     if (!selected) return;
-    if (operationDeleteId !== item.id) {
-      setOperationDeleteId(item.id);
-      setError("");
-      return;
-    }
 
     setSaving(true);
     setError("");
     try {
       await api.post("/api/production-orders/0417/operations/567/cleanup");
-      setOperationDeleteId("");
+      setCleanupTarget(null);
       await load({ preserveDetail: true });
     } catch (requestError) {
       setError(requestError.message || "Không thể xóa công đoạn và dữ liệu liên quan.");
@@ -298,30 +282,7 @@ export function ProductionOrderListPage({ params, pathname }) {
       <PageHeader title={isCreateRoute ? "Tạo mã sản xuất" : detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={isListRoute ? <button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/orders/new")}>+ Tạo Mã SX</button> : <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}>Quay lại danh sách</button>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
 
-      {isCreateRoute && <>
-        <FormSection title="Thông tin Mã SX" description="Khai báo thông tin chung trước khi thêm công đoạn.">
-          <form id="order-create" onSubmit={createOrder}>
-            <Field label="Mã SX" required><input form="order-create" className="erp-control" required value={form.code} onChange={(event) => updateForm("code", event.target.value)} /></Field>
-            <Field label="Sản phẩm" required><input form="order-create" className="erp-control" required value={form.productName} onChange={(event) => updateForm("productName", event.target.value)} /></Field>
-            <Field label="Số lượng kế hoạch" required><input form="order-create" className="erp-control" required min="0" step="0.01" type="number" value={form.plannedQuantity} onChange={(event) => updateForm("plannedQuantity", event.target.value)} /></Field>
-            <Field label="Trạng thái"><select form="order-create" className="erp-control" value={form.status} onChange={(event) => updateForm("status", event.target.value)}>{STATUSES.map((status) => <option key={status} value={status}>{orderStatusLabel(status)}</option>)}</select></Field>
-            <Field label="Ngày bắt đầu"><input className="erp-control" type="date" value={form.startDate} onChange={(event) => updateForm("startDate", event.target.value)} /></Field>
-            <Field label="Ngày kết thúc"><input className="erp-control" type="date" value={form.endDate} onChange={(event) => updateForm("endDate", event.target.value)} /></Field>
-          </form>
-        </FormSection>
-        <FormSection title="Công đoạn" description="Thêm công đoạn bằng popup; danh sách chỉ hiển thị thông tin đã khai báo.">
-          <div className="erp-field-wide erp-table-wrap">
-            <table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên công đoạn</th><th>ĐVT</th><th>Giá cố định</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-              {form.operations.map((item, index) => <tr key={index}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openCreateOperationEdit(index, item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => removeCreateOperation(index)}>Xóa</button></td></tr>)}
-              {!form.operations.length && <tr><td colSpan="6">Chưa có công đoạn.</td></tr>}
-            </tbody></table>
-          </div>
-          <div className="erp-field-wide erp-form-actions">
-            <button type="button" className="erp-button erp-button-secondary" onClick={openCreateOperationDialog}>+ Thêm công đoạn</button>
-            <button type="submit" className="erp-button erp-button-primary" form="order-create" disabled={saving}>{saving ? "Đang tạo..." : "Tạo mã sản xuất"}</button>
-          </div>
-        </FormSection>
-      </>}
+      {isCreateRoute && <div className="erp-section-description">Biểu mẫu tạo mã sản xuất đang mở trong popup.</div>}
 
       {isListRoute && <DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
 
@@ -329,19 +290,12 @@ export function ProductionOrderListPage({ params, pathname }) {
         {loading && <div className="erp-table-state">Đang tải chi tiết mã sản xuất...</div>}
         {!loading && !selected && <div className="erp-table-state">Không tìm thấy mã sản xuất.</div>}
         {selected && <>
-          <FormSection title={`${selected.code} — ${selected.productName}`} description="Cập nhật thông tin chung của Mã SX." >
-            <form id="production-order-detail" onSubmit={updateOrder} />
-            <Field label="Mã SX" required><input form="production-order-detail" className="erp-control" required value={detail.code} onChange={(event) => setDetail((current) => ({ ...current, code: event.target.value }))} /></Field>
-            <Field label="Sản phẩm" required><input form="production-order-detail" className="erp-control" required value={detail.productName} onChange={(event) => setDetail((current) => ({ ...current, productName: event.target.value }))} /></Field>
-            <Field label="Số lượng kế hoạch" required><input form="production-order-detail" className="erp-control" required min="0" step="0.01" type="number" value={detail.plannedQuantity} onChange={(event) => setDetail((current) => ({ ...current, plannedQuantity: event.target.value }))} /></Field>
-            <Field label="Trạng thái"><select form="production-order-detail" className="erp-control" value={detail.status} onChange={(event) => setDetail((current) => ({ ...current, status: event.target.value }))}>{STATUSES.map((status) => <option key={status} value={status}>{orderStatusLabel(status)}</option>)}</select></Field>
-            <Field label="Ngày bắt đầu"><input form="production-order-detail" className="erp-control" type="date" value={detail.startDate} onChange={(event) => setDetail((current) => ({ ...current, startDate: event.target.value }))} /></Field>
-            <Field label="Ngày kết thúc"><input form="production-order-detail" className="erp-control" type="date" value={detail.endDate} onChange={(event) => setDetail((current) => ({ ...current, endDate: event.target.value }))} /></Field>
-            <div className="erp-field-wide erp-form-actions"><button form="production-order-detail" type="submit" className="erp-button erp-button-primary" disabled={saving}>Lưu thông tin Mã SX</button></div>
+          <FormSection title={`${selected.code} — ${selected.productName}`} description="Thông tin chung của Mã SX.">
+            <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-primary" onClick={() => { setEditingOrder(true); setError(""); }}>Sửa thông tin Mã SX</button></div>
           </FormSection>
           <FormSection title="Công đoạn" description="Tắt để giữ lịch sử. Có thể ghi nhận riêng sản lượng nhận từ bên ngoài.">
             <div className="erp-field-wide erp-table-wrap"><table className="erp-table"><thead><tr><th>Số CĐ</th><th>Tên</th><th>ĐVT</th><th>Giá cố định</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-              {selected.operations.map((item) => { const isCleanupTarget = selected.code === "0417" && item.operationNumber === 567; return <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openExternalDialog(item)}>+ Bổ sung ngoài</button> <button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button>{isCleanupTarget && (operationDeleteId === item.id ? <><span className="erp-inline-message erp-inline-error">Xóa dữ liệu CĐ567 của Mã SX 0417</span> <button type="button" className="erp-button erp-button-danger" onClick={() => cleanupTargetOperation(item)} disabled={saving}>Xác nhận xóa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationDeleteId("")} disabled={saving}>Hủy</button></> : <button type="button" className="erp-button erp-button-link" onClick={() => cleanupTargetOperation(item)}>Xóa dữ liệu CĐ567</button>)}</td></tr>; })}
+              {selected.operations.map((item) => { const isCleanupTarget = selected.code === "0417" && item.operationNumber === 567; return <tr key={item.id}><td>CĐ{item.operationNumber}</td><td>{item.name}</td><td>{item.unit}</td><td>{formatFixedPrice(item.fixedPrice)}</td><td>{item.isActive ? "Hoạt động" : "Đã tắt"}</td><td><button type="button" className="erp-button erp-button-link" onClick={() => openExternalDialog(item)}>+ Bổ sung ngoài</button> <button type="button" className="erp-button erp-button-link" onClick={() => openDetailOperationDialog("edit", item)}>Sửa</button> <button type="button" className="erp-button erp-button-link" onClick={() => setOperationActive(item, !item.isActive)} disabled={saving}>{item.isActive ? "Tắt" : "Bật"}</button>{isCleanupTarget && <button type="button" className="erp-button erp-button-danger" onClick={() => setCleanupTarget(item)} disabled={saving}>Xóa dữ liệu CĐ567</button>}</td></tr>; })}
               {!selected.operations.length && <tr><td colSpan="6">Chưa có công đoạn.</td></tr>}
             </tbody></table></div>
             <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => openDetailOperationDialog("create")}>+ Thêm công đoạn</button></div>
@@ -377,6 +331,29 @@ export function ProductionOrderListPage({ params, pathname }) {
           </FormSection>}
         </>}
       </>}
+      <ProductionOrderDialog
+        mode="create"
+        open={isCreateRoute}
+        draft={form}
+        loading={saving}
+        error={error}
+        onClose={() => navigate("/orders")}
+        onChange={(next) => { setForm(next); setError(""); }}
+        onSubmit={createOrder}
+        onAddOperation={openCreateOperationDialog}
+        onEditOperation={openCreateOperationEdit}
+        onRemoveOperation={removeCreateOperation}
+      />
+      <ProductionOrderDialog
+        mode="edit"
+        open={Boolean(editingOrder && selected)}
+        draft={detail}
+        loading={saving}
+        error={error}
+        onClose={() => setEditingOrder(false)}
+        onChange={(next) => { setDetail(next); setError(""); }}
+        onSubmit={updateOrder}
+      />
       <ProductionOperationDialog
         open={Boolean(operationDialog)}
         mode={operationDialog?.mode}
@@ -398,6 +375,16 @@ export function ProductionOrderListPage({ params, pathname }) {
         onChange={() => setExternalError("")}
         onSubmit={submitExternalDialog}
       />
+      <ConfirmDialog
+        open={Boolean(cleanupTarget)}
+        title="Xác nhận xóa dữ liệu CĐ567?"
+        confirmLabel="Xóa dữ liệu CĐ567"
+        loading={saving}
+        onClose={() => !saving && setCleanupTarget(null)}
+        onConfirm={cleanupTargetOperation}
+      >
+        Toàn bộ dữ liệu sản lượng của CĐ567 thuộc Mã SX 0417 sẽ bị xóa.
+      </ConfirmDialog>
       <ConfirmDialog
         open={Boolean(externalDeleteItem)}
         title="Xóa sản lượng nhận ngoài?"

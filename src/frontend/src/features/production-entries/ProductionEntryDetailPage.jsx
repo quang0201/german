@@ -6,7 +6,7 @@ import { FormSection } from "../../components/erp/FormSection.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
-import { ProductionEntryFormPage } from "./ProductionEntryFormPage.jsx";
+import { ProductionEntryDialog } from "./ProductionEntryDialog.jsx";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
 import { entryModeLabel } from "../../lib/i18n.js";
 
@@ -58,10 +58,6 @@ export function ProductionEntryDetailPage({ session, params, entryId, onChanged,
   if (error && !entry) return <Alert variant="error" title="Không thể tải dữ liệu."><span>{error}</span></Alert>;
   if (!entry) return null;
 
-  if (editing) {
-    return <ProductionEntryFormPage session={session} entry={entry} inPanel={inPanel} onCancel={() => setEditing(false)} onSaved={(saved) => { setEntry((current) => ({ ...current, ...saved })); setEditing(false); onChanged?.({ type: "edit", entry: saved }); }} />;
-  }
-
   const actions = canMutate && <><button type="button" className="erp-button erp-button-secondary" onClick={() => setEditing(true)}>Sửa</button><button type="button" className="erp-button erp-button-danger" onClick={() => setConfirmingDelete(true)}>Xóa</button></>;
   return (
     <div className="erp-detail-page">
@@ -91,6 +87,13 @@ export function ProductionEntryDetailPage({ session, params, entryId, onChanged,
         <ReadField label="Cập nhật lúc" value={formatDateTime(entry.updatedAt)} />
         <ReadField label="Ghi chú" value={entry.note || "—"} wide />
       </FormSection>
+      <ProductionEntryDialog
+        open={editing}
+        session={session}
+        entry={entry}
+        onClose={() => setEditing(false)}
+        onSaved={(saved) => { setEntry((current) => ({ ...current, ...saved })); setEditing(false); onChanged?.({ type: "edit", entry: saved }); }}
+      />
       <ConfirmDialog open={confirmingDelete} title="Xóa sản lượng?" confirmLabel="Xóa sản lượng" loading={deleting} onClose={() => setConfirmingDelete(false)} onConfirm={remove}>Bản ghi sẽ được xóa mềm và không còn xuất hiện trong danh sách thông thường.</ConfirmDialog>
     </div>
   );

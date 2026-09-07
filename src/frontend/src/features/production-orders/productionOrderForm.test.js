@@ -68,7 +68,16 @@ describe("production order form", () => {
   test("offers confirmed deletion for an operation and its related production data", () => {
     expect(orderPageSource).toContain("api.post(\"/api/production-orders/0417/operations/567/cleanup\")");
     expect(orderPageSource).toContain('selected.code === "0417" && item.operationNumber === 567');
-    expect(orderPageSource).toContain("Xóa dữ liệu CĐ567 của Mã SX 0417");
-    expect(orderPageSource).toContain("Xác nhận xóa");
+    expect(orderPageSource).toContain("Toàn bộ dữ liệu sản lượng của CĐ567 thuộc Mã SX 0417 sẽ bị xóa.");
+    expect(orderPageSource).toContain("Xác nhận xóa dữ liệu CĐ567");
+    expect(orderPageSource).toContain("<ConfirmDialog");
+  });
+
+  test("uses popup forms for order create and update", () => {
+    expect(orderPageSource).toContain("<ProductionOrderDialog");
+    expect(orderPageSource).toContain('mode="create"');
+    expect(orderPageSource).toContain('mode="edit"');
+    expect(orderPageSource).not.toContain('id="order-create"');
+    expect(orderPageSource).not.toContain('id="production-order-detail"');
   });
 });

@@ -4,7 +4,7 @@ import { Field } from "../../components/erp/Field.jsx";
 import { buildShiftUpdatePayload, shiftTemplateForm } from "./shiftTemplateDialog.js";
 import "./ShiftTemplateDialog.css";
 
-export function ShiftTemplateDialog({ open = false, shift = null, loading = false, error = "", onClose, onSubmit, onChange }) {
+export function ShiftTemplateDialog({ open = false, mode = "edit", shift = null, loading = false, error = "", onClose, onSubmit, onChange }) {
   const [draft, setDraft] = useState(() => shiftTemplateForm(shift ?? {}));
 
   useEffect(() => {
@@ -12,6 +12,8 @@ export function ShiftTemplateDialog({ open = false, shift = null, loading = fals
   }, [open, shift]);
 
   if (!open) return null;
+
+  const editing = mode === "edit";
 
   function update(key, value) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -48,7 +50,7 @@ export function ShiftTemplateDialog({ open = false, shift = null, loading = fals
     <div className="erp-dialog-backdrop" role="presentation">
       <section className="erp-dialog erp-shift-template-dialog" role="dialog" aria-modal="true" aria-labelledby="shift-template-dialog-title">
         <div className="erp-shift-template-dialog-header">
-          <h2 id="shift-template-dialog-title">Sửa bộ ca</h2>
+          <h2 id="shift-template-dialog-title">{editing ? "Sửa bộ ca" : "Tạo bộ ca"}</h2>
           <button type="button" className="erp-icon-button" aria-label="Đóng" onClick={onClose} disabled={loading}>×</button>
         </div>
         {error && <Alert variant="error" title="Không thể lưu bộ ca.">{error}</Alert>}
@@ -74,11 +76,11 @@ export function ShiftTemplateDialog({ open = false, shift = null, loading = fals
                 </div>
               ))}
             </div>
-            <label className="erp-shift-template-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>
+            {editing && <label className="erp-shift-template-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>}
           </div>
           <div className="erp-dialog-actions">
             <button type="button" className="erp-button erp-button-secondary" onClick={onClose} disabled={loading}>Hủy</button>
-            <button type="submit" className="erp-button erp-button-primary" disabled={loading}>{loading ? "Đang lưu..." : "Lưu thay đổi"}</button>
+            <button type="submit" className="erp-button erp-button-primary" disabled={loading}>{loading ? "Đang lưu..." : editing ? "Lưu thay đổi" : "Tạo bộ ca"}</button>
           </div>
         </form>
       </section>

@@ -28,24 +28,18 @@ describe("frontend runtime safety", () => {
   });
 
   test("create-form controls participate in native validation", () => {
-    const cases = [
-      ["src/features/production-orders/ProductionOrderListPage.jsx", "order-create", 5],
-      ["src/features/shifts/ShiftListPage.jsx", "shift-create", 2],
-    ];
-
-    for (const [path, formId, expectedAssociations] of cases) {
-      const source = read(path);
-      const associations = source.match(new RegExp(`form="${formId}"`, "g")) || [];
-
-      expect(source).toContain(`<form id="${formId}"`);
-      expect(associations).toHaveLength(expectedAssociations);
-    }
-
     const employeeSource = read("src/features/employees/EmployeeListPage.jsx");
     expect(employeeSource).toContain('<EmployeeDialog mode="create"');
 
     const accountSource = read("src/features/admin/UserAccountPage.jsx");
     expect(accountSource).toContain('<UserAccountDialog mode="create"');
     expect(accountSource).toContain('<UserAccountDialog mode="edit"');
+
+    const shiftSource = read("src/features/shifts/ShiftListPage.jsx");
+    expect(shiftSource).toContain('<ShiftTemplateDialog mode="create"');
+
+    const orderSource = read("src/features/production-orders/ProductionOrderListPage.jsx");
+    expect(orderSource).toContain("<ProductionOrderDialog");
+    expect(orderSource).toContain('mode="create"');
   });
 });

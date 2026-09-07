@@ -29,6 +29,13 @@ describe("ShiftTemplateDialog", () => {
     expect(html).toContain("Lưu thay đổi");
   });
 
+  test("renders create mode in the same popup", () => {
+    const html = renderToStaticMarkup(<ShiftTemplateDialog mode="create" open shift={shift} onClose={() => {}} onSubmit={() => {}} />);
+
+    expect(html).toContain("Tạo bộ ca");
+    expect(html).not.toContain("Đang hoạt động");
+  });
+
   test("builds a PUT payload with normalized times and sort order", () => {
     const form = shiftTemplateForm(shift);
     form.name = "Ca mới";
