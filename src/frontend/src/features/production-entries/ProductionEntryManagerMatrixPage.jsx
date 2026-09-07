@@ -133,7 +133,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
 
   return (
     <div className="erp-feature-page erp-production-manager-page">
-      <PageHeader title="Sản lượng" description="Theo dõi và nhập sản lượng theo ma trận tháng" actions={<><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>} />
+      <PageHeader title="Sản lượng" description="Theo dõi và nhập sản lượng theo ma trận tuần" actions={<><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>} />
       <div className="erp-production-manager-overview">
         <div className="erp-production-month-header"><ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} /><span>{weekRange.fromDate.split("-").reverse().join("/")} → {weekRange.untilDate.split("-").reverse().join("/")}</span></div>
         <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />

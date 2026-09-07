@@ -22,11 +22,12 @@ describe("ProductionEntryRoutePage", () => {
     expect(html).not.toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
   });
 
-  test("routes Manager and Admin to the monthly matrix flow without a second workspace tab bar", () => {
+  test("routes Manager and Admin to the weekly matrix flow without a second workspace tab bar", () => {
     for (const role of ["Manager", "Admin"]) {
       const html = renderFor(role);
-      expect(html).toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
-      expect(html).toContain("Ẩn Chủ nhật");
+      expect(html).toContain("Theo dõi và nhập sản lượng theo ma trận tuần");
+      expect(html).toContain("Tuần trước");
+      expect(html).toContain("Tuần sau");
       expect(html).not.toContain('aria-label="Chọn kỳ"');
     }
   });
@@ -38,9 +39,11 @@ describe("ProductionEntryRoutePage", () => {
     expect(source).not.toContain("ProductionAttendanceWorkspace");
   });
 
-  test("shows Sundays by default in the manager production matrix", () => {
+  test("keeps the full Monday-to-Sunday week in the manager production matrix", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
 
-    expect(source).toContain('const [excludeSundays, setExcludeSundays] = useState(false);');
+    expect(source).toContain("buildProductionWeeklyMatrixUrl");
+    expect(source).toContain('excludeSundays={false}');
+    expect(source).toContain('showSundayToggle={false}');
   });
 });
