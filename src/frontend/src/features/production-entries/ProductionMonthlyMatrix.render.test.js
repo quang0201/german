@@ -82,6 +82,19 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("Bấm vào ngày phía trên để nhập nhanh nhiều công đoạn.");
   });
 
+  test("uses the selected weekly range label when no order is available", () => {
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={{ availableOrders: [], orders: [] }}
+      fromDate="2026-08-31"
+      untilDate="2026-09-06"
+      excludeSundays={false}
+      showSundayToggle={false}
+    />);
+
+    expect(html).toContain("31/08/2026 – 06/09/2026");
+    expect(html).not.toContain("NaN/NaN");
+  });
+
   test("restores the horizontal matrix position after a data refresh", () => {
     expect(matrixSource).toContain("useLayoutEffect");
     expect(matrixSource).toContain("scrollLeftRef.current");
