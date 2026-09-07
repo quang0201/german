@@ -65,14 +65,14 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).not.toContain(">ĐVT<");
     expect(html).not.toContain(">CN<");
     expect(html).toContain('aria-label="Nhập nhanh ngày T7 01/08: chọn Mã SX và công đoạn"');
-    expect(html).toContain("erp-month-order-filter-button");
+    expect(html).toContain("erp-month-order-filter-select");
   });
 
   test("keeps a sole production order selectable so operation filtering can be enabled", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" selectedOrderId="o1" excludeSundays />);
 
-    expect(html).toContain(">Tất cả mã SX</button>");
-    expect(html).toContain('aria-pressed="true">0417</button>');
+    expect(html).toContain('<option value="">Tất cả mã SX</option>');
+    expect(html).toContain('value="o1" selected="">0417 — Mã hàng 0417</option>');
   });
 
   test("keeps the calendar header visible for an empty month so batch entry remains reachable", () => {

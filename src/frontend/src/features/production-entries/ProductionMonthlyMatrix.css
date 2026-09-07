@@ -1,9 +1,7 @@
 .erp-month-matrix-section { min-width: 0; }
 .erp-month-matrix-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid var(--color-border); border-bottom:0; background:var(--color-surface); padding:10px 12px; }
 .erp-month-order-filter { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
-.erp-month-order-filter .erp-button { min-height:32px; padding:0 12px; font-size:12px; }
-.erp-month-order-filter-button[aria-pressed="true"] { box-shadow:inset 0 -2px 0 var(--color-primary); font-weight:800; }
-.erp-month-order-filter [aria-pressed="true"] { border-color:var(--color-primary); background:var(--color-primary-soft); color:var(--color-primary-hover); }
+.erp-month-order-filter-select { min-width:220px; min-height:32px; font-size:12px; }
 .erp-month-sunday-toggle { display:flex; align-items:center; gap:8px; color:var(--color-text-muted); font-size:13px; white-space:nowrap; }
 .erp-month-sunday-toggle input { width:16px; height:16px; accent-color:var(--color-primary); }
 .erp-month-matrix-horizontal-scroll { height:14px; overflow-x:auto; overflow-y:hidden; border:1px solid var(--color-border); border-bottom:0; background:var(--color-surface-soft); scrollbar-gutter:stable; }
