@@ -77,9 +77,21 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToListAsync(cancellationToken))
                 .Select(day => (day.EmployeeId, day.WorkDate))
                 .ToHashSet();
+        var workedDates = employeeIds.Length == 0
+            ? new HashSet<(Guid EmployeeId, DateOnly WorkDate)>()
+            : (await db.AttendanceDays.AsNoTracking()
+                .Where(day => employeeIds.Contains(day.EmployeeId)
+                    && day.WorkDate >= fromDate
+                    && day.WorkDate <= untilDate
+                    && (day.OvertimeHours > 0m
+                        || day.Shifts.Any(shift => shift.ValueKind == AttendanceShiftValueKind.Hours)))
+                .Select(day => new { day.EmployeeId, day.WorkDate })
+                .ToListAsync(cancellationToken))
+                .Select(day => (day.EmployeeId, day.WorkDate))
+                .ToHashSet();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, request, rows, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, request, rows, workedDates, paidLeaveDates));
     }
 }
 
