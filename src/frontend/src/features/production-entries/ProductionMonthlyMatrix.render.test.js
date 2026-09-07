@@ -35,6 +35,14 @@ function dataWithOneOrder() {
 
 function dataWithMissingOperationWarning() {
   const data = dataWithOneOrder();
+  data.orders[0].employees[0].operations[0].cells = [{
+    workDate: "2026-08-05",
+    hcQuantity: 100,
+    tcQuantity: 20,
+    totalQuantity: 120,
+    entryCount: 1,
+    records: [],
+  }];
   data.orders[0].employees[0].productionDates = ["2026-08-05", "2026-08-06"];
   data.orders[0].employees[0].paidLeaveDates = ["2026-08-06"];
   return data;
@@ -117,11 +125,11 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toMatch(/button[^>]*disabled=""[^>]*aria-label="Bạch Thị Đào CĐ4 01\/08 HC"/);
   });
 
-  test("highlights only missing operations on production days and suppresses paid leave days", () => {
+  test("does not warn when at least one operation is entered on a production day", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithMissingOperationWarning()} monthKey="2026-08" excludeSundays />);
     const cellsOnDate = (date) => [...html.matchAll(new RegExp(`<td data-date="${date}" class="([^"]*)"`, "g"))].map((match) => match[1]);
 
-    expect(cellsOnDate("2026-08-05").some((className) => className.includes("erp-month-missing"))).toBe(true);
+    expect(cellsOnDate("2026-08-05").every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate("2026-08-06").every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate("2026-08-07").every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(matrixSource).toContain("productionDates");
