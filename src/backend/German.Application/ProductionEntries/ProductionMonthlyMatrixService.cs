@@ -25,6 +25,8 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
         return await GetRangeAsync(
             fromDate,
             untilDate,
+            fromDate,
+            untilDate,
             request.EmployeeId,
             request.OrderId,
             request.OperationId,
@@ -48,6 +50,8 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
         return await GetRangeAsync(
             request.FromDate,
             request.UntilDate,
+            new DateOnly(request.FromDate.Year, request.FromDate.Month, 1),
+            new DateOnly(request.UntilDate.Year, request.UntilDate.Month, 1).AddMonths(1).AddDays(-1),
             request.EmployeeId,
             request.OrderId,
             request.OperationId,
@@ -59,6 +63,8 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
     private async Task<AppResult<ProductionMonthlyMatrixResult>> GetRangeAsync(
         DateOnly fromDate,
         DateOnly untilDate,
+        DateOnly groupFromDate,
+        DateOnly groupUntilDate,
         Guid? employeeId,
         Guid? orderId,
         Guid? operationId,
@@ -72,10 +78,10 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
             join employee in db.Employees.AsNoTracking() on entry.EmployeeId equals employee.Id
             join order in db.ProductionOrders.AsNoTracking() on entry.ProductionOrderId equals order.Id
             join operation in db.ProductionOperations.AsNoTracking() on entry.ProductionOperationId equals operation.Id
-            where entry.WorkDate >= fromDate
-                && entry.WorkDate <= untilDate
+            where entry.WorkDate >= groupFromDate
+                && entry.WorkDate <= groupUntilDate
                 && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
-                && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= fromDate)
+                && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= groupFromDate)
                 && (!employeeId.HasValue || entry.EmployeeId == employeeId.Value)
                 && (!operationId.HasValue || entry.ProductionOperationId == operationId.Value)
             select new { entry, employee, order, operation };
@@ -94,7 +100,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 || modes.Contains(item.entry.EntryMode));
         }
 
-        var rows = await query
+        var groupRows = await query
             .OrderBy(item => item.order.Code)
             .ThenBy(item => item.employee.EmployeeCode)
             .ThenBy(item => item.operation.OperationNumber)
@@ -109,8 +115,21 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.order.Id, item.order.Code, item.order.ProductName,
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
             .ToListAsync(cancellationToken);
+        var rows = groupRows
+            .Where(row => row.WorkDate >= fromDate && row.WorkDate <= untilDate)
+            .ToList();
 
-        var employeeIds = rows.Select(row => row.EmployeeId).Distinct().ToArray();
+        var employeeIds = groupRows.Select(row => row.EmployeeId).Distinct().ToArray();
+        var attendanceDates = employeeIds.Length == 0
+            ? new HashSet<(Guid EmployeeId, DateOnly WorkDate)>()
+            : (await db.AttendanceDays.AsNoTracking()
+                .Where(day => employeeIds.Contains(day.EmployeeId)
+                    && day.WorkDate >= fromDate
+                    && day.WorkDate <= untilDate)
+                .Select(day => new { day.EmployeeId, day.WorkDate })
+                .ToListAsync(cancellationToken))
+                .Select(day => (day.EmployeeId, day.WorkDate))
+                .ToHashSet();
         var paidLeaveDates = employeeIds.Length == 0
             ? new HashSet<(Guid EmployeeId, DateOnly WorkDate)>()
             : (await db.AttendanceDays.AsNoTracking()
@@ -136,7 +155,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToHashSet();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, workedDates, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, workedDates, attendanceDates, paidLeaveDates));
     }
 }
 

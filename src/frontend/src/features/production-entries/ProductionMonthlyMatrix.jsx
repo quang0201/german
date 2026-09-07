@@ -63,6 +63,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
           for (const employee of order.employees ?? []) {
             const inactive = employee.isActive === false;
             const workedDates = new Set(employee.workedDates ?? []);
+            const attendanceDates = new Set(employee.attendanceDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
             const enteredDates = new Set((employee.operations ?? []).flatMap((item) => (item.cells ?? []).map((cell) => cell.workDate)));
             (employee.operations ?? []).forEach((operation, operationIndex) => {
@@ -72,14 +73,17 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                 <td className="erp-month-sticky-operation erp-month-operation">CĐ{operation.operationNumber}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
+                  const noAttendance = !inactive
+                    && !attendanceDates.has(day.isoDate)
+                    && !paidLeaveDates.has(day.isoDate);
                   const missingOperation = !cell
                     && workedDates.has(day.isoDate)
                     && !paidLeaveDates.has(day.isoDate)
                     && !enteredDates.has(day.isoDate);
-                  const valueCellClass = `erp-month-value-cell${missingOperation ? " erp-month-missing" : ""}`;
-                  const missingLabel = missingOperation ? " - chưa nhập công đoạn" : "";
+                  const valueCellClass = `erp-month-value-cell${noAttendance ? " erp-month-no-attendance" : missingOperation ? " erp-month-missing" : ""}`;
+                  const statusLabel = noAttendance ? " - chưa chấm công" : missingOperation ? " - chưa nhập công đoạn" : "";
                   const context = { cell, order, employee, operation, workDate: day.isoDate };
-                  return [<td key={`${day.isoDate}-hc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC${missingLabel}`} title={missingOperation ? "Chưa nhập công đoạn trong ngày có sản lượng" : undefined}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC${missingLabel}`} title={missingOperation ? "Chưa nhập công đoạn trong ngày có sản lượng" : undefined}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
+                  return [<td key={`${day.isoDate}-hc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC${statusLabel}`} title={statusLabel ? statusLabel.slice(3) : undefined}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC${statusLabel}`} title={statusLabel ? statusLabel.slice(3) : undefined}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
                 })}
                 <td className="erp-month-total erp-month-total-hc">{quantity(operation.hcQuantity)}</td><td className="erp-month-total erp-month-total-tc">{quantity(operation.tcQuantity)}</td><td className="erp-month-total erp-month-total-all"><strong>{quantity(operation.totalQuantity)}</strong></td>
               </tr>);

@@ -44,6 +44,7 @@ public sealed record ProductionMatrixEmployeeGroupDto(
 {
     public IReadOnlyList<DateOnly> ProductionDates { get; init; } = [];
     public IReadOnlyList<DateOnly> WorkedDates { get; init; } = [];
+    public IReadOnlyList<DateOnly> AttendanceDates { get; init; } = [];
     public IReadOnlyList<DateOnly> PaidLeaveDates { get; init; } = [];
 }
 
