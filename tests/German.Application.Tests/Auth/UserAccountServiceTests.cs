@@ -63,6 +63,21 @@ public sealed class UserAccountServiceTests
     }
 
     [TestMethod]
+    public async Task DeleteAsyncDeactivatesAccountAndKeepsItInTheDatabase()
+    {
+        await using var db = CreateDb();
+        var account = new UserAccount { Username = "worker", NormalizedUsername = "WORKER", IsActive = true };
+        db.UserAccounts.Add(account);
+        await db.SaveChangesAsync();
+
+        var result = await new UserAccountService(db, new PasswordService()).DeleteAsync(account.Id, CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var deleted = await db.UserAccounts.SingleAsync();
+        Assert.IsFalse(deleted.IsActive);
+    }
+
+    [TestMethod]
     public async Task UpdateAsyncRejectsDuplicateUsernameAndMissingWorkerEmployee()
     {
         await using var db = CreateDb();

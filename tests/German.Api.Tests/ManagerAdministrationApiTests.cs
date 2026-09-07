@@ -517,6 +517,35 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Admin_CanDeleteUserAccountWithoutRemovingItsHistory()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid accountId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "admin-delete-account", "A003", UserRole.Admin, "admin-secret");
+            await AddAccountAsync(services, db, "worker-to-delete", "E403", UserRole.Worker, "worker-secret");
+            await db.SaveChangesAsync();
+            accountId = await db.UserAccounts
+                .Where(x => x.Username == "worker-to-delete")
+                .Select(x => x.Id)
+                .SingleAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "admin-delete-account", "admin-secret");
+
+        var response = await client.DeleteAsync($"/api/admin/user-accounts/{accountId}");
+
+        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var verificationDb = scope.ServiceProvider.GetRequiredService<GermanDbContext>();
+        var account = await verificationDb.UserAccounts.SingleAsync(x => x.Id == accountId);
+        Assert.IsFalse(account.IsActive);
+    }
+
+    [TestMethod]
     public async Task Worker_CannotAccessManagerAdministrationEndpoints()
     {
         await using var factory = new GermanApiFactory();
