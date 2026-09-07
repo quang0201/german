@@ -43,7 +43,8 @@ function dataWithMissingOperationWarning() {
     entryCount: 1,
     records: [],
   }];
-  data.orders[0].employees[0].productionDates = ["2026-08-05", "2026-08-06"];
+  data.orders[0].employees[0].productionDates = ["2026-08-05"];
+  data.orders[0].employees[0].workedDates = ["2026-08-05", "2026-08-06", "2026-08-07"];
   data.orders[0].employees[0].paidLeaveDates = ["2026-08-06"];
   return data;
 }
@@ -131,8 +132,8 @@ describe("ProductionMonthlyMatrix render", () => {
 
     expect(cellsOnDate("2026-08-05").every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate("2026-08-06").every((className) => !className.includes("erp-month-missing"))).toBe(true);
-    expect(cellsOnDate("2026-08-07").every((className) => !className.includes("erp-month-missing"))).toBe(true);
-    expect(matrixSource).toContain("productionDates");
+    expect(cellsOnDate("2026-08-07").every((className) => className.includes("erp-month-missing"))).toBe(true);
+    expect(matrixSource).toContain("workedDates");
     expect(matrixSource).toContain("paidLeaveDates");
   });
 });

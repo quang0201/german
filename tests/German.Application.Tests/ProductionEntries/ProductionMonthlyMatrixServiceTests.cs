@@ -122,7 +122,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
-    public async Task GetAsync_ReturnsProductionDatesAndPaidLeaveDatesForMissingOperationWarnings()
+    public async Task GetAsync_ReturnsProductionDatesWorkedDatesAndPaidLeaveDatesForMissingOperationWarnings()
     {
         await using var db = CreateDb();
         var employee = new Employee { EmployeeCode = "E005", FullName = "Bùi Thị Hòe" };
@@ -141,7 +141,18 @@ public sealed class ProductionMonthlyMatrixServiceTests
             SlotNumber = 1,
             ValueKind = AttendanceShiftValueKind.PaidLeave
         });
-        db.Add(paidLeaveDay);
+        var workedDay = new AttendanceDay
+        {
+            EmployeeId = employee.Id,
+            WorkDate = new DateOnly(2026, 8, 7)
+        };
+        workedDay.Shifts.Add(new AttendanceShiftEntry
+        {
+            SlotNumber = 1,
+            ValueKind = AttendanceShiftValueKind.Hours,
+            WorkedHours = 8m
+        });
+        db.AddRange(paidLeaveDay, workedDay);
         await db.SaveChangesAsync();
 
         var result = await new ProductionMonthlyMatrixService(db).GetAsync(
@@ -156,6 +167,9 @@ public sealed class ProductionMonthlyMatrixServiceTests
         CollectionAssert.AreEqual(
             new[] { new DateOnly(2026, 8, 6) },
             matrixEmployee.PaidLeaveDates.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 8, 7) },
+            matrixEmployee.WorkedDates.ToArray());
     }
 
     [TestMethod]
