@@ -62,6 +62,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
             const inactive = employee.isActive === false;
             const productionDates = new Set(employee.productionDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
+            const enteredDates = new Set((employee.operations ?? []).flatMap((item) => (item.cells ?? []).map((cell) => cell.workDate)));
             (employee.operations ?? []).forEach((operation, operationIndex) => {
               const map = cellsByDate(operation);
               rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`} className={inactive ? "erp-month-inactive" : ""}>
@@ -71,7 +72,8 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
                   const cell = map.get(day.isoDate) ?? null;
                   const missingOperation = !cell
                     && productionDates.has(day.isoDate)
-                    && !paidLeaveDates.has(day.isoDate);
+                    && !paidLeaveDates.has(day.isoDate)
+                    && !enteredDates.has(day.isoDate);
                   const valueCellClass = `erp-month-value-cell${missingOperation ? " erp-month-missing" : ""}`;
                   const missingLabel = missingOperation ? " - chưa nhập công đoạn" : "";
                   const context = { cell, order, employee, operation, workDate: day.isoDate };
