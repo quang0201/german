@@ -40,6 +40,17 @@ public static class UserAccountAdminEndpoints
                 : ApiResultMapper.Error(result.Error!);
         });
 
+        group.MapDelete("/{id:guid}", async (
+            Guid id,
+            UserAccountService service,
+            CancellationToken ct) =>
+        {
+            var result = await service.DeleteAsync(id, ct);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : ApiResultMapper.Error(result.Error!);
+        });
+
         return endpoints;
     }
 }

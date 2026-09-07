@@ -181,6 +181,20 @@ public sealed class UserAccountService(IGermanDbContext db, IPasswordService pas
         return AppResult<UserAccountDto>.Success(ToDto(account, employee));
     }
 
+    public async Task<AppResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var account = await db.UserAccounts.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (account is null)
+        {
+            return AppResult.Failure("user_account.not_found", "Không tìm thấy tài khoản.");
+        }
+
+        account.IsActive = false;
+        account.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult.Success();
+    }
+
     private static UserAccountDto ToDto(UserAccount account, Employee? employee) =>
         new(
             account.Id,
