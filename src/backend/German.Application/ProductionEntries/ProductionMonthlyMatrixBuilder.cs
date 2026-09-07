@@ -5,12 +5,13 @@ internal static class ProductionMonthlyMatrixBuilder
     public static ProductionMonthlyMatrixResult Build(
         DateOnly fromDate,
         DateOnly untilDate,
-        ProductionMonthlyMatrixQuery request,
+        Guid? orderId,
+        bool excludeSundays,
         IReadOnlyList<ProductionMonthlyMatrixRow> rows,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> workedDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
     {
-        var visible = request.ExcludeSundays
+        var visible = excludeSundays
             ? rows.Where(row => row.WorkDate.DayOfWeek != DayOfWeek.Sunday).ToList()
             : rows.ToList();
 
@@ -21,8 +22,8 @@ internal static class ProductionMonthlyMatrixBuilder
                 group.Key.OrderId, group.Key.OrderCode, group.Key.ProductName))
             .ToList();
 
-        var scoped = request.OrderId.HasValue
-            ? visible.Where(row => row.OrderId == request.OrderId.Value).ToList()
+        var scoped = orderId.HasValue
+            ? visible.Where(row => row.OrderId == orderId.Value).ToList()
             : visible;
 
         var summary = new ProductionMonthlyMatrixSummary(
@@ -39,7 +40,7 @@ internal static class ProductionMonthlyMatrixBuilder
             .ToList();
 
         return new ProductionMonthlyMatrixResult(
-            fromDate, untilDate, request.ExcludeSundays, summary, availableOrders, orders);
+            fromDate, untilDate, excludeSundays, summary, availableOrders, orders);
     }
 
     private static ProductionMatrixOrderBlockDto BuildOrder(

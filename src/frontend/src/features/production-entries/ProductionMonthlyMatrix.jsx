@@ -1,13 +1,15 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
+import { dateRangeAxis, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
 
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
 const cellsByDate = (operation) => new Map((operation.cells ?? []).map((cell) => [cell.workDate, cell]));
 
-export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", excludeSundays = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick, today = new Date() }) {
+export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDate = "", selectedOrderId = "", excludeSundays = true, showSundayToggle = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick, today = new Date() }) {
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const axis = useMemo(() => monthDateAxis(monthKey, excludeSundays), [monthKey, excludeSundays]);
+  const range = useMemo(() => fromDate && untilDate ? { fromDate, untilDate } : monthBounds(monthKey), [fromDate, untilDate, monthKey]);
+  const axis = useMemo(() => fromDate && untilDate ? dateRangeAxis(fromDate, untilDate, excludeSundays) : monthDateAxis(monthKey, excludeSundays), [fromDate, untilDate, monthKey, excludeSundays]);
+  const rangeLabel = fromDate && untilDate ? `${range.fromDate.split("-").reverse().join("/")} – ${range.untilDate.split("-").reverse().join("/")}` : monthLabel(monthKey);
   const scrollRef = useRef(null);
   const horizontalScrollRef = useRef(null);
   const horizontalScrollContentRef = useRef(null);
@@ -25,7 +27,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
       if (horizontalScrollContentRef.current) {
         horizontalScrollContentRef.current.style.width = `${scrollRef.current.scrollWidth}px`;
       }
-      const todayButton = monthKey === todayIso.slice(0, 7)
+      const todayButton = todayIso >= range.fromDate && todayIso <= range.untilDate
         ? scrollRef.current.querySelector(`[data-date="${todayIso}"]`)
         : null;
       const nextScrollLeft = todayButton
@@ -40,18 +42,18 @@ export function ProductionMonthlyMatrix({ data, monthKey, selectedOrderId = "", 
       if (horizontalScrollRef.current) horizontalScrollRef.current.scrollLeft = nextScrollLeft;
       scrollLeftRef.current = nextScrollLeft;
     }
-  }, [loading, error, monthKey, selectedOrderId, excludeSundays, todayIso]);
+  }, [loading, error, monthKey, fromDate, untilDate, selectedOrderId, excludeSundays, todayIso, range.fromDate, range.untilDate]);
 
   return (
-    <section className="erp-month-matrix-section" aria-label={`Sản lượng ${monthLabel(monthKey)}`}>
+    <section className="erp-month-matrix-section" aria-label={`Sản lượng ${rangeLabel}`}>
       <div className="erp-month-matrix-toolbar">
         <div className="erp-month-order-filter" role="group" aria-label="Lọc Mã SX">
           {availableOrders.length === 0 ? <strong>{monthLabel(monthKey)}</strong> : <><button type="button" className="erp-button erp-button-secondary erp-month-order-filter-button" aria-pressed={!selectedOrderId} onClick={() => onSelectOrder?.("")}>Tất cả mã SX</button>{availableOrders.map((order) => <button key={order.id} type="button" className="erp-button erp-button-secondary erp-month-order-filter-button" aria-pressed={selectedOrderId === order.id} onClick={() => onSelectOrder?.(order.id)}>{order.code}</button>)}</>}
         </div>
-        <label className="erp-month-sunday-toggle"><input type="checkbox" checked={excludeSundays} onChange={(event) => onToggleSundays?.(event.target.checked)} /><span>Ẩn Chủ nhật</span></label>
+        {showSundayToggle && <label className="erp-month-sunday-toggle"><input type="checkbox" checked={excludeSundays} onChange={(event) => onToggleSundays?.(event.target.checked)} /><span>Ẩn Chủ nhật</span></label>}
       </div>
       {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
-      {loading && <div className="erp-table-state">Đang tải sản lượng tháng...</div>}
+      {loading && <div className="erp-table-state">Đang tải sản lượng...</div>}
       {!loading && !error && <>
         <div ref={horizontalScrollRef} className="erp-month-matrix-horizontal-scroll" aria-label="Cuộn ngang ma trận" role="region" tabIndex="0" onScroll={(event) => { const nextScrollLeft = event.currentTarget.scrollLeft; scrollLeftRef.current = nextScrollLeft; if (scrollRef.current && scrollRef.current.scrollLeft !== nextScrollLeft) scrollRef.current.scrollLeft = nextScrollLeft; }}><div ref={horizontalScrollContentRef} aria-hidden="true" /></div>
           <div ref={scrollRef} onScroll={(event) => { const nextScrollLeft = event.currentTarget.scrollLeft; scrollLeftRef.current = nextScrollLeft; if (horizontalScrollRef.current && horizontalScrollRef.current.scrollLeft !== nextScrollLeft) horizontalScrollRef.current.scrollLeft = nextScrollLeft; }} className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => { const isToday = day.isoDate === todayIso; const dayClass = `erp-month-day-head${day.isSunday ? " erp-month-sunday" : ""}${isToday ? " erp-month-today" : ""}`; return <th key={day.isoDate} className={dayClass} colSpan="2" aria-current={isToday ? "date" : undefined}><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>; })}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>

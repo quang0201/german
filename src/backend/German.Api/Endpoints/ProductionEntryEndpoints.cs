@@ -12,6 +12,7 @@ public static class ProductionEntryEndpoints
         var group = endpoints.MapGroup("/api/production-entries").RequireAuthorization();
         group.MapGet("/", ListAsync).RequireAuthorization("ManagerOrAdmin");
         group.MapGet("/monthly-matrix", GetMonthlyMatrixAsync).RequireAuthorization("ManagerOrAdmin");
+        group.MapGet("/weekly-matrix", GetWeeklyMatrixAsync).RequireAuthorization("ManagerOrAdmin");
         group.MapGet("/mine", ListMineAsync);
         group.MapGet("/{id:guid}", GetDetailAsync);
         group.MapPost("/", CreateAsync);
@@ -30,6 +31,12 @@ public static class ProductionEntryEndpoints
     private static async Task<IResult> GetMonthlyMatrixAsync(int year, int month, Guid? employeeId, Guid? orderId, Guid? operationId, string? search, bool? excludeSundays, ProductionMonthlyMatrixService service, CancellationToken cancellationToken)
     {
         var result = await service.GetAsync(new ProductionMonthlyMatrixQuery(year, month, employeeId, orderId, operationId, search, excludeSundays ?? true), cancellationToken);
+        return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
+    }
+
+    private static async Task<IResult> GetWeeklyMatrixAsync(DateOnly fromDate, DateOnly untilDate, Guid? employeeId, Guid? orderId, Guid? operationId, string? search, bool? excludeSundays, ProductionMonthlyMatrixService service, CancellationToken cancellationToken)
+    {
+        var result = await service.GetWeeklyAsync(new ProductionWeeklyMatrixQuery(fromDate, untilDate, employeeId, orderId, operationId, search, excludeSundays ?? false), cancellationToken);
         return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
     }
 

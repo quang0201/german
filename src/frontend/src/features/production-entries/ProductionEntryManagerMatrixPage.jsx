@@ -12,22 +12,22 @@ import { ProductionExportDialog } from "./ProductionExportDialog.jsx";
 import { ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
 import { ProductionMatrixCellRecordsDialog } from "./ProductionMatrixCellRecordsDialog.jsx";
 import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
-import { ProductionMonthNavigator } from "./ProductionMonthNavigator.jsx";
 import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
 import { ProductionSummary } from "./ProductionSummary.jsx";
 import { buildProductionExportUrl } from "./productionEntryQuery.js";
 import { productionExportFileName } from "./productionExport.js";
-import { buildProductionMonthlyMatrixUrl, currentMonthKey, matrixCellAction, monthBounds, shiftMonth } from "./productionMonthlyMatrix.js";
+import { buildProductionWeeklyMatrixUrl, currentMonthKey, matrixCellAction } from "./productionMonthlyMatrix.js";
 import { localIsoDate } from "./productionPeriod.js";
+import { derivePeriodRange, shiftPeriod } from "./productionPeriod.js";
+import { ProductionWeekNavigator } from "./ProductionWeekNavigator.jsx";
 import "./ProductionMonthlyMatrix.css";
 
 const emptyMatrix = { summary: {}, availableOrders: [], orders: [] };
 const emptyFilters = { employeeId: "", operationId: "", search: "" };
 
 export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPanelClose }) {
-  const [monthKey, setMonthKey] = useState(() => currentMonthKey(localIsoDate()));
+  const [weekAnchorDate, setWeekAnchorDate] = useState(() => localIsoDate());
   const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [excludeSundays, setExcludeSundays] = useState(false);
   const [filters, setFilters] = useState(emptyFilters);
   const [draft, setDraft] = useState(emptyFilters);
   const [employees, setEmployees] = useState([]);
@@ -41,7 +41,8 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   const [batchDay, setBatchDay] = useState(null);
   const [recordsContext, setRecordsContext] = useState(null);
   const toast = useToast();
-  const bounds = useMemo(() => monthBounds(monthKey), [monthKey]);
+  const weekRange = useMemo(() => derivePeriodRange({ periodMode: "week", anchorDate: weekAnchorDate }), [weekAnchorDate]);
+  const monthKey = currentMonthKey(weekAnchorDate);
 
   useEffect(() => {
     api.get("/api/employees").then(setEmployees)
@@ -69,12 +70,12 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   useEffect(() => {
     let active = true;
     setLoading(true); setError("");
-    api.get(buildProductionMonthlyMatrixUrl({ monthKey, orderId: selectedOrderId, excludeSundays, ...filters }))
+    api.get(buildProductionWeeklyMatrixUrl({ ...weekRange, orderId: selectedOrderId, excludeSundays: false, ...filters }))
       .then((payload) => { if (active) setData(payload); })
       .catch((requestError) => { if (active) setError(requestError.message || "Không thể tải sản lượng tháng."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [monthKey, selectedOrderId, excludeSundays, filters, reloadKey]);
+  }, [weekRange, selectedOrderId, filters, reloadKey]);
 
   useEffect(() => {
     if (!selectedOrderId) return;
@@ -134,7 +135,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     <div className="erp-feature-page erp-production-manager-page">
       <PageHeader title="Sản lượng" description="Theo dõi và nhập sản lượng theo ma trận tháng" actions={<><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>} />
       <div className="erp-production-manager-overview">
-        <div className="erp-production-month-header"><ProductionMonthNavigator monthKey={monthKey} onPrevious={() => setMonthKey((value) => shiftMonth(value, -1))} onNext={() => setMonthKey((value) => shiftMonth(value, 1))} /><span>{bounds.fromDate.split("-").reverse().join("/")} → {bounds.untilDate.split("-").reverse().join("/")}</span></div>
+        <div className="erp-production-month-header"><ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} /><span>{weekRange.fromDate.split("-").reverse().join("/")} → {weekRange.untilDate.split("-").reverse().join("/")}</span></div>
         <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
       </div>
       <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
@@ -142,11 +143,11 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
         <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
         <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
       </FilterBar>
-      <ProductionMonthlyMatrix data={data} monthKey={monthKey} selectedOrderId={selectedOrderId} excludeSundays={excludeSundays} loading={loading} error={error} onSelectOrder={selectOrder} onToggleSundays={setExcludeSundays} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} />
+      <ProductionMonthlyMatrix data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} selectedOrderId={selectedOrderId} excludeSundays={false} showSundayToggle={false} loading={loading} error={error} onSelectOrder={selectOrder} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} />
       <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} onReload={reload} />
       <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />
-      <ProductionExportDialog open={exportOpen} initialMode="month" initialAnchorDate={`${monthKey}-01`} initialFromDate={bounds.fromDate} initialUntilDate={bounds.untilDate} onClose={() => setExportOpen(false)} onExport={exportRows} />
+      <ProductionExportDialog open={exportOpen} initialMode="week" initialAnchorDate={weekAnchorDate} initialFromDate={weekRange.fromDate} initialUntilDate={weekRange.untilDate} onClose={() => setExportOpen(false)} onExport={exportRows} />
       <DetailPanel open={Boolean(panelEntryId)} title="Chi tiết sản lượng" onClose={onPanelClose}>
         {panelEntryId && <ProductionEntryDetailPage session={session} entryId={panelEntryId} inPanel onClose={onPanelClose} onChanged={reload} />}
       </DetailPanel>

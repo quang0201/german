@@ -22,6 +22,51 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
         var fromDate = new DateOnly(request.Year, request.Month, 1);
         var untilDate = fromDate.AddMonths(1).AddDays(-1);
 
+        return await GetRangeAsync(
+            fromDate,
+            untilDate,
+            request.EmployeeId,
+            request.OrderId,
+            request.OperationId,
+            request.Search,
+            request.ExcludeSundays,
+            cancellationToken);
+    }
+
+    public async Task<AppResult<ProductionMonthlyMatrixResult>> GetWeeklyAsync(
+        ProductionWeeklyMatrixQuery request,
+        CancellationToken cancellationToken)
+    {
+        if (request.FromDate.DayOfWeek != DayOfWeek.Monday
+            || request.UntilDate != request.FromDate.AddDays(6))
+        {
+            return AppResult<ProductionMonthlyMatrixResult>.Failure(
+                "production_matrix.invalid_week",
+                "Khoảng tuần phải bắt đầu từ thứ 2 và kết thúc vào Chủ nhật.");
+        }
+
+        return await GetRangeAsync(
+            request.FromDate,
+            request.UntilDate,
+            request.EmployeeId,
+            request.OrderId,
+            request.OperationId,
+            request.Search,
+            request.ExcludeSundays,
+            cancellationToken);
+    }
+
+    private async Task<AppResult<ProductionMonthlyMatrixResult>> GetRangeAsync(
+        DateOnly fromDate,
+        DateOnly untilDate,
+        Guid? employeeId,
+        Guid? orderId,
+        Guid? operationId,
+        string? searchText,
+        bool excludeSundays,
+        CancellationToken cancellationToken)
+    {
+
         var query =
             from entry in db.ProductionEntries.AsNoTracking()
             join employee in db.Employees.AsNoTracking() on entry.EmployeeId equals employee.Id
@@ -31,11 +76,11 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 && entry.WorkDate <= untilDate
                 && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= fromDate)
-                && (!request.EmployeeId.HasValue || entry.EmployeeId == request.EmployeeId.Value)
-                && (!request.OperationId.HasValue || entry.ProductionOperationId == request.OperationId.Value)
+                && (!employeeId.HasValue || entry.EmployeeId == employeeId.Value)
+                && (!operationId.HasValue || entry.ProductionOperationId == operationId.Value)
             select new { entry, employee, order, operation };
 
-        var search = ProductionEntrySearch.Normalize(request.Search);
+        var search = ProductionEntrySearch.Normalize(searchText);
         if (search is not null)
         {
             var text = search.LoweredText;
@@ -91,7 +136,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToHashSet();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, request, rows, workedDates, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, workedDates, paidLeaveDates));
     }
 }
 

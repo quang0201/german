@@ -33,13 +33,24 @@ export function monthBounds(monthKey) {
 export function monthDateAxis(monthKey, excludeSundays = true) {
   const { year, month } = parseMonthKey(monthKey);
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const monthText = String(month).padStart(2, "0");
+  return dateRangeAxis(`${year}-${String(month).padStart(2, "0")}-01`, `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`, excludeSundays);
+}
+
+function parseIsoDate(isoDate) {
+  const [year, month, day] = String(isoDate).split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+export function dateRangeAxis(fromDate, untilDate, excludeSundays = false) {
+  const from = parseIsoDate(fromDate);
+  const until = parseIsoDate(untilDate);
   const days = [];
-  for (let day = 1; day <= lastDay; day += 1) {
-    const date = new Date(Date.UTC(year, month - 1, day));
+  for (const date = from; date <= until; date.setUTCDate(date.getUTCDate() + 1)) {
     const weekday = date.getUTCDay();
     if (excludeSundays && weekday === 0) continue;
-    const dayText = String(day).padStart(2, "0");
+    const year = date.getUTCFullYear();
+    const monthText = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const dayText = String(date.getUTCDate()).padStart(2, "0");
     days.push({
       isoDate: `${year}-${monthText}-${dayText}`,
       weekdayLabel: WEEKDAYS[weekday],
@@ -48,6 +59,10 @@ export function monthDateAxis(monthKey, excludeSundays = true) {
     });
   }
   return days;
+}
+
+export function weekDateAxis(fromDate, untilDate) {
+  return dateRangeAxis(fromDate, untilDate, false);
 }
 
 export function buildProductionMonthlyMatrixUrl(filters) {
@@ -61,6 +76,18 @@ export function buildProductionMonthlyMatrixUrl(filters) {
     if (filters[key]) params.set(key, filters[key]);
   }
   return `/api/production-entries/monthly-matrix?${params}`;
+}
+
+export function buildProductionWeeklyMatrixUrl(filters) {
+  const params = new URLSearchParams({
+    fromDate: filters.fromDate,
+    untilDate: filters.untilDate,
+    excludeSundays: String(filters.excludeSundays === true),
+  });
+  for (const key of ["employeeId", "orderId", "operationId", "search"]) {
+    if (filters[key]) params.set(key, filters[key]);
+  }
+  return `/api/production-entries/weekly-matrix?${params}`;
 }
 
 export function matrixCellAction(cell) {
