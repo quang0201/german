@@ -69,12 +69,26 @@ public sealed class ProductionMonthlyMatrixServiceTests
     {
         await using var db = CreateDb();
         var employee = new Employee { EmployeeCode = "E006", FullName = "Bạch Thị Nương" };
+        var rosterEmployee = new Employee { EmployeeCode = "E007", FullName = "Bạch Thị Đào" };
         var order = NewOrder("0417", "Mã hàng 0417");
         var operation = NewOperation(order, 14, "May quai");
-        db.AddRange(employee, order, operation);
+        db.AddRange(employee, rosterEmployee, order, operation);
         AddEntry(db, employee, order, operation, new DateOnly(2026, 8, 31), 100m, 0m);
         AddEntry(db, employee, order, operation, new DateOnly(2026, 9, 6), 200m, 0m);
         AddEntry(db, employee, order, operation, new DateOnly(2026, 9, 7), 300m, 0m);
+        AddEntry(db, rosterEmployee, order, operation, new DateOnly(2026, 9, 7), 400m, 0m);
+        var rosterAttendance = new AttendanceDay
+        {
+            EmployeeId = rosterEmployee.Id,
+            WorkDate = new DateOnly(2026, 9, 3)
+        };
+        rosterAttendance.Shifts.Add(new AttendanceShiftEntry
+        {
+            SlotNumber = 1,
+            ValueKind = AttendanceShiftValueKind.Hours,
+            WorkedHours = 8m
+        });
+        db.Add(rosterAttendance);
         await db.SaveChangesAsync();
 
         var result = await new ProductionMonthlyMatrixService(db).GetWeeklyAsync(
@@ -85,9 +99,18 @@ public sealed class ProductionMonthlyMatrixServiceTests
         Assert.AreEqual(new DateOnly(2026, 8, 31), result.Value!.FromDate);
         Assert.AreEqual(new DateOnly(2026, 9, 6), result.Value.UntilDate);
         Assert.AreEqual(2, result.Value.Summary.EntryCount);
+        Assert.AreEqual(2, result.Value.Orders.Single().Employees.Count);
+        var employeeWithoutWeeklyProduction = result.Value.Orders.Single().Employees.Single(item => item.EmployeeCode == "E007");
+        Assert.AreEqual(0m, employeeWithoutWeeklyProduction.Operations.Single().TotalQuantity);
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 9, 3) },
+            employeeWithoutWeeklyProduction.WorkedDates.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 9, 3) },
+            employeeWithoutWeeklyProduction.AttendanceDates.ToArray());
         CollectionAssert.AreEquivalent(
             new[] { new DateOnly(2026, 8, 31), new DateOnly(2026, 9, 6) },
-            result.Value.Orders.Single().Employees.Single().Operations.Single().Cells.Select(cell => cell.WorkDate).ToArray());
+            result.Value.Orders.Single().Employees.Single(item => item.EmployeeCode == "E006").Operations.Single().Cells.Select(cell => cell.WorkDate).ToArray());
     }
 
     [TestMethod]
