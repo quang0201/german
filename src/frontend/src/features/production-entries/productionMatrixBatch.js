@@ -72,13 +72,22 @@ export function resolveBatchEntryQuantities({ mode, draft, hourDraft }) {
   return { hc: preview.hc, tc: preview.tc, preview };
 }
 
-export function buildBatchDirectPayload({ workDate, employeeId, productionOrderId, hourDraft, items }) {
-  const shifts = (hourDraft?.shifts ?? []).map((shift) => ({
-    slotNumber: shift.slotNumber,
-    kind: "Hours",
-    workedHours: requiredHours(shift.workedHours, shift.shiftName || `Ca ${shift.slotNumber}`),
-  }));
+export function buildAttendanceMonthPayload({ workDate, employeeId, hourDraft, useTotalRegularHours = false }) {
+  const shifts = buildAttendanceShifts(hourDraft, useTotalRegularHours);
+  const [year, month] = String(workDate).split("-").map(Number);
+  return {
+    year,
+    month,
+    days: [{
+      employeeId,
+      workDate,
+      overtimeHours: requiredHours(hourDraft?.tcHours ?? 0, "TC"),
+      shifts,
+    }],
+  };
+}
 
+export function buildBatchDirectPayload({ workDate, employeeId, productionOrderId, hourDraft, useTotalRegularHours = false, items }) {
   const payload = {
     workDate,
     employeeId,
@@ -91,12 +100,40 @@ export function buildBatchDirectPayload({ workDate, employeeId, productionOrderI
   return {
     ...payload,
     attendance: {
-      employeeId,
-      workDate,
-      overtimeHours: requiredHours(hourDraft?.tcHours ?? 0, "TC"),
-      shifts,
+      ...buildAttendanceMonthPayload({ workDate, employeeId, hourDraft, useTotalRegularHours }).days[0],
     },
   };
+}
+
+function buildAttendanceShifts(hourDraft, useTotalRegularHours) {
+  const sourceShifts = hourDraft?.shifts ?? [];
+  if (!useTotalRegularHours) {
+    return sourceShifts.map((shift) => ({
+      slotNumber: shift.slotNumber,
+      kind: "Hours",
+      workedHours: requiredHours(shift.workedHours, shift.shiftName || `Ca ${shift.slotNumber}`),
+    }));
+  }
+
+  const totalHours = requiredHours(hourDraft?.hcHours ?? 0, "Giờ HC");
+  if (!sourceShifts.length) return [];
+  const weights = sourceShifts.map((shift) => {
+    const scheduledHours = Number(shift.scheduledHours);
+    return Number.isFinite(scheduledHours) && scheduledHours > 0 ? scheduledHours : 1;
+  });
+  const weightTotal = weights.reduce((sum, value) => sum + value, 0);
+  let assigned = 0;
+  return sourceShifts.map((shift, index) => {
+    const workedHours = index === sourceShifts.length - 1
+      ? totalHours - assigned
+      : totalHours * weights[index] / weightTotal;
+    assigned += workedHours;
+    return {
+      slotNumber: shift.slotNumber,
+      kind: "Hours",
+      workedHours,
+    };
+  });
 }
 
 function requiredQuantity(value, label) {
