@@ -32,6 +32,24 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task UpdateAsyncPersistsHourlyCompensationType()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E006", FullName = "Nguyễn Thị Nga" };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).UpdateAsync(
+            employee.Id,
+            new UpdateEmployeeCommand("E006", "Nguyễn Thị Nga", true, EmployeeCompensationType.Hourly),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(EmployeeCompensationType.Hourly, (await db.Employees.SingleAsync()).CompensationType);
+        Assert.AreEqual(EmployeeCompensationType.Hourly, result.Value?.CompensationType);
+    }
+
+    [TestMethod]
     public async Task CreateAsyncRejectsMissingShiftBeforeCreatingEmployee()
     {
         await using var db = CreateDb();

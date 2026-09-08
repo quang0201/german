@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { EmployeeDialog } from "./EmployeeDialog.jsx";
 import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
+import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate.js";
 
 describe("EmployeeDialog", () => {
   const employee = { id: "employee-1", employeeCode: "E001", fullName: "Nguyễn Văn An", isActive: true };
@@ -18,6 +19,18 @@ describe("EmployeeDialog", () => {
     expect(html).toContain('value="E001"');
     expect(html).toContain('value="Nguyễn Văn An"');
     expect(html).toContain("Lưu thay đổi");
+  });
+
+  test("renders compensation selection and sends hourly compensation", () => {
+    const html = renderToStaticMarkup(<EmployeeDialog open employee={{ ...employee, compensationType: "Hourly" }} onClose={() => {}} onSubmit={() => {}} />);
+
+    expect(html).toContain("Cách tính tiền");
+    expect(html).toContain("Theo giờ");
+    expect(buildEmployeeUpdatePayload({ ...employeeForm(employee), compensationType: "Hourly" }).compensationType).toBe("Hourly");
+  });
+
+  test("includes compensation selection when creating an employee", () => {
+    expect(buildEmployeeCreatePayload({ ...employeeCreateForm(), compensationType: "Hourly" }).compensationType).toBe("Hourly");
   });
 
   test("renders shift selection when creating an employee", () => {
