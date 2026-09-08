@@ -9,6 +9,7 @@ import {
   createQuickEntry,
   buildQuickEntryCreatePayload,
   buildQuickEntryPayload,
+  buildQuickEntryAttendanceLookupPath,
   isQuickEntryDetailCompatible,
   quickEntryExpectedVersion,
   quickEntryFeedbackMessage,
@@ -35,6 +36,12 @@ const detail = {
 };
 
 describe("production matrix quick entry guards", () => {
+  test("builds attendance lookup for an existing entry before switching to hour split", () => {
+    expect(buildQuickEntryAttendanceLookupPath(context)).toBe(
+      "/api/lookups/attendance-hours?employeeId=employee-1&date=2026-08-27",
+    );
+  });
+
   test("loads attendance hours for a new hour-split entry without changing edit mode", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionMatrixQuickEntryDialog.jsx"), "utf8");
 
