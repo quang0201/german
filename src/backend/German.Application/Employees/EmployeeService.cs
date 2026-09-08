@@ -48,6 +48,7 @@ public sealed class EmployeeService(IGermanDbContext db)
                     employee.EmployeeCode,
                     employee.FullName,
                     employee.IsActive,
+                    employee.CompensationType,
                     current.ShiftTemplateId,
                     current.ShiftTemplateName,
                     current.EffectiveFrom,
@@ -58,6 +59,11 @@ public sealed class EmployeeService(IGermanDbContext db)
 
     public async Task<AppResult<EmployeeDto>> CreateAsync(CreateEmployeeCommand command, CancellationToken cancellationToken)
     {
+        if (!Enum.IsDefined(command.CompensationType))
+        {
+            return AppResult<EmployeeDto>.Failure("employee.invalid_compensation_type", "Cách tính tiền không hợp lệ.");
+        }
+
         var normalized = Normalize(command.EmployeeCode);
         if (normalized.Length == 0 || string.IsNullOrWhiteSpace(command.FullName))
         {
@@ -83,7 +89,8 @@ public sealed class EmployeeService(IGermanDbContext db)
         var employee = new Employee
         {
             EmployeeCode = command.EmployeeCode.Trim(),
-            FullName = command.FullName.Trim()
+            FullName = command.FullName.Trim(),
+            CompensationType = command.CompensationType
         };
         db.Employees.Add(employee);
 
@@ -103,6 +110,11 @@ public sealed class EmployeeService(IGermanDbContext db)
 
     public async Task<AppResult<EmployeeDto>> UpdateAsync(Guid id, UpdateEmployeeCommand command, CancellationToken cancellationToken)
     {
+        if (command.CompensationType.HasValue && !Enum.IsDefined(command.CompensationType.Value))
+        {
+            return AppResult<EmployeeDto>.Failure("employee.invalid_compensation_type", "Cách tính tiền không hợp lệ.");
+        }
+
         var employee = await db.Employees.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (employee is null)
         {
@@ -122,6 +134,10 @@ public sealed class EmployeeService(IGermanDbContext db)
 
         employee.EmployeeCode = command.EmployeeCode.Trim();
         employee.FullName = command.FullName.Trim();
+        if (command.CompensationType.HasValue)
+        {
+            employee.CompensationType = command.CompensationType.Value;
+        }
         var wasActive = employee.IsActive;
         employee.IsActive = command.IsActive;
         if (wasActive && !command.IsActive)
@@ -213,7 +229,7 @@ public sealed class EmployeeService(IGermanDbContext db)
     }
 
     private static EmployeeDto ToDto(Employee employee) =>
-        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, DeactivatedAt: employee.DeactivatedAt);
+        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, employee.CompensationType, DeactivatedAt: employee.DeactivatedAt);
 
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
 

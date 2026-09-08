@@ -60,6 +60,41 @@ public sealed class ManagerAdministrationApiTests
     }
 
     [TestMethod]
+    public async Task Manager_CanSetHourlyCompensationForAnEmployee()
+    {
+        await using var factory = new GermanApiFactory();
+        Guid employeeId = Guid.Empty;
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-employee-pay", "M015", UserRole.Manager, "secret");
+            var employee = new Employee { EmployeeCode = "E015", FullName = "Nguyễn Thị Loan" };
+            db.Employees.Add(employee);
+            employeeId = employee.Id;
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-employee-pay", "secret");
+        var response = await client.PutAsJsonAsync($"/api/employees/{employeeId}", new
+        {
+            employeeCode = "E015",
+            fullName = "Nguyễn Thị Loan",
+            isActive = true,
+            compensationType = "Hourly"
+        });
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual("Hourly", json.GetProperty("compensationType").GetString());
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            Assert.AreEqual(EmployeeCompensationType.Hourly, (await db.Employees.SingleAsync(x => x.Id == employeeId)).CompensationType);
+        });
+    }
+
+    [TestMethod]
     public async Task Manager_CannotCreateEmployeeWithoutShiftAssignment()
     {
         await using var factory = new GermanApiFactory();

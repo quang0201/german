@@ -75,6 +75,12 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
             <Field label="Họ tên" required>
               <input className="erp-control" required value={draft.fullName} onChange={(event) => update("fullName", event.target.value)} />
             </Field>
+            <Field label="Cách tính tiền" required>
+              <select className="erp-control" required value={draft.compensationType} onChange={(event) => update("compensationType", event.target.value)}>
+                <option value="PieceRate">Theo sản lượng</option>
+                <option value="Hourly">Theo giờ</option>
+              </select>
+            </Field>
             {mode === "create" ? <>
               <Field label="Bộ ca HC" required>
                 <select className="erp-control" required disabled={shiftLoading} value={draft.shiftTemplateId} onChange={(event) => update("shiftTemplateId", event.target.value)}>

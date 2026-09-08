@@ -12,12 +12,12 @@ public static class EmployeeEndpoints
         group.MapGet("/", async (EmployeeService service, CancellationToken ct) => Results.Ok(await service.ListAsync(ct)));
         group.MapPost("/", async (CreateEmployeeRequest request, EmployeeService service, CancellationToken ct) =>
         {
-            var result = await service.CreateAsync(new CreateEmployeeCommand(request.EmployeeCode, request.FullName, request.ShiftTemplateId, request.EffectiveFrom), ct);
+            var result = await service.CreateAsync(new CreateEmployeeCommand(request.EmployeeCode, request.FullName, request.ShiftTemplateId, request.EffectiveFrom, request.CompensationType ?? German.Domain.Employees.EmployeeCompensationType.PieceRate), ct);
             return result.IsSuccess ? Results.Created($"/api/employees/{result.Value!.Id}", result.Value) : ApiResultMapper.Error(result.Error!);
         });
         group.MapPut("/{id:guid}", async (Guid id, UpdateEmployeeRequest request, EmployeeService service, CancellationToken ct) =>
         {
-            var result = await service.UpdateAsync(id, new UpdateEmployeeCommand(request.EmployeeCode, request.FullName, request.IsActive), ct);
+            var result = await service.UpdateAsync(id, new UpdateEmployeeCommand(request.EmployeeCode, request.FullName, request.IsActive, request.CompensationType), ct);
             return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
         });
         group.MapDelete("/{id:guid}", async (Guid id, EmployeeService service, CancellationToken ct) =>

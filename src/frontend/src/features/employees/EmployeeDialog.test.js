@@ -105,6 +105,7 @@ describe("EmployeeDialog", () => {
       employeeCode: "E002",
       fullName: "Trần Thị B",
       isActive: false,
+      compensationType: "PieceRate",
     });
   });
 

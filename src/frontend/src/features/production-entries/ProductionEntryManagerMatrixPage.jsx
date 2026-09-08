@@ -110,6 +110,11 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }
 
   function handleBatchSaved(result) {
+    if (result?.attendanceOnly) {
+      toast.success("Đã lưu chấm công.");
+      reload();
+      return;
+    }
     const count = Number(result?.createdCount ?? 0);
     toast.success(count > 0 ? `Đã lưu ${count} công đoạn.` : "Đã lưu nhiều công đoạn.");
     reload();

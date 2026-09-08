@@ -50,6 +50,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   employeeIdRef.current = employeeId;
   const selectedIds = useMemo(() => Object.keys(drafts), [drafts]);
   const attendanceOnly = inputMode === "attendance-only";
+  const selectedEmployee = employees.find((item) => String(item.id) === String(employeeId));
 
   useEffect(() => {
     if (!day) return undefined;
@@ -221,7 +222,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
         <div className="erp-dialog-body">
           <div className="erp-matrix-input-grid erp-matrix-batch-fields">
             <label><span>Ngày</span><input className="erp-control" value={day.isoDate} readOnly /></label>
-            <label><span>Nhân viên *</span><select className="erp-control" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></label>
+            <label><span>Nhân viên *</span><select className="erp-control" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}</label>
             {!attendanceOnly && <label><span>Bước 1: Chọn Mã SX *</span><select className="erp-control" required value={orderId} onChange={(event) => setOrderId(event.target.value)}><option value="">Chọn Mã SX</option>{orders.map((item) => <option key={item.id} value={item.id}>{item.code} — {item.productName}</option>)}</select></label>}
           </div>
           {!attendanceOnly && <div className="erp-matrix-operation-picker" role="group" aria-label="Bước 2: Chọn công đoạn">

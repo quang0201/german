@@ -8,6 +8,7 @@ describe("employee create flow", () => {
       fullName: "",
       shiftTemplateId: "",
       effectiveFrom: "2026-08-17",
+      compensationType: "PieceRate",
     });
   });
 
@@ -22,6 +23,7 @@ describe("employee create flow", () => {
       fullName: "Nguyễn Văn An",
       shiftTemplateId: "shift-1",
       effectiveFrom: "2026-08-17",
+      compensationType: "PieceRate",
     });
   });
 });
