@@ -25,6 +25,10 @@ export function initialBatchEmployeeId(employees = [], preferredEmployeeId = "")
   return firstActiveEmployeeId(employees);
 }
 
+export function initialBatchInputMode(employee = {}) {
+  return employee.compensationType === "Hourly" ? "attendance-only" : "attendance-shifts";
+}
+
 export function initialBatchOrderId(orders = [], preferredOrderId = "") {
   return orders.some((item) => String(item.id) === String(preferredOrderId)) ? String(preferredOrderId) : "";
 }
@@ -56,11 +60,12 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     if (!day) return undefined;
     let active = true;
     const requestedDay = day;
-    setEmployeeId(initialBatchEmployeeId(employees, requestedDay.preferredEmployeeId));
+    const requestedEmployeeId = initialBatchEmployeeId(employees, requestedDay.preferredEmployeeId);
+    setEmployeeId(requestedEmployeeId);
     setOrderId("");
     setOrders([]);
     setOperations([]);
-    setInputMode("attendance-shifts");
+    setInputMode(initialBatchInputMode(employees.find((item) => String(item.id) === requestedEmployeeId)));
     setHourDraft(emptyHourDraft());
     setDrafts({});
     setError("");
@@ -156,6 +161,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
 
   function selectEmployee(value) {
     setEmployeeId(value);
+    setInputMode(initialBatchInputMode(employees.find((item) => String(item.id) === String(value))));
     setDrafts({});
     setError("");
   }
