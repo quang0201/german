@@ -78,8 +78,16 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }, [weekRange, selectedOrderId, filters, reloadKey]);
 
   useEffect(() => {
-    if (!selectedOrderId) return;
-    if (!(data.availableOrders ?? []).some((order) => String(order.id) === String(selectedOrderId))) {
+    const availableOrders = data.availableOrders ?? [];
+    if (!availableOrders.length) {
+      if (selectedOrderId) setSelectedOrderId("");
+      return;
+    }
+    if (!selectedOrderId) {
+      setSelectedOrderId(String(availableOrders[0].id));
+      return;
+    }
+    if (!availableOrders.some((order) => String(order.id) === String(selectedOrderId))) {
       setSelectedOrderId("");
       setFilters((current) => ({ ...current, operationId: "" }));
       setDraft((current) => ({ ...current, operationId: "" }));

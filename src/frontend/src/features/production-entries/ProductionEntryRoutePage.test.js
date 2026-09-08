@@ -45,5 +45,6 @@ describe("ProductionEntryRoutePage", () => {
     expect(source).toContain("buildProductionWeeklyMatrixUrl");
     expect(source).toContain('excludeSundays={false}');
     expect(source).toContain('showSundayToggle={false}');
+    expect(source).toContain("availableOrders[0].id");
   });
 });

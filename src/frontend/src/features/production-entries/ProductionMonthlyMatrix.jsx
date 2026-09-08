@@ -48,7 +48,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
     <section className="erp-month-matrix-section" aria-label={`Sản lượng ${rangeLabel}`}>
       <div className="erp-month-matrix-toolbar">
         <div className="erp-month-order-filter" role="group" aria-label="Lọc Mã SX">
-          {availableOrders.length === 0 ? <strong>{rangeLabel}</strong> : <select className="erp-control erp-month-order-filter-select" aria-label="Lọc Mã SX" value={selectedOrderId} onChange={(event) => onSelectOrder?.(event.target.value)}><option value="">Tất cả mã SX</option>{availableOrders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select>}
+          {availableOrders.length === 0 ? <strong>{rangeLabel}</strong> : <select className="erp-control erp-month-order-filter-select" aria-label="Lọc Mã SX" value={selectedOrderId} onChange={(event) => onSelectOrder?.(event.target.value)}>{availableOrders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select>}
         </div>
         {showSundayToggle && <label className="erp-month-sunday-toggle"><input type="checkbox" checked={excludeSundays} onChange={(event) => onToggleSundays?.(event.target.checked)} /><span>Ẩn Chủ nhật</span></label>}
       </div>

@@ -23,9 +23,11 @@ internal static class ProductionMonthlyMatrixBuilder
 
         var availableOrders = visibleGroupRows
             .GroupBy(row => (row.OrderId, row.OrderCode, row.ProductName))
-            .OrderBy(group => group.Key.OrderCode)
+            .OrderByDescending(group => group.Max(row => row.OrderCreatedAt))
+            .ThenBy(group => group.Key.OrderCode)
             .Select(group => new ProductionMatrixOrderOptionDto(
-                group.Key.OrderId, group.Key.OrderCode, group.Key.ProductName))
+                group.Key.OrderId, group.Key.OrderCode, group.Key.ProductName,
+                group.Max(row => row.OrderCreatedAt)))
             .ToList();
 
         var scoped = orderId.HasValue
@@ -42,7 +44,8 @@ internal static class ProductionMonthlyMatrixBuilder
         var orders = visibleGroupRows
             .Where(row => !orderId.HasValue || row.OrderId == orderId.Value)
             .GroupBy(row => (row.OrderId, row.OrderCode, row.ProductName))
-            .OrderBy(group => group.Key.OrderCode)
+            .OrderByDescending(group => group.Max(row => row.OrderCreatedAt))
+            .ThenBy(group => group.Key.OrderCode)
             .Select(group => BuildOrder(group, scoped, workedDates, attendanceDates, paidLeaveDates))
             .ToList();
 

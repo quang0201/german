@@ -39,6 +39,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
         Assert.AreEqual(new DateOnly(2026, 8, 1), result.Value!.FromDate);
         Assert.AreEqual(new DateOnly(2026, 8, 31), result.Value.UntilDate);
         Assert.AreEqual(2, result.Value.AvailableOrders.Count);
+        Assert.AreEqual("0521", result.Value.AvailableOrders[0].Code);
         Assert.AreEqual(2, result.Value.Orders.Count);
         var firstBlock = result.Value.Orders.Single(x => x.OrderCode == "0417");
         Assert.AreEqual(1, firstBlock.Employees.Count);

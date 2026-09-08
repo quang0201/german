@@ -54,7 +54,7 @@ public sealed record ProductionMatrixOrderBlockDto(
     string ProductName,
     IReadOnlyList<ProductionMatrixEmployeeGroupDto> Employees);
 
-public sealed record ProductionMatrixOrderOptionDto(Guid Id, string Code, string ProductName);
+public sealed record ProductionMatrixOrderOptionDto(Guid Id, string Code, string ProductName, DateTimeOffset CreatedAt);
 
 public sealed record ProductionMonthlyMatrixResult(
     DateOnly FromDate,

@@ -71,8 +71,8 @@ describe("ProductionMonthlyMatrix render", () => {
   test("keeps a sole production order selectable so operation filtering can be enabled", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" selectedOrderId="o1" excludeSundays />);
 
-    expect(html).toContain('<option value="">Tất cả mã SX</option>');
     expect(html).toContain('value="o1" selected="">0417 — Mã hàng 0417</option>');
+    expect(html).not.toContain("Tất cả mã SX");
   });
 
   test("keeps the calendar header visible for an empty month so batch entry remains reachable", () => {
