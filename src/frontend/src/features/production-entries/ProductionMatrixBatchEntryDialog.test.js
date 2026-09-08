@@ -1,5 +1,7 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { firstActiveEmployeeId, initialBatchEmployeeId, initialBatchInputMode, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
 import { isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
@@ -58,5 +60,12 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(html).toContain("Bước 1: Chọn Mã SX");
     expect(html).toContain("Bước 2: Chọn công đoạn");
     expect(html).toContain("Chọn Mã SX ở bước 1 để tải công đoạn.");
+  });
+
+  test("renders attendance shift inputs as text fields for P or Ô", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionMatrixBatchEntryDialog.jsx"), "utf8");
+
+    expect(source).toContain('type="text"');
+    expect(source).toContain("P/Ô");
   });
 });

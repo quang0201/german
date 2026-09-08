@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("production matrix batch attendance", () => {
   test("ignores attendance responses for an obsolete employee or day", () => {
@@ -23,6 +23,8 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain('tcHours: "0"');
     expect(source).toContain("Chỉ chấm công");
     expect(source).toContain("/api/attendance/monthly");
+    expect(source).toContain('type="text"');
+    expect(source).toContain("P/Ô");
   });
 
   test("builds a single-day attendance payload without requiring production", () => {
@@ -48,6 +50,48 @@ describe("production matrix batch attendance", () => {
           { slotNumber: 2, kind: "Hours", workedHours: 4 },
         ],
       }],
+    });
+  });
+
+  test("maps P to paid leave instead of treating it as an hour value", () => {
+    expect(parseAttendanceShiftValue("P", "Ca 1")).toEqual({ kind: "PaidLeave", workedHours: null });
+
+    expect(buildAttendanceMonthPayload({
+      workDate: "2026-08-22",
+      employeeId: "employee-1",
+      hourDraft: {
+        tcHours: "0",
+        shifts: [
+          { slotNumber: 1, workedHours: "P" },
+          { slotNumber: 2, workedHours: "4" },
+        ],
+      },
+    }).days[0].shifts).toEqual([
+      { slotNumber: 1, kind: "PaidLeave", workedHours: null },
+      { slotNumber: 2, kind: "Hours", workedHours: 4 },
+    ]);
+  });
+
+  test("excludes a paid-leave shift from production hour allocation", () => {
+    expect(resolveBatchEntryQuantities({
+      mode: "attendance-shifts",
+      draft: { total: "1000" },
+      hourDraft: {
+        tcHours: "0",
+        shifts: [
+          { slotNumber: 1, shiftName: "Ca 1", workedHours: "P" },
+          { slotNumber: 2, shiftName: "Ca 2", workedHours: "4" },
+        ],
+      },
+    })).toMatchObject({
+      hc: 1000,
+      tc: 0,
+      preview: {
+        shifts: [
+          { slotNumber: 1, quantity: 0 },
+          { slotNumber: 2, quantity: 1000 },
+        ],
+      },
     });
   });
 
