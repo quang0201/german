@@ -2,6 +2,13 @@ function sameId(left, right) {
   return String(left ?? "") === String(right ?? "");
 }
 
+export function buildQuickEntryAttendanceLookupPath(context) {
+  const employeeId = context?.employee?.employeeId;
+  const workDate = context?.workDate;
+  if (!employeeId || !workDate) return null;
+  return `/api/lookups/attendance-hours?employeeId=${encodeURIComponent(employeeId)}&date=${encodeURIComponent(workDate)}`;
+}
+
 export function isQuickEntryDetailCompatible({ record, context, detail }) {
   return Boolean(
     record && context && detail

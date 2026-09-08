@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
-import { buildQuickEntryPayload, canWriteQuickEntry, createQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion, quickEntryFeedbackMessage, shouldShowQuickEntryReload } from "./productionMatrixQuickEntry.js";
+import { buildQuickEntryAttendanceLookupPath, buildQuickEntryPayload, canWriteQuickEntry, createQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion, quickEntryFeedbackMessage, shouldShowQuickEntryReload } from "./productionMatrixQuickEntry.js";
 import { calculateHourSplitPreview, resolveQuickEntryQuantities } from "./productionMatrixHourSplit.js";
 import { attendanceHoursDefaults } from "./productionAttendanceHours.js";
 import "./ProductionMatrixDialogs.css";
@@ -47,8 +47,9 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     setDetailLoaded(!editing);
     setConfirmDelete(false);
     attendanceHoursEditedRef.current = false;
-    if (!editing) {
-      api.get(`/api/lookups/attendance-hours?employeeId=${encodeURIComponent(context.employee.employeeId)}&date=${encodeURIComponent(context.workDate)}`)
+    const attendanceLookupPath = buildQuickEntryAttendanceLookupPath(context);
+    if (attendanceLookupPath) {
+      api.get(attendanceLookupPath)
         .then((attendance) => {
           if (!active || attendanceHoursEditedRef.current) return;
           const defaults = attendanceHoursDefaults(attendance);
@@ -61,6 +62,8 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
           setHcHours(defaults.hcHours);
           setTcHours(defaults.tcHours);
         });
+    }
+    if (!editing) {
       return () => { active = false; };
     }
 

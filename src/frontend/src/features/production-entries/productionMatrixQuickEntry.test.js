@@ -42,10 +42,10 @@ describe("production matrix quick entry guards", () => {
     );
   });
 
-  test("loads attendance hours for a new hour-split entry without changing edit mode", () => {
+  test("loads attendance hours for new and existing hour-split entries without changing edit mode", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionMatrixQuickEntryDialog.jsx"), "utf8");
 
-    expect(source).toContain("/api/lookups/attendance-hours");
+    expect(source).toContain("buildQuickEntryAttendanceLookupPath");
     expect(source).toContain("attendanceHoursDefaults");
     expect(source).toContain("attendanceHoursEditedRef");
   });
