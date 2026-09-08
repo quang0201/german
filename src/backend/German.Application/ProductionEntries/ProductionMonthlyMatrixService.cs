@@ -73,7 +73,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
         CancellationToken cancellationToken)
     {
 
-        var rosterQuery =
+        var query =
             from entry in db.ProductionEntries.AsNoTracking()
             join employee in db.Employees.AsNoTracking() on entry.EmployeeId equals employee.Id
             join order in db.ProductionOrders.AsNoTracking() on entry.ProductionOrderId equals order.Id
@@ -82,14 +82,9 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 && entry.WorkDate <= groupUntilDate
                 && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= groupFromDate)
+                && (!employeeId.HasValue || entry.EmployeeId == employeeId.Value)
                 && (!operationId.HasValue || entry.ProductionOperationId == operationId.Value)
             select new { entry, employee, order, operation };
-
-        var query = rosterQuery;
-        if (employeeId.HasValue)
-        {
-            query = query.Where(item => item.entry.EmployeeId == employeeId.Value);
-        }
 
         var search = ProductionEntrySearch.Normalize(searchText);
         if (search is not null)
@@ -120,42 +115,6 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.order.Id, item.order.Code, item.order.ProductName,
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
             .ToListAsync(cancellationToken);
-        var rosterOperations = await rosterQuery
-            .Select(item => new ProductionMonthlyMatrixRosterOperation(
-                item.order.Id, item.order.Code, item.order.ProductName,
-                item.operation.Id, item.operation.OperationNumber, item.operation.Name))
-            .Distinct()
-            .ToListAsync(cancellationToken);
-        var rosterEmployeesQuery = db.Employees.AsNoTracking()
-            .Where(employee => employee.IsActive
-                || !employee.DeactivatedAt.HasValue
-                || employee.DeactivatedAt.Value >= groupFromDate);
-        if (employeeId.HasValue)
-        {
-            rosterEmployeesQuery = rosterEmployeesQuery.Where(employee => employee.Id == employeeId.Value);
-        }
-        if (search is not null)
-        {
-            rosterEmployeesQuery = rosterEmployeesQuery.Where(employee =>
-                employee.EmployeeCode.ToLower().Contains(search.LoweredText)
-                || employee.FullName.ToLower().Contains(search.LoweredText));
-        }
-        var rosterEmployees = await rosterEmployeesQuery
-            .Select(employee => new ProductionMonthlyMatrixRosterEmployee(
-                employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive))
-            .ToListAsync(cancellationToken);
-        var rosterMarkerDate = groupFromDate.DayOfWeek == DayOfWeek.Sunday
-            ? groupFromDate.AddDays(1)
-            : groupFromDate;
-        var rosterRows = rosterOperations
-            .SelectMany(operation => rosterEmployees.Select(employee => new ProductionMonthlyMatrixRow(
-                Guid.Empty, 0, rosterMarkerDate, ProductionEntryMode.Direct,
-                0m, 0m, 0m, null, DateTimeOffset.UnixEpoch,
-                employee.EmployeeId, employee.EmployeeCode, employee.EmployeeName, employee.EmployeeIsActive,
-                operation.OrderId, operation.OrderCode, operation.ProductName,
-                operation.OperationId, operation.OperationNumber, operation.OperationName)))
-            .ToList();
-        var matrixGroupRows = groupRows.Concat(rosterRows).ToList();
         var rows = groupRows
             .Where(row => row.WorkDate >= fromDate && row.WorkDate <= untilDate)
             .ToList();
@@ -196,7 +155,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToHashSet();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, matrixGroupRows, workedDates, attendanceDates, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, workedDates, attendanceDates, paidLeaveDates));
     }
 }
 
@@ -207,10 +166,3 @@ internal sealed record ProductionMonthlyMatrixRow(
     Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive,
     Guid OrderId, string OrderCode, string ProductName,
     Guid OperationId, int OperationNumber, string OperationName);
-
-internal sealed record ProductionMonthlyMatrixRosterOperation(
-    Guid OrderId, string OrderCode, string ProductName,
-    Guid OperationId, int OperationNumber, string OperationName);
-
-internal sealed record ProductionMonthlyMatrixRosterEmployee(
-    Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive);

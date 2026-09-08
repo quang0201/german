@@ -100,7 +100,8 @@ public sealed class ProductionMonthlyMatrixServiceTests
         Assert.AreEqual(new DateOnly(2026, 8, 31), result.Value!.FromDate);
         Assert.AreEqual(new DateOnly(2026, 9, 6), result.Value.UntilDate);
         Assert.AreEqual(2, result.Value.Summary.EntryCount);
-        Assert.AreEqual(3, result.Value.Orders.Single().Employees.Count);
+        Assert.AreEqual(2, result.Value.Orders.Single().Employees.Count);
+        Assert.IsFalse(result.Value.Orders.Single().Employees.Any(item => item.EmployeeCode == "7"));
         var employeeWithoutWeeklyProduction = result.Value.Orders.Single().Employees.Single(item => item.EmployeeCode == "E007");
         Assert.AreEqual(0m, employeeWithoutWeeklyProduction.Operations.Single().TotalQuantity);
         CollectionAssert.AreEqual(
@@ -112,10 +113,6 @@ public sealed class ProductionMonthlyMatrixServiceTests
         CollectionAssert.AreEquivalent(
             new[] { new DateOnly(2026, 8, 31), new DateOnly(2026, 9, 6) },
             result.Value.Orders.Single().Employees.Single(item => item.EmployeeCode == "E006").Operations.Single().Cells.Select(cell => cell.WorkDate).ToArray());
-        var employeeWithoutProductionInMatrix = result.Value.Orders.Single().Employees.Single(item => item.EmployeeCode == "7");
-        Assert.AreEqual("Hoa", employeeWithoutProductionInMatrix.EmployeeName);
-        Assert.AreEqual(0m, employeeWithoutProductionInMatrix.Operations.Single().TotalQuantity);
-        Assert.AreEqual(0, employeeWithoutProductionInMatrix.AttendanceDates.Count);
     }
 
     [TestMethod]

@@ -82,7 +82,6 @@ internal static class ProductionMonthlyMatrixBuilder
                     && row.OperationId == operationGroup.Key.OperationId)))
             .ToList();
         var productionDates = group
-            .Where(row => row.Id != Guid.Empty)
             .Select(row => row.WorkDate)
             .Distinct()
             .OrderBy(date => date)
