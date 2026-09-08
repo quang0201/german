@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildBatchDirectPayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("production matrix batch attendance", () => {
   test("ignores attendance responses for an obsolete employee or day", () => {
@@ -21,6 +21,52 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("/api/production-entries/batch-direct");
     expect(source).toContain("attendance");
     expect(source).toContain('tcHours: "0"');
+    expect(source).toContain("Chỉ chấm công");
+    expect(source).toContain("/api/attendance/monthly");
+  });
+
+  test("builds a single-day attendance payload without requiring production", () => {
+    expect(buildAttendanceMonthPayload({
+      workDate: "2026-08-22",
+      employeeId: "employee-1",
+      hourDraft: {
+        tcHours: "2",
+        shifts: [
+          { slotNumber: 1, workedHours: "4" },
+          { slotNumber: 2, workedHours: "4" },
+        ],
+      },
+    })).toEqual({
+      year: 2026,
+      month: 8,
+      days: [{
+        employeeId: "employee-1",
+        workDate: "2026-08-22",
+        overtimeHours: 2,
+        shifts: [
+          { slotNumber: 1, kind: "Hours", workedHours: 4 },
+          { slotNumber: 2, kind: "Hours", workedHours: 4 },
+        ],
+      }],
+    });
+  });
+
+  test("maps total HC hours back to the configured shifts when saving production by hours", () => {
+    const payload = buildAttendanceMonthPayload({
+      workDate: "2026-08-22",
+      employeeId: "employee-1",
+      hourDraft: {
+        hcHours: "6",
+        tcHours: "2",
+        shifts: [
+          { slotNumber: 1, scheduledHours: 4, workedHours: "4" },
+          { slotNumber: 2, scheduledHours: 4, workedHours: "4" },
+        ],
+      },
+      useTotalRegularHours: true,
+    });
+
+    expect(payload.days[0].shifts.map((shift) => shift.workedHours)).toEqual([3, 3]);
   });
 
   test("builds Direct quantities from total-hours and attendance-shift modes", () => {
