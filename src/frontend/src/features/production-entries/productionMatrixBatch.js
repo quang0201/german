@@ -20,6 +20,16 @@ export function isCurrentAttendanceRequest(
     && requestedDate === currentDate;
 }
 
+export function parseAttendanceShiftValue(value, label) {
+  const normalized = String(value ?? "").trim().toUpperCase();
+  if (normalized === "P") return { kind: "PaidLeave", workedHours: null };
+  if (normalized === "Ô") return { kind: "SickLeave", workedHours: null };
+  return {
+    kind: "Hours",
+    workedHours: requiredHours(value, label),
+  };
+}
+
 export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
   const hasAttendance = Boolean(attendance?.hasAttendance);
   const incomingShifts = attendance?.shifts ?? [];
@@ -59,7 +69,7 @@ export function resolveBatchEntryQuantities({ mode, draft, hourDraft }) {
 
   const preview = mode === "attendance-shifts"
     ? calculateMultiShiftHourSplit({
-      shifts: hourDraft.shifts,
+      shifts: normalizeProductionShifts(hourDraft),
       overtimeHours: hourDraft.tcHours,
       totalExpression: draft.total,
     })
@@ -107,32 +117,49 @@ export function buildBatchDirectPayload({ workDate, employeeId, productionOrderI
 
 function buildAttendanceShifts(hourDraft, useTotalRegularHours) {
   const sourceShifts = hourDraft?.shifts ?? [];
+  const parsedShifts = sourceShifts.map((shift) => ({
+    source: shift,
+    value: parseAttendanceShiftValue(
+      shift.kind === "PaidLeave" ? "P" : shift.kind === "SickLeave" ? "Ô" : shift.workedHours,
+      shift.shiftName || `Ca ${shift.slotNumber}`,
+    ),
+  }));
   if (!useTotalRegularHours) {
-    return sourceShifts.map((shift) => ({
-      slotNumber: shift.slotNumber,
-      kind: "Hours",
-      workedHours: requiredHours(shift.workedHours, shift.shiftName || `Ca ${shift.slotNumber}`),
-    }));
+    return parsedShifts.map(({ source, value }) => ({ slotNumber: source.slotNumber, ...value }));
   }
 
   const totalHours = requiredHours(hourDraft?.hcHours ?? 0, "Giờ HC");
   if (!sourceShifts.length) return [];
-  const weights = sourceShifts.map((shift) => {
-    const scheduledHours = Number(shift.scheduledHours);
+  const workingShifts = parsedShifts.filter(({ value }) => value.kind === "Hours");
+  if (!workingShifts.length) {
+    if (totalHours > 0) throw new RangeError("Không thể phân bổ giờ HC cho các ca nghỉ.");
+    return parsedShifts.map(({ source, value }) => ({ slotNumber: source.slotNumber, ...value }));
+  }
+  const weights = workingShifts.map(({ source }) => {
+    const scheduledHours = Number(source.scheduledHours);
     return Number.isFinite(scheduledHours) && scheduledHours > 0 ? scheduledHours : 1;
   });
   const weightTotal = weights.reduce((sum, value) => sum + value, 0);
   let assigned = 0;
-  return sourceShifts.map((shift, index) => {
-    const workedHours = index === sourceShifts.length - 1
+  let workingIndex = 0;
+  return parsedShifts.map(({ source, value }) => {
+    if (value.kind !== "Hours") return { slotNumber: source.slotNumber, ...value };
+    const workedHours = workingIndex === workingShifts.length - 1
       ? totalHours - assigned
-      : totalHours * weights[index] / weightTotal;
+      : totalHours * weights[workingIndex] / weightTotal;
     assigned += workedHours;
-    return {
-      slotNumber: shift.slotNumber,
-      kind: "Hours",
-      workedHours,
-    };
+    workingIndex += 1;
+    return { slotNumber: source.slotNumber, kind: "Hours", workedHours };
+  });
+}
+
+function normalizeProductionShifts(hourDraft) {
+  return (hourDraft?.shifts ?? []).map((shift) => {
+    const value = parseAttendanceShiftValue(
+      shift.kind === "PaidLeave" ? "P" : shift.kind === "SickLeave" ? "Ô" : shift.workedHours,
+      shift.shiftName || `Ca ${shift.slotNumber}`,
+    );
+    return { ...shift, workedHours: value.kind === "Hours" ? value.workedHours : 0 };
   });
 }
 
@@ -150,7 +177,7 @@ function requiredQuantity(value, label) {
 function requiredHours(value, label) {
   if (value === "" || value === null || value === undefined) return 0;
   const hours = Number(value);
-  if (!Number.isFinite(hours) || hours < 0) throw new RangeError(`${label} phải là số giờ không âm.`);
+  if (!Number.isFinite(hours) || hours < 0) throw new RangeError(`${label} phải là số giờ không âm, P hoặc Ô.`);
   return hours;
 }
 import { calculateHourSplitPreview, calculateMultiShiftHourSplit } from "./productionMatrixHourSplit.js";
