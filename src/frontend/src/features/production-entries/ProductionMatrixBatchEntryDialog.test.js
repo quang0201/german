@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { firstActiveEmployeeId, initialBatchEmployeeId, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
+import { firstActiveEmployeeId, initialBatchEmployeeId, initialBatchInputMode, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
 import { isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
 
 describe("ProductionMatrixBatchEntryDialog helpers", () => {
@@ -24,6 +24,12 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(initialBatchEmployeeId(employees, "employee-2")).toBe("employee-2");
     expect(initialBatchEmployeeId(employees, "missing")).toBe("employee-1");
     expect(initialBatchEmployeeId([{ id: "employee-2", isActive: false }], "employee-2")).toBe("");
+  });
+
+  test("opens hourly employees in attendance mode automatically", () => {
+    expect(initialBatchInputMode({ compensationType: "Hourly" })).toBe("attendance-only");
+    expect(initialBatchInputMode({ compensationType: "PieceRate" })).toBe("attendance-shifts");
+    expect(initialBatchInputMode({})).toBe("attendance-shifts");
   });
 
   test("ignores operations from an obsolete order request", () => {
