@@ -53,10 +53,16 @@ export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
         ...shift,
         workedHours: dirtyShifts[slotKey]
           ? currentShift?.workedHours ?? ""
-          : String(hasAttendance ? (shift.workedHours ?? "0") : "4"),
+          : attendanceShiftDraftValue(shift, hasAttendance),
       };
     }),
   };
+}
+
+function attendanceShiftDraftValue(shift, hasAttendance) {
+  if (shift.valueKind === "PaidLeave") return "P";
+  if (shift.valueKind === "SickLeave") return "Ô";
+  return String(hasAttendance ? (shift.workedHours ?? "0") : "4");
 }
 
 export function resolveBatchEntryQuantities({ mode, draft, hourDraft }) {

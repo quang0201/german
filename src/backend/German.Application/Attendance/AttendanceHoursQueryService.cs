@@ -33,15 +33,14 @@ public sealed class AttendanceHoursQueryService(IGermanDbContext db)
                 .OrderBy(item => item.SortOrder)
                 .ToListAsync(cancellationToken);
             var scheduledShifts = scheduledPeriods
-                .Select((item, index) => new AttendanceShiftHoursDto(index + 1, item.Name, 0m))
+                .Select((item, index) => new AttendanceShiftHoursDto(index + 1, item.Name, 0m, AttendanceShiftValueKind.Empty))
                 .ToList();
             return new AttendanceHoursDto(employeeId, workDate, false, 0m, 0m, 0m, 0m, scheduledShifts);
         }
 
-        var workedShifts = day.Shifts
-            .Where(x => x.ValueKind == AttendanceShiftValueKind.Hours)
+        var attendanceShifts = day.Shifts
             .OrderBy(x => x.SlotNumber)
-            .Select(x => new AttendanceShiftHoursDto(x.SlotNumber, x.ShiftName, x.WorkedHours ?? 0m))
+            .Select(x => new AttendanceShiftHoursDto(x.SlotNumber, x.ShiftName, x.WorkedHours ?? 0m, x.ValueKind))
             .ToList();
 
         return new AttendanceHoursDto(
@@ -52,6 +51,6 @@ public sealed class AttendanceHoursQueryService(IGermanDbContext db)
             day.OvertimeHours,
             day.Shifts.Where(x => x.ValueKind == AttendanceShiftValueKind.PaidLeave).Sum(x => x.ScheduledHours),
             day.Shifts.Where(x => x.ValueKind == AttendanceShiftValueKind.SickLeave).Sum(x => x.ScheduledHours),
-            workedShifts);
+            attendanceShifts);
     }
 }

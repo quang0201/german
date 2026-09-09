@@ -1,9 +1,12 @@
+using German.Domain.Attendance;
+
 namespace German.Application.Attendance;
 
 public sealed record AttendanceShiftHoursDto(
     int SlotNumber,
     string ShiftName,
-    decimal WorkedHours);
+    decimal WorkedHours,
+    AttendanceShiftValueKind ValueKind);
 
 public sealed record AttendanceHoursDto(
     Guid EmployeeId,
