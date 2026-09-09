@@ -235,6 +235,25 @@ describe("production matrix batch attendance", () => {
     expect(merged.shifts[0].workedHours).toBe("7");
   });
 
+  test("restores paid leave and its locked state from attendance lookup", () => {
+    const merged = mergeAttendanceHourDraft(
+      { hcHours: "", tcHours: "0", shifts: [] },
+      {
+        hasAttendance: true,
+        regularHours: 4,
+        overtimeHours: 0,
+        shifts: [
+          { slotNumber: 1, shiftName: "Ca 1", workedHours: 0, valueKind: "PaidLeave" },
+          { slotNumber: 2, shiftName: "Ca 2", workedHours: 4, valueKind: "Hours" },
+        ],
+      },
+      { hcHours: false, tcHours: false, shifts: {} },
+    );
+
+    expect(merged.shifts.map((shift) => shift.workedHours)).toEqual(["P", "4"]);
+    expect(merged.shifts[0].valueKind).toBe("PaidLeave");
+  });
+
   test("keeps an edited shift value while loading untouched shifts", () => {
     const merged = mergeAttendanceHourDraft(
       {

@@ -45,6 +45,9 @@ public sealed class AttendanceHoursQueryServiceTests
         Assert.AreEqual(2m, result.OvertimeHours);
         Assert.AreEqual(4m, result.PaidLeaveHours);
         Assert.AreEqual(0m, result.SickLeaveHours);
+        Assert.AreEqual(2, result.Shifts.Count);
+        Assert.AreEqual(AttendanceShiftValueKind.Hours, result.Shifts[0].ValueKind);
+        Assert.AreEqual(AttendanceShiftValueKind.PaidLeave, result.Shifts[1].ValueKind);
     }
 
     [TestMethod]

@@ -67,5 +67,6 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
 
     expect(source).toContain('type="text"');
     expect(source).toContain("P/Ô");
+    expect(source).toContain("readOnly={isPaidLeaveShift(shift)}");
   });
 });

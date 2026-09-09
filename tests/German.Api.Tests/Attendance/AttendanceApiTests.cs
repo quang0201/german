@@ -190,12 +190,16 @@ public sealed class AttendanceApiTests
             $"/api/lookups/attendance-hours?employeeId={employeeId}&date=2026-08-17");
         var shifts = response.GetProperty("shifts");
 
-        Assert.AreEqual(2, shifts.GetArrayLength());
+        Assert.AreEqual(3, shifts.GetArrayLength());
         Assert.AreEqual(1, shifts[0].GetProperty("slotNumber").GetInt32());
         Assert.AreEqual("Ca 1", shifts[0].GetProperty("shiftName").GetString());
         Assert.AreEqual(4m, shifts[0].GetProperty("workedHours").GetDecimal());
+        Assert.AreEqual("Hours", shifts[0].GetProperty("valueKind").GetString());
         Assert.AreEqual(2, shifts[1].GetProperty("slotNumber").GetInt32());
         Assert.AreEqual(3.5m, shifts[1].GetProperty("workedHours").GetDecimal());
+        Assert.AreEqual("Hours", shifts[1].GetProperty("valueKind").GetString());
+        Assert.AreEqual(3, shifts[2].GetProperty("slotNumber").GetInt32());
+        Assert.AreEqual("PaidLeave", shifts[2].GetProperty("valueKind").GetString());
     }
 
     [TestMethod]
