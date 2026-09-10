@@ -5,7 +5,7 @@ export interface GermanMcpConfig {
     baseUrl: string;
     username?: string;
     password?: string;
-    mcpCode?: string;
+    mcpToken?: string;
     sessionCookie?: string;
     timeoutMs: number;
   };
@@ -25,7 +25,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
       baseUrl: parsed.toString().replace(/\/+$/, ""),
       username: env.GERMAN_API_USERNAME,
       password: env.GERMAN_API_PASSWORD,
-      mcpCode: env.GERMAN_API_MCP_CODE,
+      mcpToken: env.GERMAN_API_MCP_TOKEN,
       sessionCookie: env.GERMAN_API_SESSION_COOKIE,
       timeoutMs: Number(env.GERMAN_API_TIMEOUT_MS || 15_000),
     },

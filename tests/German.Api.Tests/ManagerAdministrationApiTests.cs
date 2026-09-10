@@ -598,11 +598,13 @@ public sealed class ManagerAdministrationApiTests
         var orders = await client.GetAsync("/api/production-orders");
         var entries = await client.GetAsync("/api/production-entries");
         var mcpSession = await client.PostAsJsonAsync("/api/auth/mcp-session", new { });
+        var mcpToken = await client.PostAsJsonAsync("/api/auth/mcp-token", new { });
 
         Assert.AreEqual(HttpStatusCode.Forbidden, employees.StatusCode);
         Assert.AreEqual(HttpStatusCode.Forbidden, orders.StatusCode);
         Assert.AreEqual(HttpStatusCode.Forbidden, entries.StatusCode);
         Assert.AreEqual(HttpStatusCode.Forbidden, mcpSession.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Forbidden, mcpToken.StatusCode);
     }
 
     [TestMethod]
@@ -632,6 +634,40 @@ public sealed class ManagerAdministrationApiTests
 
         var reuse = await client.PostAsJsonAsync("/api/auth/mcp-session/exchange", new { code });
         Assert.AreEqual(HttpStatusCode.Unauthorized, reuse.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task Manager_CanCreateReusableMcpTokenAndNewTokenRevokesOld()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-mcp-token", "M021", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-mcp-token", "secret");
+
+        var firstResponse = await client.PostAsJsonAsync("/api/auth/mcp-token", new { });
+        Assert.AreEqual(HttpStatusCode.OK, firstResponse.StatusCode);
+        using var firstJson = JsonDocument.Parse(await firstResponse.Content.ReadAsStringAsync());
+        var firstToken = firstJson.RootElement.GetProperty("token").GetString();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(firstToken));
+
+        var firstExchange = await client.PostAsJsonAsync("/api/auth/mcp-token/exchange", new { token = firstToken });
+        var secondExchange = await client.PostAsJsonAsync("/api/auth/mcp-token/exchange", new { token = firstToken });
+        Assert.AreEqual(HttpStatusCode.OK, firstExchange.StatusCode);
+        Assert.AreEqual(HttpStatusCode.OK, secondExchange.StatusCode);
+
+        var secondResponse = await client.PostAsJsonAsync("/api/auth/mcp-token", new { });
+        using var secondJson = JsonDocument.Parse(await secondResponse.Content.ReadAsStringAsync());
+        var secondToken = secondJson.RootElement.GetProperty("token").GetString();
+        var revokedExchange = await client.PostAsJsonAsync("/api/auth/mcp-token/exchange", new { token = firstToken });
+        var currentExchange = await client.PostAsJsonAsync("/api/auth/mcp-token/exchange", new { token = secondToken });
+        Assert.AreEqual(HttpStatusCode.Unauthorized, revokedExchange.StatusCode);
+        Assert.AreEqual(HttpStatusCode.OK, currentExchange.StatusCode);
     }
 
     private static async Task AddAccountAsync(

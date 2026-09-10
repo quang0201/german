@@ -17,6 +17,8 @@ public static class AuthEndpoints
         group.MapGet("/me", Me).RequireAuthorization();
         group.MapPost("/mcp-session", CreateMcpSessionCode).RequireAuthorization("ManagerOrAdmin");
         group.MapPost("/mcp-session/exchange", ExchangeMcpSessionCode).AllowAnonymous();
+        group.MapPost("/mcp-token", CreateMcpToken).RequireAuthorization("ManagerOrAdmin");
+        group.MapPost("/mcp-token/exchange", ExchangeMcpToken).AllowAnonymous();
 
         return endpoints;
     }
@@ -56,6 +58,35 @@ public static class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var result = await service.ExchangeAsync(request.Code, cancellationToken);
+        if (!result.IsSuccess) return Results.Unauthorized();
+
+        await SignInAsync(httpContext, result.Value!);
+        httpContext.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> CreateMcpToken(
+        ClaimsPrincipal user,
+        McpSessionService service,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var userIdText = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdText, out var userId)) return Results.Unauthorized();
+
+        var result = await service.CreateTokenAsync(userId, cancellationToken);
+        if (!result.IsSuccess) return ApiResultMapper.Error(result.Error!);
+        httpContext.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> ExchangeMcpToken(
+        McpTokenExchangeRequest request,
+        McpSessionService service,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.ExchangeTokenAsync(request.Token, cancellationToken);
         if (!result.IsSuccess) return Results.Unauthorized();
 
         await SignInAsync(httpContext, result.Value!);

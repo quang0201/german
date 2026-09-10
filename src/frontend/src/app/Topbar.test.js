@@ -11,7 +11,7 @@ describe("Topbar", () => {
       onMenu: () => {},
     }));
 
-    expect(html).toContain("Tạo mã MCP");
+    expect(html).toContain("Tạo token MCP");
     expect(html).toContain("kết nối MCP");
   });
 

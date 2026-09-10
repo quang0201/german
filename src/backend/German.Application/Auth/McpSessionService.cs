@@ -9,9 +9,79 @@ using Microsoft.EntityFrameworkCore;
 namespace German.Application.Auth;
 
 public sealed record McpSessionCodeDto(string Code, DateTimeOffset ExpiresAt);
+public sealed record McpAccessTokenDto(string Token, DateTimeOffset CreatedAt);
 
 public sealed class McpSessionService(IGermanDbContext db, TimeProvider timeProvider)
 {
+    public async Task<AppResult<McpAccessTokenDto>> CreateTokenAsync(Guid issuedByUserId, CancellationToken cancellationToken)
+    {
+        var account = await db.UserAccounts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == issuedByUserId, cancellationToken);
+        if (account is null || !account.IsActive || (account.Role != UserRole.Manager && account.Role != UserRole.Admin))
+        {
+            return AppResult<McpAccessTokenDto>.Failure("auth.mcp_forbidden", "Tài khoản không được tạo token MCP.");
+        }
+
+        var now = timeProvider.GetUtcNow();
+        var currentTokens = await db.McpAccessTokens
+            .Where(x => x.IssuedByUserId == issuedByUserId && x.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+        foreach (var currentToken in currentTokens) currentToken.RevokedAt = now;
+
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+        var accessToken = new McpAccessToken
+        {
+            TokenHash = Hash(token),
+            IssuedByUserId = issuedByUserId,
+            CreatedAt = now
+        };
+        db.McpAccessTokens.Add(accessToken);
+        db.AuditLogs.Add(new AuditLog
+        {
+            EntityType = nameof(McpAccessToken),
+            EntityId = accessToken.Id,
+            Action = AuditAction.Create,
+            PerformedByUserId = issuedByUserId,
+            PerformedAt = now,
+            AfterJson = System.Text.Json.JsonSerializer.Serialize(new { accessToken.CreatedAt })
+        });
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult<McpAccessTokenDto>.Success(new McpAccessTokenDto(token, now));
+    }
+
+    public async Task<AppResult<AuthSessionDto>> ExchangeTokenAsync(string? token, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return InvalidCode();
+
+        var accessToken = await db.McpAccessTokens.SingleOrDefaultAsync(x => x.TokenHash == Hash(token.Trim()), cancellationToken);
+        if (accessToken is null || accessToken.RevokedAt.HasValue) return InvalidCode();
+
+        var account = await db.UserAccounts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == accessToken.IssuedByUserId, cancellationToken);
+        if (account is null || !account.IsActive || (account.Role != UserRole.Manager && account.Role != UserRole.Admin)) return InvalidCode();
+
+        string? employeeCode = null;
+        string? fullName = null;
+        if (account.EmployeeId.HasValue)
+        {
+            var employee = await db.Employees.AsNoTracking().SingleOrDefaultAsync(x => x.Id == account.EmployeeId.Value, cancellationToken);
+            if (employee is null || !employee.IsActive) return InvalidCode();
+            employeeCode = employee.EmployeeCode;
+            fullName = employee.FullName;
+        }
+
+        accessToken.LastUsedAt = timeProvider.GetUtcNow();
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult<AuthSessionDto>.Success(new AuthSessionDto(
+            account.Id,
+            account.Username,
+            account.Role,
+            account.EmployeeId,
+            employeeCode,
+            fullName));
+    }
+
     public async Task<AppResult<McpSessionCodeDto>> CreateAsync(Guid issuedByUserId, CancellationToken cancellationToken)
     {
         var account = await db.UserAccounts.AsNoTracking().SingleOrDefaultAsync(x => x.Id == issuedByUserId, cancellationToken);

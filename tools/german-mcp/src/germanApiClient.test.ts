@@ -38,11 +38,11 @@ describe("German API client", () => {
     await expect(client.get("/api/production-orders")).rejects.toThrow("authentication");
   });
 
-  test("exchanges a one-time MCP code and reuses the returned session cookie", async () => {
+  test("exchanges a reusable MCP token and reuses the returned session cookie", async () => {
     const requests: Array<{ url: string; init?: RequestInit }> = [];
     const fetchImpl: typeof fetch = async (input, init) => {
       requests.push({ url: String(input), init });
-      if (String(input).endsWith("/api/auth/mcp-session/exchange")) {
+      if (String(input).endsWith("/api/auth/mcp-token/exchange")) {
         return new Response(JSON.stringify({ role: "Manager" }), {
           status: 200,
           headers: { "content-type": "application/json", "set-cookie": "german.auth=exchanged123; Path=/; HttpOnly" },
@@ -51,11 +51,11 @@ describe("German API client", () => {
       return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
     };
 
-    const client = new GermanApiClient({ baseUrl: "https://hr.quangt.com", mcpCode: "one-time-code" }, fetchImpl);
+    const client = new GermanApiClient({ baseUrl: "https://hr.quangt.com", mcpToken: "reusable-token" }, fetchImpl);
     await client.get("/api/production-orders");
 
     expect(requests).toHaveLength(2);
-    expect(requests[0].init?.body).toContain("one-time-code");
+    expect(requests[0].init?.body).toContain("reusable-token");
     expect((requests[1].init?.headers as Headers).get("Cookie")).toBe("german.auth=exchanged123");
   });
 });
