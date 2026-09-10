@@ -15,7 +15,7 @@ function cellDraft(drafts, employeeId, day, slotNumber) {
 function draftDay(drafts, employee, day) {
   const key = attendanceDayKey(employee.employeeId, day.workDate);
   return drafts[key] ?? {
-    overtimeHours: day.overtimeHours ? String(day.overtimeHours) : "",
+    overtimeHours: String(day.overtimeHours ?? 0),
     shifts: Object.fromEntries((day.shifts ?? []).map((shift) => [shift.slotNumber, ""])),
   };
 }

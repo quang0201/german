@@ -23,5 +23,6 @@ public sealed record UpdateEmployeeCommand(
     string EmployeeCode,
     string FullName,
     bool IsActive,
-    EmployeeCompensationType? CompensationType = null);
+    EmployeeCompensationType? CompensationType = null,
+    DateOnly? DeactivatedAt = null);
 public sealed record AssignShiftCommand(Guid ShiftTemplateId, DateOnly EffectiveFrom);

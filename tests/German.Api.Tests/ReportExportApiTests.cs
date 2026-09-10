@@ -240,6 +240,12 @@ public sealed class ReportExportApiTests
         Assert.AreEqual(120m, operations[0].GetProperty("totalQuantity").GetDecimal());
         Assert.AreEqual(5000m, operations[0].GetProperty("externalQuantity").GetDecimal());
         Assert.AreEqual(5120m, operations[0].GetProperty("combinedTotalQuantity").GetDecimal());
+        var contributors = operations[0].GetProperty("contributors");
+        Assert.AreEqual(2, contributors.GetArrayLength());
+        var dailyTotals = contributors[0].GetProperty("dailyTotals");
+        Assert.AreEqual(1, dailyTotals.GetArrayLength());
+        Assert.AreEqual("2026-08-12", dailyTotals[0].GetProperty("workDate").GetString());
+        Assert.AreEqual(120m, dailyTotals[0].GetProperty("totalQuantity").GetDecimal());
         Assert.AreEqual("thùng", operations[1].GetProperty("unit").GetString());
         Assert.AreEqual(0m, operations[1].GetProperty("totalQuantity").GetDecimal());
     }

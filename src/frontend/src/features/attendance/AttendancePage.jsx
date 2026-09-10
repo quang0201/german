@@ -231,7 +231,7 @@ export function AttendancePage() {
 
   function ensureDraft(employee, day) {
     const key = attendanceDayKey(employee.employeeId, day.workDate);
-    return drafts[key] ?? { overtimeHours: day.overtimeHours ? String(day.overtimeHours) : "", shifts: Object.fromEntries((day.shifts ?? []).map((shift) => [shift.slotNumber, ""])) };
+    return drafts[key] ?? { overtimeHours: String(day.overtimeHours ?? 0), shifts: Object.fromEntries((day.shifts ?? []).map((shift) => [shift.slotNumber, ""])) };
   }
 
   function handleCellChange(employee, day, shift, value) {

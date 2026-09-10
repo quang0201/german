@@ -18,7 +18,16 @@ public sealed record ProductionOperationEmployeeSummary(
     decimal HcQuantity,
     decimal TcQuantity,
     decimal TotalQuantity,
-    bool IsExternal = false);
+    bool IsExternal = false)
+{
+    public IReadOnlyList<ProductionOperationEmployeeDaySummary> DailyTotals { get; init; } = [];
+}
+
+public sealed record ProductionOperationEmployeeDaySummary(
+    DateOnly WorkDate,
+    decimal HcQuantity,
+    decimal TcQuantity,
+    decimal TotalQuantity);
 
 public sealed record ProductionOperationSummaryReport(
     Guid OrderId,

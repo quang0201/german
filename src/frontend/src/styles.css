@@ -339,8 +339,16 @@
 .erp-report-operation-details-row { min-height: 42px; border-bottom: 1px solid var(--color-border); color: var(--color-text); font-size: 12px; }
 .erp-report-operation-details-row:last-of-type { border-bottom: 0; }
 .erp-report-operation-details-row > div { min-width: 0; }
+.erp-report-contributor-toggle { display: block; width: 100%; padding: 0; text-align: left; }
+.erp-report-contributor-toggle:hover strong, .erp-report-contributor-toggle:focus-visible strong { color: var(--color-primary-hover); text-decoration: underline; }
 .erp-report-operation-details-row strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .erp-report-operation-details-row small { display: block; margin-top: 2px; color: var(--color-text-muted); font-size: 10px; }
+.erp-report-contributor-days { margin: -1px 12px 8px 28px; border-left: 3px solid var(--color-primary-soft); background: var(--color-surface); font-size: 11px; }
+.erp-report-contributor-days-header, .erp-report-contributor-day-row { display: grid; grid-template-columns: minmax(180px, 1fr) 80px 80px 110px; gap: 10px; align-items: center; padding: 6px 10px; }
+.erp-report-contributor-days-header { border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 10px; font-weight: 800; }
+.erp-report-contributor-days-header span, .erp-report-contributor-day-row > span { text-align: right; }
+.erp-report-contributor-day-row { border-bottom: 1px solid var(--color-border); color: var(--color-text); }
+.erp-report-contributor-day-row:last-child { border-bottom: 0; }
 .erp-report-operation-details-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--color-border-strong); padding: 9px 12px; color: var(--color-primary-strong); font-size: 12px; }
 .erp-report-operation-details-empty { margin: 0; padding: 12px; color: var(--color-text-muted); font-size: 12px; }
 .erp-report-plan-alert, .erp-report-monthly-plan-alert { display: inline-flex; width: fit-content; border-radius: 999px; background: var(--color-error-soft); color: var(--color-error); padding: 1px 5px; font-size: 9px; font-weight: 800; }

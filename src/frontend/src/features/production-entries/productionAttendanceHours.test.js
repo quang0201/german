@@ -9,17 +9,17 @@ describe("production attendance hour autofill", () => {
     });
   });
 
-  test("leaves hours blank when attendance was not saved", () => {
+  test("defaults unsaved attendance hours to zero", () => {
     expect(attendanceHoursDefaults({ hasAttendance: false, regularHours: 8, overtimeHours: 2 })).toEqual({
-      hcHours: "",
-      tcHours: "",
+      hcHours: "0",
+      tcHours: "0",
     });
   });
 
-  test("does not autofill an existing production record", () => {
+  test("defaults hours to zero instead of autofilling an existing production record", () => {
     expect(attendanceHoursDefaults({ hasAttendance: true, regularHours: 7, overtimeHours: 2 }, true)).toEqual({
-      hcHours: "",
-      tcHours: "",
+      hcHours: "0",
+      tcHours: "0",
     });
   });
 });

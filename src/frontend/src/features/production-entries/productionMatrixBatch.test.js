@@ -21,6 +21,8 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("/api/production-entries/batch-direct");
     expect(source).toContain("attendance");
     expect(source).toContain('tcHours: "0"');
+    expect(source).toContain('hcHours: "0"');
+    expect(source).toContain('hc: "0", tc: "0", total: "0"');
     expect(source).toContain("Chỉ chấm công");
     expect(source).toContain("/api/attendance/monthly");
     expect(source).toContain('type="text"');

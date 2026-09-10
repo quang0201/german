@@ -140,13 +140,21 @@ public sealed class EmployeeService(IGermanDbContext db)
         }
         var wasActive = employee.IsActive;
         employee.IsActive = command.IsActive;
-        if (wasActive && !command.IsActive)
+        if (command.IsActive)
+        {
+            employee.DeactivatedAt = null;
+        }
+        else if (command.DeactivatedAt.HasValue)
+        {
+            employee.DeactivatedAt = command.DeactivatedAt.Value;
+        }
+        else if (wasActive)
         {
             employee.DeactivatedAt = Today();
         }
-        else if (!wasActive && command.IsActive)
+        else if (!employee.DeactivatedAt.HasValue)
         {
-            employee.DeactivatedAt = null;
+            employee.DeactivatedAt = Today();
         }
         employee.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);

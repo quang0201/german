@@ -105,8 +105,24 @@ describe("EmployeeDialog", () => {
       employeeCode: "E002",
       fullName: "Trần Thị B",
       isActive: false,
+      deactivatedAt: null,
       compensationType: "PieceRate",
     });
+  });
+
+  test("renders and sends a custom deactivation date", () => {
+    const html = renderToStaticMarkup(<EmployeeDialog
+      open
+      employee={{ ...employee, isActive: false, deactivatedAt: "2026-08-15" }}
+      onClose={() => {}}
+      onSubmit={() => {}}
+    />);
+
+    expect(html).toContain("Ngày nghỉ");
+    expect(html).toContain('value="2026-08-15"');
+    expect(buildEmployeeUpdatePayload({
+      ...employeeForm({ ...employee, isActive: false, deactivatedAt: "2026-08-15" }),
+    }).deactivatedAt).toBe("2026-08-15");
   });
 
   test("builds an effective-date shift assignment payload", () => {

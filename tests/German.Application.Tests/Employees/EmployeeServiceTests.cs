@@ -181,6 +181,23 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task UpdateAsyncUsesProvidedDeactivationDate()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E014", FullName = "Nhân viên nghỉ giữa tháng" };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).UpdateAsync(
+            employee.Id,
+            new UpdateEmployeeCommand("E014", "Nhân viên nghỉ giữa tháng", false, DeactivatedAt: new DateOnly(2026, 8, 15)),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(new DateOnly(2026, 8, 15), (await db.Employees.SingleAsync()).DeactivatedAt);
+    }
+
+    [TestMethod]
     public async Task DeleteAsyncDoesNotInventDeactivationDateForLegacyInactiveEmployee()
     {
         await using var db = CreateDb();

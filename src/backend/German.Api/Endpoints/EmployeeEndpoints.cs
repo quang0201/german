@@ -17,7 +17,7 @@ public static class EmployeeEndpoints
         });
         group.MapPut("/{id:guid}", async (Guid id, UpdateEmployeeRequest request, EmployeeService service, CancellationToken ct) =>
         {
-            var result = await service.UpdateAsync(id, new UpdateEmployeeCommand(request.EmployeeCode, request.FullName, request.IsActive, request.CompensationType), ct);
+            var result = await service.UpdateAsync(id, new UpdateEmployeeCommand(request.EmployeeCode, request.FullName, request.IsActive, request.CompensationType, request.DeactivatedAt), ct);
             return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
         });
         group.MapDelete("/{id:guid}", async (Guid id, EmployeeService service, CancellationToken ct) =>

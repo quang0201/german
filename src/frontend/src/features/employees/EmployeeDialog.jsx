@@ -93,6 +93,10 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
               </Field>
             </> : <>
               <label className="erp-employee-active"><input type="checkbox" checked={draft.isActive} onChange={(event) => update("isActive", event.target.checked)} /><span>Đang hoạt động</span></label>
+              <Field label="Ngày nghỉ" required={!draft.isActive}>
+                <input className="erp-control" type="date" required={!draft.isActive} disabled={draft.isActive} value={draft.deactivatedAt} onChange={(event) => update("deactivatedAt", event.target.value)} />
+              </Field>
+              {!draft.isActive && <p className="erp-field-hint">Ví dụ nghỉ từ 15/08 thì vẫn xem được tháng 8, nhưng sẽ không xuất hiện khi lọc tháng 9.</p>}
               <div className="erp-employee-current-shift-section">
                 <div className="erp-employee-dialog-section-heading">
                   <h3>Bộ ca đang áp dụng hôm nay</h3>

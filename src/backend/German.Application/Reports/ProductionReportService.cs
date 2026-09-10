@@ -218,6 +218,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 entry.ProductionOperationId,
                 employee.EmployeeCode,
                 EmployeeName = employee.FullName,
+                entry.WorkDate,
                 entry.HcQuantity,
                 entry.TcQuantity,
                 entry.TotalQuantity
@@ -239,6 +240,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 SourceEmployeeName = sourceEmployee == null ? null : sourceEmployee.FullName,
                 ExternalSourceName = externalSource == null ? null : externalSource.Name,
                 external.SourceName,
+                external.ReceivedDate,
                 external.Quantity
             }).ToListAsync(cancellationToken);
 
@@ -247,6 +249,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 OperationId: item.ProductionOperationId,
                 EmployeeCode: item.EmployeeCode,
                 EmployeeName: item.EmployeeName,
+                WorkDate: item.WorkDate,
                 HcQuantity: item.HcQuantity,
                 TcQuantity: item.TcQuantity,
                 TotalQuantity: item.TotalQuantity,
@@ -255,6 +258,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 OperationId: item.ProductionOperationId,
                 EmployeeCode: item.SourceEmployeeCode ?? "__EXTERNAL__",
                 EmployeeName: ResolveExternalSourceName(item.ExternalSourceName, item.SourceEmployeeName, item.SourceName),
+                WorkDate: item.ReceivedDate,
                 HcQuantity: 0m,
                 TcQuantity: 0m,
                 TotalQuantity: item.Quantity,
@@ -269,7 +273,18 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                     group.Sum(item => item.HcQuantity),
                     group.Sum(item => item.TcQuantity),
                     group.Sum(item => item.TotalQuantity),
-                    group.Key.IsExternal));
+                    group.Key.IsExternal)
+                {
+                    DailyTotals = group
+                        .GroupBy(item => item.WorkDate)
+                        .OrderBy(day => day.Key)
+                        .Select(day => new ProductionOperationEmployeeDaySummary(
+                            day.Key,
+                            day.Sum(item => item.HcQuantity),
+                            day.Sum(item => item.TcQuantity),
+                            day.Sum(item => item.TotalQuantity)))
+                        .ToArray()
+                });
 
         var summaries = operations
             .Select(operation =>

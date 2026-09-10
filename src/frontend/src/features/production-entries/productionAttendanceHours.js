@@ -1,10 +1,10 @@
 export function attendanceHoursDefaults(attendance, editing = false) {
   if (editing || !attendance?.hasAttendance) {
-    return { hcHours: "", tcHours: "" };
+    return { hcHours: "0", tcHours: "0" };
   }
 
   return {
-    hcHours: String(attendance.regularHours ?? ""),
-    tcHours: String(attendance.overtimeHours ?? ""),
+    hcHours: String(attendance.regularHours ?? "0"),
+    tcHours: String(attendance.overtimeHours ?? "0"),
   };
 }

@@ -3,6 +3,7 @@ export function employeeForm(employee = {}) {
     employeeCode: employee.employeeCode ?? "",
     fullName: employee.fullName ?? "",
     isActive: employee.isActive ?? true,
+    deactivatedAt: employee.deactivatedAt ?? "",
     compensationType: employee.compensationType ?? "PieceRate",
   };
 }
@@ -12,6 +13,7 @@ export function buildEmployeeUpdatePayload(form) {
     employeeCode: form.employeeCode.trim(),
     fullName: form.fullName.trim(),
     isActive: Boolean(form.isActive),
+    deactivatedAt: form.isActive ? null : (form.deactivatedAt || null),
     compensationType: form.compensationType ?? "PieceRate",
   };
 }

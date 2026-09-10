@@ -38,7 +38,7 @@ export function mergeAttendanceHourDraft(current, attendance, dirty = {}) {
   return {
     hcHours: dirty.hcHours
       ? current.hcHours
-      : (hasAttendance ? String(attendance.regularHours ?? "") : ""),
+      : (hasAttendance ? String(attendance.regularHours ?? "0") : (current.hcHours || "0")),
     tcHours: dirty.tcHours
       ? current.tcHours
       : (hasAttendance

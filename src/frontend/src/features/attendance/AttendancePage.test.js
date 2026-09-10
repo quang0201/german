@@ -60,6 +60,8 @@ describe("AttendancePage", () => {
     />);
     expect(html).not.toContain("data-attendance-block-end");
     expect(html).not.toContain("erp-attendance-window-spacer");
+    expect(html).toContain('aria-label="An TC 2026-08-16"');
+    expect(html).toContain('value="0"');
   });
 
   test("marks today's attendance column with a dedicated style", () => {

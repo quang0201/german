@@ -211,7 +211,7 @@ export function mergeDraftsPreservingDirty(drafts, payload, dirtyDayKeys) {
       const key = attendanceDayKey(employee.employeeId, day.workDate);
       if (!dirtyDayKeys.has(key)) {
         next[key] = {
-          overtimeHours: day.overtimeHours ? String(day.overtimeHours) : "",
+          overtimeHours: String(day.overtimeHours ?? 0),
           shifts: Object.fromEntries((day.shifts ?? []).map((shift) => [shift.slotNumber, formatAttendanceCell(shift)])),
         };
       }
@@ -226,7 +226,7 @@ export function buildAttendanceDrafts(data) {
     for (const day of employee.days ?? []) {
       if (!day.hasShiftSetup && !day.hasAttendance) continue;
       drafts[attendanceDayKey(employee.employeeId, day.workDate)] = {
-        overtimeHours: day.overtimeHours ? String(day.overtimeHours) : "",
+        overtimeHours: String(day.overtimeHours ?? 0),
         shifts: Object.fromEntries((day.shifts ?? []).map((shift) => [shift.slotNumber, formatAttendanceCell(shift)])),
       };
     }

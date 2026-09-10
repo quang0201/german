@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
-import { ProductionOperationDetails, ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
+import { ProductionOperationDetails, ProductionOperationEmployeeDailyDetails, ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 describe("ProductionOperationSummaryChart", () => {
   test("highlights an operation that exceeds the plan tolerance", () => {
@@ -77,14 +77,35 @@ describe("ProductionOperationSummaryChart", () => {
       name: "May dài khóa với thân trước",
       unit: "cái",
       contributors: [
-        { employeeCode: "0417-BTD", employeeName: "Bạch Thị Đào", hcQuantity: 16268, tcQuantity: 5732, totalQuantity: 22000, isExternal: false },
-        { employeeCode: "__EXTERNAL__", employeeName: "Gia công ABC", hcQuantity: 0, tcQuantity: 0, totalQuantity: 1000, isExternal: true },
+        {
+          employeeCode: "0417-BTD",
+          employeeName: "Bạch Thị Đào",
+          hcQuantity: 16268,
+          tcQuantity: 5732,
+          totalQuantity: 22000,
+          isExternal: false,
+          dailyTotals: [{ workDate: "2026-08-27", hcQuantity: 16268, tcQuantity: 5732, totalQuantity: 22000 }],
+        },
+        {
+          employeeCode: "__EXTERNAL__",
+          employeeName: "Gia công ABC",
+          hcQuantity: 0,
+          tcQuantity: 0,
+          totalQuantity: 1000,
+          isExternal: true,
+          dailyTotals: [{ workDate: "2026-08-28", hcQuantity: 0, tcQuantity: 0, totalQuantity: 1000 }],
+        },
       ],
     };
     const buttonHtml = renderToString(React.createElement(ProductionOperationSummaryChart, {
       summary: { orderCode: "4004 đỏ", productName: "Túi 4004 đỏ", operationCount: 1, operations: [operation] },
     }));
     const detailHtml = renderToString(React.createElement(ProductionOperationDetails, { operation }));
+    const dailyHtml = renderToString(React.createElement(ProductionOperationEmployeeDailyDetails, {
+      employee: operation.contributors[0],
+      unit: operation.unit,
+      id: "daily-details",
+    }));
 
     expect(buttonHtml).toContain('aria-label="Xem chi tiết CĐ10"');
     expect(detailHtml).toContain("Bạch Thị Đào");
@@ -93,5 +114,8 @@ describe("ProductionOperationSummaryChart", () => {
     expect(detailHtml).toContain("1.000");
     expect(detailHtml).toContain("Tổng CĐ");
     expect(detailHtml).toContain("23.000");
+    expect(detailHtml).toContain('aria-label="Xem theo ngày Bạch Thị Đào"');
+    expect(dailyHtml).toContain("27/08/2026");
+    expect(dailyHtml).toContain("Chi tiết theo ngày");
   });
 });

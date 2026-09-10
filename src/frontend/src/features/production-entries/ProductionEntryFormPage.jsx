@@ -35,13 +35,13 @@ function initialState(entry, session) {
     orderId: String(entry?.productionOrderId ?? ""),
     operationId: String(entry?.productionOperationId ?? ""),
     mode: entry?.entryMode ?? "ByShift",
-    shift1Quantity: entry?.shift1Quantity ?? "",
-    shift2Quantity: entry?.shift2Quantity ?? "",
-    directHcQuantity: entry?.directHcQuantity ?? "",
-    directTcQuantity: entry?.directTcQuantity ?? "",
-    totalQuantity: entry?.totalInputQuantity ?? "",
-    overtimeHours: entry?.overtimeHours ?? "",
-    overtimeQuantity: entry?.overtimeQuantity ?? "",
+    shift1Quantity: entry?.shift1Quantity ?? "0",
+    shift2Quantity: entry?.shift2Quantity ?? "0",
+    directHcQuantity: entry?.directHcQuantity ?? "0",
+    directTcQuantity: entry?.directTcQuantity ?? "0",
+    totalQuantity: entry?.totalInputQuantity ?? "0",
+    overtimeHours: entry?.overtimeHours ?? "0",
+    overtimeQuantity: entry?.overtimeQuantity ?? "0",
     workStart: entry?.workStart ?? "",
     workEnd: entry?.workEnd ?? "",
     note: entry?.note ?? "",
@@ -75,7 +75,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
   const [employees, setEmployees] = useState([]);
   const [orders, setOrders] = useState([]);
   const [operations, setOperations] = useState([]);
-  const [hcHours, setHcHours] = useState(null);
+  const [hcHours, setHcHours] = useState("0");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -131,7 +131,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
 
   useEffect(() => {
     if (!form.employeeId || !form.workDate) {
-      setHcHours("");
+      setHcHours("0");
       return undefined;
     }
     let active = true;
@@ -142,12 +142,12 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
         return () => { active = false; };
       }
       api.get(`/api/lookups/hc-hours?employeeId=${encodeURIComponent(form.employeeId)}&date=${encodeURIComponent(form.workDate)}`)
-        .then((result) => active && setHcHours(result.hcHours))
-        .catch(() => active && setHcHours(""));
+        .then((result) => active && setHcHours(String(result.hcHours ?? "0")))
+        .catch(() => active && setHcHours("0"));
       return () => { active = false; };
     }
 
-    setHcHours("");
+    setHcHours("0");
     api.get(`/api/lookups/attendance-hours?employeeId=${encodeURIComponent(form.employeeId)}&date=${encodeURIComponent(form.workDate)}`)
       .then((result) => {
         if (!active || attendanceHoursEditedRef.current) return;
@@ -215,7 +215,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
       toast.success(editing ? "Đã cập nhật sản lượng." : "Đã lưu sản lượng.");
       if (intentRef.current === "continue" && !editing) {
         setForm((current) => ({ ...initialState(null, session), workDate: current.workDate, employeeId: current.employeeId, orderId: current.orderId, operationId: current.operationId }));
-        setHcHours("");
+        setHcHours("0");
         setAttendanceLookupVersion((current) => current + 1);
         attendanceHoursEditedRef.current = false;
         setServerResult(null);

@@ -21,6 +21,15 @@ function operationKey(operation) {
   return String(operation.operationId || operation.operationNumber);
 }
 
+function contributorKey(item, index) {
+  return `${item.employeeCode || "employee"}-${index}`;
+}
+
+function reportDate(value) {
+  const [year, month, day] = String(value).slice(0, 10).split("-");
+  return year && month && day ? `${day}/${month}/${year}` : String(value);
+}
+
 export function Quantity({ value, unit, emptyAsDash = false, total = false, isOverPlan = false, planLimit = null }) {
   const amount = Number(value || 0);
 
@@ -95,6 +104,7 @@ export function ProductionOperationDetails({ operation }) {
   const contributors = operation?.contributors || [];
   const total = contributors.reduce((sum, item) => sum + Number(item.totalQuantity || 0), 0);
   const unit = operation?.unit || "";
+  const [expandedContributor, setExpandedContributor] = React.useState(null);
 
   return (
     <div className="erp-report-operation-details" id={`erp-report-operation-details-${operationKey(operation)}`} role="region" aria-label={`Chi tiết CĐ${operation.operationNumber}`}>
@@ -105,18 +115,51 @@ export function ProductionOperationDetails({ operation }) {
         <span>Tổng</span>
       </div>
       {contributors.length === 0 && <p className="erp-report-operation-details-empty">Chưa có dữ liệu từng người.</p>}
-      {contributors.map((item) => (
-        <div className="erp-report-operation-details-row" role="row" key={`${item.employeeCode}-${item.employeeName}`}>
-          <div>
-            <strong>{item.employeeName}</strong>
-            <small>{item.isExternal ? "Gia công" : item.employeeCode}</small>
+      {contributors.map((item, index) => {
+        const key = contributorKey(item, index);
+        const expanded = expandedContributor === key;
+        return <React.Fragment key={key}>
+          <div className="erp-report-operation-details-row" role="row">
+            <div>
+              <button
+                className="erp-report-contributor-toggle"
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={`erp-report-contributor-days-${key}`}
+                aria-label={`${expanded ? "Ẩn" : "Xem"} theo ngày ${item.employeeName}`}
+                onClick={() => setExpandedContributor((current) => current === key ? null : key)}
+              >
+                <strong>{item.employeeName}</strong>
+                <small>{item.isExternal ? "Gia công" : item.employeeCode} · {expanded ? "Ẩn theo ngày" : "Xem theo ngày"}</small>
+              </button>
+            </div>
+            <span>{item.isExternal ? "—" : quantity(item.hcQuantity)}</span>
+            <span>{item.isExternal ? "—" : quantity(item.tcQuantity)}</span>
+            <span><strong>{quantity(item.totalQuantity)}</strong> {unit}</span>
           </div>
-          <span>{item.isExternal ? "—" : quantity(item.hcQuantity)}</span>
-          <span>{item.isExternal ? "—" : quantity(item.tcQuantity)}</span>
-          <span><strong>{quantity(item.totalQuantity)}</strong> {unit}</span>
+          {expanded && <ProductionOperationEmployeeDailyDetails employee={item} unit={unit} id={`erp-report-contributor-days-${key}`} />}
+        </React.Fragment>;
+      })}
+      {contributors.length > 0 && <div className="erp-report-operation-details-total"><strong>Tổng CĐ{operation.operationNumber}</strong><strong>{quantity(total)} {unit}</strong></div>}
+    </div>
+  );
+}
+
+export function ProductionOperationEmployeeDailyDetails({ employee, unit, id }) {
+  const dailyTotals = employee?.dailyTotals || [];
+
+  return (
+    <div className="erp-report-contributor-days" id={id} role="region" aria-label={`Chi tiết theo ngày ${employee?.employeeName}`}>
+      <div className="erp-report-contributor-days-header"><strong>Chi tiết theo ngày</strong><span>HC</span><span>TC</span><span>Tổng</span></div>
+      {dailyTotals.length === 0 && <p className="erp-report-operation-details-empty">Chưa có dữ liệu theo ngày.</p>}
+      {dailyTotals.map((day) => (
+        <div className="erp-report-contributor-day-row" key={day.workDate}>
+          <strong>{reportDate(day.workDate)}</strong>
+          <span>{employee.isExternal ? "—" : quantity(day.hcQuantity)}</span>
+          <span>{employee.isExternal ? "—" : quantity(day.tcQuantity)}</span>
+          <span><strong>{quantity(day.totalQuantity)}</strong> {unit}</span>
         </div>
       ))}
-      {contributors.length > 0 && <div className="erp-report-operation-details-total"><strong>Tổng CĐ{operation.operationNumber}</strong><strong>{quantity(total)} {unit}</strong></div>}
     </div>
   );
 }

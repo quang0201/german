@@ -10,8 +10,8 @@ const INPUT_MODES = [
 ];
 
 const quantityFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
-const emptyHourDraft = () => ({ hcHours: "", tcHours: "0", shifts: [] });
-const emptyOperationDraft = () => ({ hc: "", tc: "", total: "", note: "" });
+const emptyHourDraft = () => ({ hcHours: "0", tcHours: "0", shifts: [] });
+const emptyOperationDraft = () => ({ hc: "0", tc: "0", total: "0", note: "" });
 
 export function firstActiveEmployeeId(employees = []) {
   const employee = employees.find((item) => item.isActive !== false);

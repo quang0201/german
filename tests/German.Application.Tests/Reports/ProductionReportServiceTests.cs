@@ -315,14 +315,24 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual(3, result.Value.OperationCount);
         var firstSummary = result.Value.Operations[0];
         Assert.AreEqual(new ProductionOperationSummary(seed.Operation.Id, 11, "May thân", "cái", 100m, 20m, 120m, 0m, 120m, firstSummary.Contributors), firstSummary);
+        Assert.AreEqual(1, firstSummary.Contributors.Count);
+        Assert.AreEqual("E001", firstSummary.Contributors[0].EmployeeCode);
+        Assert.AreEqual(100m, firstSummary.Contributors[0].HcQuantity);
+        Assert.AreEqual(20m, firstSummary.Contributors[0].TcQuantity);
+        Assert.AreEqual(120m, firstSummary.Contributors[0].TotalQuantity);
         CollectionAssert.AreEqual(
-            new[] { new ProductionOperationEmployeeSummary("E001", "Nguyễn Văn A", 100m, 20m, 120m) },
-            firstSummary.Contributors.ToArray());
+            new[] { new ProductionOperationEmployeeDaySummary(new DateOnly(2026, 8, 12), 100m, 20m, 120m) },
+            firstSummary.Contributors[0].DailyTotals.ToArray());
         var secondSummary = result.Value.Operations[1];
         Assert.AreEqual(new ProductionOperationSummary(secondOperation.Id, 12, "Đóng gói", "thùng", 30m, 5m, 35m, 0m, 35m, secondSummary.Contributors), secondSummary);
+        Assert.AreEqual(1, secondSummary.Contributors.Count);
+        Assert.AreEqual("E001", secondSummary.Contributors[0].EmployeeCode);
+        Assert.AreEqual(30m, secondSummary.Contributors[0].HcQuantity);
+        Assert.AreEqual(5m, secondSummary.Contributors[0].TcQuantity);
+        Assert.AreEqual(35m, secondSummary.Contributors[0].TotalQuantity);
         CollectionAssert.AreEqual(
-            new[] { new ProductionOperationEmployeeSummary("E001", "Nguyễn Văn A", 30m, 5m, 35m) },
-            secondSummary.Contributors.ToArray());
+            new[] { new ProductionOperationEmployeeDaySummary(new DateOnly(2026, 8, 13), 30m, 5m, 35m) },
+            secondSummary.Contributors[0].DailyTotals.ToArray());
         var zeroSummary = result.Value.Operations[2];
         Assert.AreEqual(0, zeroSummary.Contributors.Count);
     }
@@ -396,14 +406,26 @@ public sealed class ProductionReportServiceTests
 
         Assert.IsTrue(result.IsSuccess, result.Error?.Message);
         var contributors = result.Value!.Operations[0].Contributors.ToArray();
+        Assert.AreEqual(3, contributors.Length);
+        Assert.AreEqual("E001", contributors[0].EmployeeCode);
+        Assert.AreEqual(16368m, contributors[0].HcQuantity);
+        Assert.AreEqual(5752m, contributors[0].TcQuantity);
+        Assert.AreEqual(22120m, contributors[0].TotalQuantity);
+        Assert.AreEqual("E002", contributors[1].EmployeeCode);
+        Assert.AreEqual(700m, contributors[1].HcQuantity);
+        Assert.AreEqual(300m, contributors[1].TcQuantity);
+        Assert.AreEqual(1000m, contributors[1].TotalQuantity);
+        Assert.AreEqual("__EXTERNAL__", contributors[2].EmployeeCode);
+        Assert.IsTrue(contributors[2].IsExternal);
+        Assert.AreEqual(1000m, contributors[2].TotalQuantity);
+
         CollectionAssert.AreEqual(
             new[]
             {
-                new ProductionOperationEmployeeSummary("E001", "Nguyễn Văn A", 16368m, 5752m, 22120m),
-                new ProductionOperationEmployeeSummary("E002", "Công nhân B", 700m, 300m, 1000m),
-                new ProductionOperationEmployeeSummary("__EXTERNAL__", "Gia công ABC", 0m, 0m, 1000m, true)
+                new ProductionOperationEmployeeDaySummary(new DateOnly(2026, 8, 12), 100m, 20m, 120m),
+                new ProductionOperationEmployeeDaySummary(new DateOnly(2026, 8, 13), 16268m, 5732m, 22000m)
             },
-            contributors);
+            contributors[0].DailyTotals.ToArray());
     }
 
     [TestMethod]

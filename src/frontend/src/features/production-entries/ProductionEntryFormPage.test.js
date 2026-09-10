@@ -23,8 +23,11 @@ describe("ProductionEntryFormPage attendance defaults", () => {
   test("resets both hour fields when saving and entering the next record", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionEntryFormPage.jsx"), "utf8");
 
-    expect(source).toContain("setHcHours(\"\")");
-    expect(source).toContain("overtimeHours: entry?.overtimeHours ?? \"\"");
+    expect(source).toContain("setHcHours(\"0\")");
+    expect(source).toContain("overtimeHours: entry?.overtimeHours ?? \"0\"");
+    expect(source).toContain("shift1Quantity: entry?.shift1Quantity ?? \"0\"");
+    expect(source).toContain("directHcQuantity: entry?.directHcQuantity ?? \"0\"");
+    expect(source).toContain("totalQuantity: entry?.totalInputQuantity ?? \"0\"");
     expect(source).toContain("setAttendanceLookupVersion");
   });
 });

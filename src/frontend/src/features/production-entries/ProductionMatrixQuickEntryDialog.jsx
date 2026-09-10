@@ -14,11 +14,11 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
   const record = context?.cell?.entryCount === 1 ? context.cell.records?.[0] : null;
   const editing = record?.entryMode === "Direct";
   const [inputMode, setInputMode] = useState(DIRECT_MODE);
-  const [directHc, setDirectHc] = useState("");
-  const [directTc, setDirectTc] = useState("");
-  const [hcHours, setHcHours] = useState("");
-  const [tcHours, setTcHours] = useState("");
-  const [totalExpression, setTotalExpression] = useState("");
+  const [directHc, setDirectHc] = useState("0");
+  const [directTc, setDirectTc] = useState("0");
+  const [hcHours, setHcHours] = useState("0");
+  const [tcHours, setTcHours] = useState("0");
+  const [totalExpression, setTotalExpression] = useState("0");
   const [note, setNote] = useState("");
   const [editEntry, setEditEntry] = useState(null);
   const [error, setError] = useState("");
@@ -34,11 +34,11 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
     if (!context) return undefined;
     let active = true;
     setInputMode(DIRECT_MODE);
-    setDirectHc(editing ? String(context.cell.hcQuantity ?? "") : "");
-    setDirectTc(editing ? String(context.cell.tcQuantity ?? "") : "");
-    setHcHours("");
-    setTcHours("");
-    setTotalExpression("");
+    setDirectHc(editing ? String(context.cell.hcQuantity ?? "0") : "0");
+    setDirectTc(editing ? String(context.cell.tcQuantity ?? "0") : "0");
+    setHcHours("0");
+    setTcHours("0");
+    setTotalExpression("0");
     setNote(editing ? (record?.note ?? "") : "");
     setEditEntry(null);
     setError("");
@@ -82,8 +82,8 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
         }
         setEditEntry(entry);
         setDetailLoaded(true);
-        setDirectHc(String(entry.directHcQuantity ?? entry.hcQuantity ?? ""));
-        setDirectTc(String(entry.directTcQuantity ?? entry.tcQuantity ?? ""));
+        setDirectHc(String(entry.directHcQuantity ?? entry.hcQuantity ?? "0"));
+        setDirectTc(String(entry.directTcQuantity ?? entry.tcQuantity ?? "0"));
         setNote(entry.note ?? "");
       })
       .catch((requestError) => active && setError(mapProductionEntryError(requestError, "Không thể tải bản ghi để chỉnh sửa.")))

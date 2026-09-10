@@ -48,6 +48,7 @@ describe("production matrix quick entry guards", () => {
     expect(source).toContain("buildQuickEntryAttendanceLookupPath");
     expect(source).toContain("attendanceHoursDefaults");
     expect(source).toContain("attendanceHoursEditedRef");
+    expect(source).toContain('useState("0")');
   });
 
   test("accepts detail only when snapshot version, mode, and matrix key still match", () => {
