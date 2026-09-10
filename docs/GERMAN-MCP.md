@@ -19,11 +19,21 @@ $env:GERMAN_API_USERNAME = "<manager-user>"
 $env:GERMAN_API_PASSWORD = "<password>"
 ```
 
+Hoặc dùng mã MCP một lần do Manager/Admin tạo trên thanh tài khoản:
+
+```powershell
+$env:GERMAN_API_MCP_CODE = "<one-time-code>"
+```
+
+Mã chỉ được đổi một lần và có thời hạn ngắn. Sau khi MCP đổi mã thành công, backend cấp session cookie trong bộ nhớ cho MCP.
+
 Hoặc dùng session cookie ngắn hạn:
 
 ```powershell
 $env:GERMAN_API_SESSION_COOKIE = "german.auth=<cookie-value>"
 ```
+
+Trong ứng dụng web, Manager/Admin có thể bấm **Tạo mã MCP** trên thanh tài khoản, sau đó dán mã vào biến `GERMAN_API_MCP_CODE`. Không lưu mã vào Git, log hoặc chia sẻ cho người khác.
 
 Không lưu các giá trị trên vào Git, log hoặc file cấu hình commit vào repository.
 

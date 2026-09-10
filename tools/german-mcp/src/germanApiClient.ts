@@ -36,8 +36,19 @@ export class GermanApiClient {
 
   private async ensureAuthenticated(): Promise<void> {
     if (this.cookie) return;
+    if (this.config.mcpCode) {
+      const response = await this.fetchImpl(`${this.baseUrl}/api/auth/mcp-session/exchange`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: this.config.mcpCode }),
+      });
+      if (!response.ok) throw new Error(`German API MCP code exchange failed with status ${response.status}.`);
+      this.cookie = cookieValue(response.headers);
+      if (!this.cookie) throw new Error("German API MCP code exchange succeeded but no session cookie was returned.");
+      return;
+    }
     if (!this.config.username || !this.config.password) {
-      throw new Error("MCP authentication is not configured. Set GERMAN_API_SESSION_COOKIE or GERMAN_API_USERNAME and GERMAN_API_PASSWORD.");
+      throw new Error("MCP authentication is not configured. Set GERMAN_API_MCP_CODE, GERMAN_API_SESSION_COOKIE, or GERMAN_API_USERNAME and GERMAN_API_PASSWORD.");
     }
 
     const response = await this.fetchImpl(`${this.baseUrl}/api/auth/login`, {

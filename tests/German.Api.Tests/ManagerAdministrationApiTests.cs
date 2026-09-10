@@ -597,10 +597,41 @@ public sealed class ManagerAdministrationApiTests
         var employees = await client.GetAsync("/api/employees");
         var orders = await client.GetAsync("/api/production-orders");
         var entries = await client.GetAsync("/api/production-entries");
+        var mcpSession = await client.PostAsJsonAsync("/api/auth/mcp-session", new { });
 
         Assert.AreEqual(HttpStatusCode.Forbidden, employees.StatusCode);
         Assert.AreEqual(HttpStatusCode.Forbidden, orders.StatusCode);
         Assert.AreEqual(HttpStatusCode.Forbidden, entries.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Forbidden, mcpSession.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task Manager_CanCreateAndUseMcpSessionCodeOnlyOnce()
+    {
+        await using var factory = new GermanApiFactory();
+        await factory.SeedAsync(async services =>
+        {
+            var db = services.GetRequiredService<GermanDbContext>();
+            await AddAccountAsync(services, db, "manager-mcp-session", "M020", UserRole.Manager, "secret");
+            await db.SaveChangesAsync();
+        });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "manager-mcp-session", "secret");
+
+        var response = await client.PostAsJsonAsync("/api/auth/mcp-session", new { });
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var code = json.RootElement.GetProperty("code").GetString();
+        Assert.IsFalse(string.IsNullOrWhiteSpace(code));
+        Assert.IsTrue(json.RootElement.GetProperty("expiresAt").GetDateTimeOffset() > DateTimeOffset.UtcNow);
+
+        var exchange = await client.PostAsJsonAsync("/api/auth/mcp-session/exchange", new { code });
+        Assert.AreEqual(HttpStatusCode.OK, exchange.StatusCode);
+
+        var reuse = await client.PostAsJsonAsync("/api/auth/mcp-session/exchange", new { code });
+        Assert.AreEqual(HttpStatusCode.Unauthorized, reuse.StatusCode);
     }
 
     private static async Task AddAccountAsync(

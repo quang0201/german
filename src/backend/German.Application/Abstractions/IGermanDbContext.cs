@@ -12,6 +12,7 @@ public interface IGermanDbContext
 {
     DbSet<Employee> Employees { get; }
     DbSet<UserAccount> UserAccounts { get; }
+    DbSet<McpSessionCode> McpSessionCodes { get; }
     DbSet<ShiftTemplate> ShiftTemplates { get; }
     DbSet<ShiftPeriod> ShiftPeriods { get; }
     DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments { get; }

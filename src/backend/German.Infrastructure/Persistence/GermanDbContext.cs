@@ -14,6 +14,7 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
 {
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<UserAccount> UserAccounts => Set<UserAccount>();
+    public DbSet<McpSessionCode> McpSessionCodes => Set<McpSessionCode>();
     public DbSet<ShiftTemplate> ShiftTemplates => Set<ShiftTemplate>();
     public DbSet<ShiftPeriod> ShiftPeriods => Set<ShiftPeriod>();
     public DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments => Set<EmployeeShiftAssignment>();
@@ -75,6 +76,17 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.HasOne<ShiftTemplate>()
                 .WithMany()
                 .HasForeignKey(x => x.ShiftTemplateId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<McpSessionCode>(builder =>
+        {
+            builder.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
+            builder.HasIndex(x => x.CodeHash).IsUnique();
+            builder.Property(x => x.UsedAt).IsConcurrencyToken();
+            builder.HasOne<UserAccount>()
+                .WithMany()
+                .HasForeignKey(x => x.IssuedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

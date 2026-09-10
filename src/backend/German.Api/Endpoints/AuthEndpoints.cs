@@ -15,6 +15,8 @@ public static class AuthEndpoints
         group.MapPost("/login", LoginAsync).AllowAnonymous();
         group.MapPost("/logout", (Delegate)LogoutAsync).RequireAuthorization();
         group.MapGet("/me", Me).RequireAuthorization();
+        group.MapPost("/mcp-session", CreateMcpSessionCode).RequireAuthorization("ManagerOrAdmin");
+        group.MapPost("/mcp-session/exchange", ExchangeMcpSessionCode).AllowAnonymous();
 
         return endpoints;
     }
@@ -26,31 +28,55 @@ public static class AuthEndpoints
         CancellationToken cancellationToken)
     {
         var result = await authService.LoginAsync(request.Identifier, request.Password, cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return ApiResultMapper.Error(result.Error!);
-        }
+        if (!result.IsSuccess) return ApiResultMapper.Error(result.Error!);
 
-        var session = result.Value!;
+        await SignInAsync(httpContext, result.Value!);
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> CreateMcpSessionCode(
+        ClaimsPrincipal user,
+        McpSessionService service,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var userIdText = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdText, out var userId)) return Results.Unauthorized();
+
+        var result = await service.CreateAsync(userId, cancellationToken);
+        if (!result.IsSuccess) return ApiResultMapper.Error(result.Error!);
+        httpContext.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> ExchangeMcpSessionCode(
+        McpSessionCodeExchangeRequest request,
+        McpSessionService service,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var result = await service.ExchangeAsync(request.Code, cancellationToken);
+        if (!result.IsSuccess) return Results.Unauthorized();
+
+        await SignInAsync(httpContext, result.Value!);
+        httpContext.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task SignInAsync(HttpContext httpContext, AuthSessionDto session)
+    {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, session.UserId.ToString()),
             new(ClaimTypes.Name, session.Username),
             new(ClaimTypes.Role, session.Role.ToString())
         };
-        if (session.EmployeeId.HasValue)
-        {
-            claims.Add(new Claim("employee_id", session.EmployeeId.Value.ToString()));
-        }
+        if (session.EmployeeId.HasValue) claims.Add(new Claim("employee_id", session.EmployeeId.Value.ToString()));
 
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
         await httpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            principal,
+            new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
             new AuthenticationProperties { IsPersistent = false });
-
-        return Results.Ok(session);
     }
 
     private static async Task<IResult> LogoutAsync(HttpContext httpContext)

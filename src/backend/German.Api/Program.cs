@@ -24,6 +24,7 @@ var builder = WebApplication.CreateBuilder(StartModeParser.GetHostArguments(args
 builder.Services.AddGermanInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<McpSessionService>();
 builder.Services.AddScoped<AttendanceService>();
 builder.Services.AddScoped<AttendanceExportService>();
 builder.Services.AddScoped<AttendanceHoursQueryService>();
