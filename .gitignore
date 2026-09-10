@@ -9,6 +9,8 @@ obj/
 !.env.example
 src/frontend/node_modules/
 src/frontend/dist/
+tools/german-mcp/node_modules/
+.mcp-logs/
 src/frontend/src/tailwind.css
 src/backend/German.Api/wwwroot/
 .worktrees/

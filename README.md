@@ -13,6 +13,7 @@ MVP nhập và quản lý sản lượng sản xuất. Backend dùng .NET 10 + E
 - Quản lý nhân viên, bộ ca, lịch gán ca theo ngày hiệu lực.
 - Mỗi mã sản xuất có công đoạn riêng và có thể clone công đoạn từ mã cũ.
 - Admin tạo tài khoản nội bộ.
+- MCP riêng để tra cứu và ghi nhận gia công ngoài qua API, có preview và audit log JSONL.
 - Audit log khi Manager/Admin sửa hoặc xóa sản lượng.
 - Manager/Admin xuất báo cáo sản lượng `.xlsx` bằng OpenXML.
 - Docker runtime một container app, kết nối PostgreSQL ngoài Compose.
