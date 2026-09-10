@@ -10,21 +10,24 @@ function localToday() {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function draftFor(item) {
+function draftFor(item, externalSources = []) {
+  const matchedSource = externalSources.find((source) => source.id === item?.externalSourceId)
+    || externalSources.find((source) => String(source.name).trim().toLocaleUpperCase("vi-VN") === String(item?.sourceName || "").trim().toLocaleUpperCase("vi-VN"));
   return {
     receivedDate: item?.receivedDate || localToday(),
     quantity: item?.quantity ?? "",
+    externalSourceId: item?.externalSourceId || matchedSource?.id || "",
     sourceName: item?.sourceName || "",
     note: item?.note || "",
   };
 }
 
-export function ProductionExternalQuantityDialog({ open = false, order, operation, item = null, loading = false, error = "", onClose, onSubmit, onChange }) {
-  const [draft, setDraft] = useState(() => draftFor(item));
+export function ProductionExternalQuantityDialog({ open = false, order, operation, item = null, externalSources = [], loading = false, error = "", onClose, onSubmit, onChange }) {
+  const [draft, setDraft] = useState(() => draftFor(item, externalSources));
 
   useEffect(() => {
-    if (open) setDraft(draftFor(item));
-  }, [open, item]);
+    if (open) setDraft(draftFor(item, externalSources));
+  }, [open, item, externalSources]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -48,6 +51,10 @@ export function ProductionExternalQuantityDialog({ open = false, order, operatio
   }
 
   const editing = Boolean(item);
+  const sourceOptions = [...externalSources];
+  if (item?.externalSourceId && !sourceOptions.some((source) => source.id === item.externalSourceId)) {
+    sourceOptions.push({ id: item.externalSourceId, name: item.sourceName || "Nguồn đã tắt", isActive: false });
+  }
   return (
     <div className="erp-dialog-backdrop" role="presentation">
       <section className="erp-dialog erp-production-external-dialog" role="dialog" aria-modal="true" aria-labelledby="production-external-dialog-title">
@@ -69,8 +76,11 @@ export function ProductionExternalQuantityDialog({ open = false, order, operatio
             <Field label="Số lượng" required hint="> 0">
               <input className="erp-control" required min="0.01" step="0.01" type="number" value={draft.quantity} onChange={(event) => update("quantity", event.target.value)} />
             </Field>
-            <Field label="Nguồn bên ngoài">
-              <input className="erp-control" maxLength="200" value={draft.sourceName} onChange={(event) => update("sourceName", event.target.value)} placeholder="Ví dụ: Xưởng ngoài A" />
+            <Field label="Nguồn bên ngoài" required={sourceOptions.length > 0}>
+              {sourceOptions.length > 0 ? <select className="erp-control" name="externalSourceId" required value={draft.externalSourceId} onChange={(event) => update("externalSourceId", event.target.value)}>
+                <option value="">Chọn nguồn gia công</option>
+                {sourceOptions.map((source) => <option key={source.id} value={source.id} disabled={source.isActive === false && source.id !== draft.externalSourceId}>{source.name}{source.isActive === false ? " (đã tắt)" : ""}</option>)}
+              </select> : <input className="erp-control" maxLength="200" value={draft.sourceName} onChange={(event) => update("sourceName", event.target.value)} placeholder="Ví dụ: Xưởng ngoài A" />}
             </Field>
             <Field label="Ghi chú">
               <textarea className="erp-control" maxLength="1000" rows="3" value={draft.note} onChange={(event) => update("note", event.target.value)} />

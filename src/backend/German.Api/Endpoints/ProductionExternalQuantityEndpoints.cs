@@ -49,7 +49,8 @@ public static class ProductionExternalQuantityEndpoints
                     request.ReceivedDate,
                     request.Quantity,
                     request.SourceName,
-                    request.Note),
+                    request.Note,
+                    request.ExternalSourceId),
                 cancellationToken);
             return result.IsSuccess
                 ? Results.Created($"/api/production-external-quantities/{result.Value!.Id}", result.Value)
@@ -66,7 +67,7 @@ public static class ProductionExternalQuantityEndpoints
             var result = await service.UpdateAsync(
                 httpContext.User.ToCurrentActor(),
                 id,
-                new UpdateProductionExternalQuantityCommand(request.ReceivedDate, request.Quantity, request.SourceName, request.Note),
+                new UpdateProductionExternalQuantityCommand(request.ReceivedDate, request.Quantity, request.SourceName, request.Note, request.ExternalSourceId),
                 cancellationToken);
             return result.IsSuccess ? Results.Ok(result.Value) : ApiResultMapper.Error(result.Error!);
         });

@@ -6,10 +6,12 @@ public sealed record CreateProductionExternalQuantityRequest(
     DateOnly ReceivedDate,
     decimal Quantity,
     string? SourceName = null,
-    string? Note = null);
+    string? Note = null,
+    Guid? ExternalSourceId = null);
 
 public sealed record UpdateProductionExternalQuantityRequest(
     DateOnly ReceivedDate,
     decimal Quantity,
     string? SourceName = null,
-    string? Note = null);
+    string? Note = null,
+    Guid? ExternalSourceId = null);

@@ -238,7 +238,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 external.ProductionOperationId,
                 SourceEmployeeCode = sourceEmployee == null ? null : sourceEmployee.EmployeeCode,
                 SourceEmployeeName = sourceEmployee == null ? null : sourceEmployee.FullName,
-                ExternalSourceName = externalSource == null ? null : externalSource.Name,
+                ExternalSourceName = external.SourceName == null ? (externalSource == null ? null : externalSource.Name) : external.SourceName!.Trim(),
                 external.SourceName,
                 external.ReceivedDate,
                 external.Quantity
@@ -435,7 +435,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
 
             foreach (var item in externalItems)
             {
-                var source = item.externalSource?.Name ?? item.sourceEmployee?.FullName;
+                var source = item.external.SourceName ?? item.externalSource?.Name ?? item.sourceEmployee?.FullName;
                 if (string.IsNullOrWhiteSpace(source))
                 {
                     source = string.IsNullOrWhiteSpace(item.external.SourceName)

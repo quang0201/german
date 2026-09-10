@@ -9,6 +9,7 @@ import { ProductionMonthlyReportPage } from "../features/reports/ProductionMonth
 import { UserAccountPage } from "../features/admin/UserAccountPage.jsx";
 import { AuditLogListPage } from "../features/admin/AuditLogListPage.jsx";
 import { AttendancePage } from "../features/attendance/AttendancePage.jsx";
+import { ProductionExternalSourceConfigPage } from "../features/production-orders/ProductionExternalSourceConfigPage.jsx";
 
 export const routes = [
   { path: "/production/new", roles: ["Worker", "Manager", "Admin"], navLabel: "Nhập sản lượng", breadcrumb: () => [{ label: "Nhập sản lượng" }], component: ProductionEntryCreatePage },
@@ -19,6 +20,7 @@ export const routes = [
   { path: "/orders/new", roles: ["Manager", "Admin"], navLabel: "Mã sản xuất", breadcrumb: () => [{ label: "Mã sản xuất", href: "/orders" }, { label: "Tạo mới" }], component: ProductionOrderListPage },
   { path: "/orders", roles: ["Manager", "Admin"], navLabel: "Mã sản xuất", breadcrumb: () => [{ label: "Mã sản xuất" }], component: ProductionOrderListPage },
   { path: "/orders/:id", roles: ["Manager", "Admin"], navLabel: "Mã sản xuất", breadcrumb: ({ id }) => [{ label: "Mã sản xuất", href: "/orders" }, { label: id }], component: ProductionOrderListPage },
+  { path: "/settings/external-sources", roles: ["Manager", "Admin"], navLabel: "Gia công ngoài", breadcrumb: () => [{ label: "Gia công ngoài" }], component: ProductionExternalSourceConfigPage },
   { path: "/shifts", roles: ["Manager", "Admin"], navLabel: "Ca làm việc", breadcrumb: () => [{ label: "Ca làm việc" }], component: ShiftListPage },
   { path: "/attendance", roles: ["Manager", "Admin"], navLabel: "Chấm công", breadcrumb: () => [{ label: "Chấm công" }], component: AttendancePage },
   { path: "/reports", roles: ["Manager", "Admin"], navLabel: "Báo cáo", breadcrumb: () => [], component: ReportPage },

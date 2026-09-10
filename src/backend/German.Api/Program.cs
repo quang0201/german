@@ -38,6 +38,7 @@ builder.Services.AddScoped<ProductionOrderService>();
 builder.Services.AddScoped<LookupService>();
 builder.Services.AddScoped<ProductionReportService>();
 builder.Services.AddScoped<ProductionExternalQuantityService>();
+builder.Services.AddScoped<ProductionExternalSourceService>();
 builder.Services.AddScoped<AuditLogQueryService>();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -160,6 +161,7 @@ app.MapShiftTemplateEndpoints();
 app.MapProductionOrderAdminEndpoints();
 app.MapReportEndpoints();
 app.MapProductionExternalQuantityEndpoints();
+app.MapProductionExternalSourceEndpoints();
 app.MapAuditLogEndpoints();
 app.MapFallbackToFile("index.html");
 

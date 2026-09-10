@@ -83,7 +83,7 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
                 external.SourceEmployeeId,
                 SourceEmployeeName = employee == null ? null : employee.FullName,
                 external.ExternalSourceId,
-                ExternalSourceName = source == null ? null : source.Name,
+                ExternalSourceName = external.SourceName == null ? (source == null ? null : source.Name) : external.SourceName!.Trim(),
                 external.Quantity,
                 external.ProductionOperationId,
                 operation.OperationNumber,
@@ -146,7 +146,9 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         if (!referenceValidation.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(referenceValidation.Error!.Code, referenceValidation.Error.Message);
 
         var now = DateTimeOffset.UtcNow;
-        var externalSource = await ResolveExternalSourceAsync(command.SourceName, cancellationToken);
+        var sourceResult = await ResolveExternalSourceAsync(command.ExternalSourceId, command.SourceName, cancellationToken);
+        if (!sourceResult.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(sourceResult.Error!.Code, sourceResult.Error.Message);
+        var externalSource = sourceResult.Value;
         var item = new ProductionExternalQuantity
         {
             ProductionOrderId = command.ProductionOrderId,
@@ -154,7 +156,7 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
             ExternalSourceId = externalSource?.Id,
             ReceivedDate = command.ReceivedDate,
             Quantity = command.Quantity,
-            SourceName = Normalize(command.SourceName),
+            SourceName = externalSource?.Name ?? Normalize(command.SourceName),
             Note = Normalize(command.Note),
             SubmittedByUserId = actor.UserId,
             CreatedAt = now,
@@ -181,8 +183,11 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         item.ReceivedDate = command.ReceivedDate;
         item.Quantity = command.Quantity;
         item.SourceName = Normalize(command.SourceName);
-        var externalSource = await ResolveExternalSourceAsync(command.SourceName, cancellationToken);
+        var sourceResult = await ResolveExternalSourceAsync(command.ExternalSourceId, command.SourceName, cancellationToken);
+        if (!sourceResult.IsSuccess) return AppResult<ProductionExternalQuantityDto>.Failure(sourceResult.Error!.Code, sourceResult.Error.Message);
+        var externalSource = sourceResult.Value;
         item.ExternalSourceId = externalSource?.Id;
+        item.SourceName = externalSource?.Name ?? Normalize(command.SourceName);
         item.Note = Normalize(command.Note);
         item.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
@@ -236,14 +241,27 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
         return string.IsNullOrWhiteSpace(normalized) ? "Không ghi nguồn" : normalized;
     }
 
-    private async Task<ProductionExternalSource?> ResolveExternalSourceAsync(string? sourceName, CancellationToken cancellationToken)
+    private async Task<AppResult<ProductionExternalSource?>> ResolveExternalSourceAsync(Guid? sourceId, string? sourceName, CancellationToken cancellationToken)
     {
+        if (sourceId.HasValue)
+        {
+            var selected = await db.ProductionExternalSources.FirstOrDefaultAsync(source => source.Id == sourceId.Value, cancellationToken);
+            if (selected is null) return AppResult<ProductionExternalSource?>.Failure("production_external_source.not_found", "Không tìm thấy nguồn gia công ngoài.");
+            if (!selected.IsActive) return AppResult<ProductionExternalSource?>.Failure("production_external_source.inactive", "Nguồn gia công ngoài đã được tắt.");
+            return AppResult<ProductionExternalSource?>.Success(selected);
+        }
+
         var normalized = NormalizeSourceKey(sourceName);
-        if (normalized is null) return null;
+        if (normalized is null) return AppResult<ProductionExternalSource?>.Success(null);
 
         var existing = await db.ProductionExternalSources
             .FirstOrDefaultAsync(source => source.NormalizedName == normalized, cancellationToken);
-        if (existing is not null) return existing;
+        if (existing is not null)
+        {
+            return existing.IsActive
+                ? AppResult<ProductionExternalSource?>.Success(existing)
+                : AppResult<ProductionExternalSource?>.Failure("production_external_source.inactive", "Nguồn gia công ngoài đã được tắt.");
+        }
 
         var created = new ProductionExternalSource
         {
@@ -251,7 +269,7 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
             NormalizedName = normalized
         };
         db.ProductionExternalSources.Add(created);
-        return created;
+        return AppResult<ProductionExternalSource?>.Success(created);
     }
 
     private static string? NormalizeSourceKey(string? value)

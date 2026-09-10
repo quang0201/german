@@ -192,6 +192,34 @@ public sealed class ProductionExternalQuantityApiTests
         Assert.AreEqual("production_external_quantity.invalid_quantity", json.RootElement.GetProperty("code").GetString());
     }
 
+    [TestMethod]
+    public async Task ManagerCanConfigureExternalSourceAndInactiveSourcesStayOutOfEntryList()
+    {
+        await using var factory = new GermanApiFactory();
+        await SeedAsync(factory, UserRole.Manager, "external-source-manager", "M903", seedProduction: false, _ => { });
+
+        using var client = factory.CreateClient(new() { HandleCookies = true });
+        await LoginAsync(client, "external-source-manager", "secret");
+
+        var create = await client.PostAsJsonAsync("/api/production-external-sources", new { name = " Xưởng cấu hình A " });
+        Assert.AreEqual(HttpStatusCode.Created, create.StatusCode);
+        using var createdJson = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+        var sourceId = createdJson.RootElement.GetProperty("id").GetGuid();
+        Assert.AreEqual("Xưởng cấu hình A", createdJson.RootElement.GetProperty("name").GetString());
+        Assert.IsTrue(createdJson.RootElement.GetProperty("isActive").GetBoolean());
+
+        var update = await client.PutAsJsonAsync($"/api/production-external-sources/{sourceId}", new { name = "Xưởng cấu hình A", isActive = false });
+        Assert.AreEqual(HttpStatusCode.OK, update.StatusCode);
+
+        var activeOnly = await client.GetAsync("/api/production-external-sources");
+        Assert.AreEqual(HttpStatusCode.OK, activeOnly.StatusCode);
+        Assert.AreEqual(0, (await JsonDocument.ParseAsync(await activeOnly.Content.ReadAsStreamAsync())).RootElement.GetArrayLength());
+
+        var all = await client.GetAsync("/api/production-external-sources?includeInactive=true");
+        Assert.AreEqual(HttpStatusCode.OK, all.StatusCode);
+        Assert.AreEqual(1, (await JsonDocument.ParseAsync(await all.Content.ReadAsStreamAsync())).RootElement.GetArrayLength());
+    }
+
     private static async Task SeedAsync(GermanApiFactory factory, UserRole role, string username, string employeeCode, bool seedProduction, Action<SeedIds> capture)
     {
         var ids = new SeedIds();

@@ -41,6 +41,7 @@ export function ProductionOrderListPage({ params, pathname }) {
   const [externalDialog, setExternalDialog] = useState(null);
   const [externalDeleteItem, setExternalDeleteItem] = useState(null);
   const [externalSourceGroups, setExternalSourceGroups] = useState([]);
+  const [externalSources, setExternalSources] = useState([]);
   const externalHistoryGroups = groupProductionExternalHistory(externalQuantities, selected?.operations ?? []);
 
   async function loadExternalQuantities(orderId = selected?.id) {
@@ -91,6 +92,12 @@ export function ProductionOrderListPage({ params, pathname }) {
     previousViewRef.current = view;
     load();
   }, [detailId, view]);
+
+  useEffect(() => {
+    api.get("/api/production-external-sources")
+      .then(setExternalSources)
+      .catch(() => setExternalSources([]));
+  }, []);
 
   useEffect(() => {
     setExternalDialog(null);
@@ -232,7 +239,8 @@ export function ProductionOrderListPage({ params, pathname }) {
       const payload = {
         receivedDate: draft.receivedDate,
         quantity: Number(draft.quantity),
-        sourceName: draft.sourceName || null,
+        sourceName: draft.externalSourceId ? null : (draft.sourceName || null),
+        externalSourceId: draft.externalSourceId || null,
         note: draft.note || null,
       };
       if (externalDialog.item) {
@@ -369,6 +377,7 @@ export function ProductionOrderListPage({ params, pathname }) {
         order={selected}
         operation={externalDialog?.operation}
         item={externalDialog?.item}
+        externalSources={externalSources}
         loading={externalLoading}
         error={externalError}
         onClose={() => !externalLoading && setExternalDialog(null)}

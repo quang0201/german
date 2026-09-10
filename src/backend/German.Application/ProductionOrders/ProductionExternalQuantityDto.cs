@@ -36,10 +36,12 @@ public sealed record CreateProductionExternalQuantityCommand(
     DateOnly ReceivedDate,
     decimal Quantity,
     string? SourceName,
-    string? Note);
+    string? Note,
+    Guid? ExternalSourceId = null);
 
 public sealed record UpdateProductionExternalQuantityCommand(
     DateOnly ReceivedDate,
     decimal Quantity,
     string? SourceName,
-    string? Note);
+    string? Note,
+    Guid? ExternalSourceId = null);

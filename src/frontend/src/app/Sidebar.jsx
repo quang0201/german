@@ -4,7 +4,7 @@ import { navigate } from "./navigation.js";
 import { routes } from "./routes.js";
 
 function navItems(role) {
-  const preferredOrder = ["/reports", "/reports/monthly", "/employees", "/orders", "/attendance", "/production", "/shifts", "/admin/accounts", "/admin/audit"];
+  const preferredOrder = ["/reports", "/reports/monthly", "/employees", "/orders", "/settings/external-sources", "/attendance", "/production", "/shifts", "/admin/accounts", "/admin/audit"];
   const seen = new Set();
   return routes.filter((route) => {
     if (!route.roles.includes(role) || route.path.includes(":id") || route.path.endsWith("/new")) return false;
@@ -18,6 +18,7 @@ const icons = {
   "/production": "production",
   "/employees": "employees",
   "/orders": "orders",
+  "/settings/external-sources": "orders",
   "/shifts": "shifts",
   "/reports": "reports",
   "/reports/monthly": "reports",
