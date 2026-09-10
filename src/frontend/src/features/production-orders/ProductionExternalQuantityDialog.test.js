@@ -21,6 +21,19 @@ describe("ProductionExternalQuantityDialog", () => {
     expect(html).toContain("Ghi nhận");
   });
 
+  test("renders configured external sources as a dropdown", () => {
+    const html = renderToString(React.createElement(ProductionExternalQuantityDialog, {
+      open: true,
+      order: { code: "0417" },
+      operation: { operationNumber: 4, name: "May thân", unit: "cái" },
+      externalSources: [{ id: "source-a", name: "Xưởng ngoài A", isActive: true }],
+      onClose: () => {},
+    }));
+
+    expect(html).toContain("Xưởng ngoài A");
+    expect(html).toContain('name="externalSourceId"');
+  });
+
   test("renders edit mode with existing quantity and API error inside popup", () => {
     const html = renderToString(React.createElement(ProductionExternalQuantityDialog, {
       open: true,
