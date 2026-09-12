@@ -62,11 +62,13 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(html).toContain("Chọn Mã SX ở bước 1 để tải công đoạn.");
   });
 
-  test("renders attendance shift inputs as text fields for P or Ô", () => {
+  test("keeps attendance editable while locking production quantity for paid leave", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionMatrixBatchEntryDialog.jsx"), "utf8");
 
     expect(source).toContain('type="text"');
     expect(source).toContain("P/Ô");
-    expect(source).toContain("readOnly={isPaidLeaveShift(shift)}");
+    expect(source).not.toContain("readOnly={isPaidLeaveShift(shift)}");
+    expect(source).toContain("const hasPaidLeave = hourDraft.shifts.some(isPaidLeaveShift);");
+    expect(source).toContain("readOnly={hasPaidLeave}");
   });
 });

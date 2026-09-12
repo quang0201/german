@@ -9,6 +9,7 @@ internal static class ProductionMonthlyMatrixBuilder
         bool excludeSundays,
         IReadOnlyList<ProductionMonthlyMatrixRow> rows,
         IReadOnlyList<ProductionMonthlyMatrixRow> groupRows,
+        IReadOnlyList<ProductionMonthlyMatrixRow> activityRows,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> workedDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> attendanceDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
@@ -46,7 +47,7 @@ internal static class ProductionMonthlyMatrixBuilder
             .GroupBy(row => (row.OrderId, row.OrderCode, row.ProductName))
             .OrderByDescending(group => group.Max(row => row.OrderCreatedAt))
             .ThenBy(group => group.Key.OrderCode)
-            .Select(group => BuildOrder(group, scoped, workedDates, attendanceDates, paidLeaveDates))
+            .Select(group => BuildOrder(group, scoped, activityRows, workedDates, attendanceDates, paidLeaveDates))
             .ToList();
 
         return new ProductionMonthlyMatrixResult(
@@ -56,6 +57,7 @@ internal static class ProductionMonthlyMatrixBuilder
     private static ProductionMatrixOrderBlockDto BuildOrder(
         IGrouping<(Guid OrderId, string OrderCode, string ProductName), ProductionMonthlyMatrixRow> group,
         IReadOnlyList<ProductionMonthlyMatrixRow> visibleRows,
+        IReadOnlyList<ProductionMonthlyMatrixRow> activityRows,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> workedDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> attendanceDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
@@ -63,7 +65,7 @@ internal static class ProductionMonthlyMatrixBuilder
         var employees = group
             .GroupBy(row => (row.EmployeeId, row.EmployeeCode, row.EmployeeName, row.EmployeeIsActive))
             .OrderBy(employeeGroup => employeeGroup.Key.EmployeeCode)
-            .Select(employeeGroup => BuildEmployee(employeeGroup, visibleRows, workedDates, attendanceDates, paidLeaveDates))
+            .Select(employeeGroup => BuildEmployee(employeeGroup, group.Key.OrderId, visibleRows, activityRows, workedDates, attendanceDates, paidLeaveDates))
             .ToList();
         return new ProductionMatrixOrderBlockDto(
             group.Key.OrderId, group.Key.OrderCode, group.Key.ProductName, employees);
@@ -71,7 +73,9 @@ internal static class ProductionMonthlyMatrixBuilder
 
     private static ProductionMatrixEmployeeGroupDto BuildEmployee(
         IGrouping<(Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive), ProductionMonthlyMatrixRow> group,
+        Guid orderId,
         IReadOnlyList<ProductionMonthlyMatrixRow> visibleRows,
+        IReadOnlyList<ProductionMonthlyMatrixRow> activityRows,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> workedDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> attendanceDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
@@ -84,7 +88,8 @@ internal static class ProductionMonthlyMatrixBuilder
                 visibleRows.Where(row => row.EmployeeId == group.Key.EmployeeId
                     && row.OperationId == operationGroup.Key.OperationId)))
             .ToList();
-        var productionDates = group
+        var productionDates = activityRows
+            .Where(row => row.EmployeeId == group.Key.EmployeeId && row.OrderId == orderId)
             .Select(row => row.WorkDate)
             .Distinct()
             .OrderBy(date => date)

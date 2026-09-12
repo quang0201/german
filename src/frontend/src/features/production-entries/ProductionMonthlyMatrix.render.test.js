@@ -153,4 +153,16 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(matrixSource).toContain("erp-month-no-attendance");
     expect(matrixSource).toContain("paidLeaveDates");
   });
+
+  test("does not warn when another operation in the selected order was entered", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].operations = [operation("op2", 5)];
+    data.orders[0].employees[0].productionDates = ["2026-08-05"];
+    data.orders[0].employees[0].workedDates = ["2026-08-05"];
+    data.orders[0].employees[0].attendanceDates = ["2026-08-05"];
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+    const cellsOnDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
+
+    expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
+  });
 });

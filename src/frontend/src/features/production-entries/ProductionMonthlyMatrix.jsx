@@ -65,7 +65,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
             const workedDates = new Set(employee.workedDates ?? []);
             const attendanceDates = new Set(employee.attendanceDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
-            const enteredDates = new Set((employee.operations ?? []).flatMap((item) => (item.cells ?? []).map((cell) => cell.workDate)));
+            const enteredDates = new Set(employee.productionDates ?? []);
             (employee.operations ?? []).forEach((operation, operationIndex) => {
               const map = cellsByDate(operation);
               rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`} className={inactive ? "erp-month-inactive" : ""}>

@@ -305,6 +305,31 @@ public sealed class ProductionMonthlyMatrixServiceTests
         Assert.AreEqual(200m, result.Value.Summary.TotalQuantity);
     }
 
+    [TestMethod]
+    public async Task GetAsync_OperationFilterKeepsProductionDatesAcrossAllOperationsOfTheOrder()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E010", FullName = "Bạch Thị Nương" };
+        var order = NewOrder("4004 xanh", "Mã hàng xanh");
+        var enteredOperation = NewOperation(order, 3, "Cắt");
+        var filteredOperation = NewOperation(order, 4, "May");
+        db.AddRange(employee, order, enteredOperation, filteredOperation);
+        AddEntry(db, employee, order, enteredOperation, new DateOnly(2026, 8, 10), 100m, 0m);
+        AddEntry(db, employee, order, filteredOperation, new DateOnly(2026, 8, 11), 80m, 0m);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 8, null, order.Id, filteredOperation.Id, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var matrixEmployee = result.Value!.Orders.Single().Employees.Single();
+        Assert.AreEqual(1, matrixEmployee.Operations.Count);
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 8, 10), new DateOnly(2026, 8, 11) },
+            matrixEmployee.ProductionDates.ToArray());
+    }
+
     private static GermanDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<GermanDbContext>()

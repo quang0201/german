@@ -83,8 +83,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= groupFromDate)
                 && (!employeeId.HasValue || entry.EmployeeId == employeeId.Value)
-                && (!operationId.HasValue || entry.ProductionOperationId == operationId.Value)
-            select new { entry, employee, order, operation };
+                select new { entry, employee, order, operation };
 
         var search = ProductionEntrySearch.Normalize(searchText);
         if (search is not null)
@@ -100,7 +99,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 || modes.Contains(item.entry.EntryMode));
         }
 
-        var groupRows = await query
+        var allGroupRows = await query
             .OrderBy(item => item.order.Code)
             .ThenBy(item => item.employee.EmployeeCode)
             .ThenBy(item => item.operation.OperationNumber)
@@ -116,6 +115,9 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.order.CreatedAt,
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
             .ToListAsync(cancellationToken);
+        var groupRows = operationId.HasValue
+            ? allGroupRows.Where(row => row.OperationId == operationId.Value).ToList()
+            : allGroupRows;
         var rows = groupRows
             .Where(row => row.WorkDate >= fromDate && row.WorkDate <= untilDate)
             .ToList();
@@ -156,7 +158,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToHashSet();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, workedDates, attendanceDates, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, allGroupRows, workedDates, attendanceDates, paidLeaveDates));
     }
 }
 
