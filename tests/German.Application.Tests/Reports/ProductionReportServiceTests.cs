@@ -1,4 +1,5 @@
 using German.Application.Reports;
+using German.Domain.Attendance;
 using German.Domain.Auth;
 using German.Domain.Employees;
 using German.Domain.Production;
@@ -273,6 +274,47 @@ public sealed class ProductionReportServiceTests
                 new ProductionReportEmployeeSummary("E002", "Nguyễn Văn B", 30m, 10m, 40m)
             },
             result.Value.ByEmployee.ToArray());
+    }
+
+    [TestMethod]
+    public async Task BuildAsync_AddsDailyOrderTotalsAndAttendanceHoursForFilteredWorkers()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        db.AttendanceDays.Add(new AttendanceDay
+        {
+            EmployeeId = seed.Employee.Id,
+            WorkDate = new DateOnly(2026, 8, 12),
+            OvertimeHours = 2m,
+            Note = "Ca chiều",
+            Shifts =
+            [
+                new AttendanceShiftEntry
+                {
+                    SlotNumber = 1,
+                    ShiftName = "Ca 1",
+                    ScheduledHours = 8m,
+                    WorkedHours = 8m,
+                    ValueKind = AttendanceShiftValueKind.Hours
+                }
+            ]
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        CollectionAssert.AreEqual(
+            new[] { new ProductionReportOrderDaySummary(new DateOnly(2026, 8, 12), "0417", "Túi 0417", 100m, 20m, 120m) },
+            result.Value!.ByOrderAndDay.ToArray());
+        var hours = result.Value.WorkHours.Single();
+        Assert.AreEqual("E001", hours.EmployeeCode);
+        Assert.AreEqual(8m, hours.RegularHours);
+        Assert.AreEqual(2m, hours.OvertimeHours);
+        Assert.AreEqual(10m, hours.TotalHours);
+        Assert.AreEqual("Ca chiều", hours.Note);
     }
 
     [TestMethod]

@@ -32,11 +32,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             stylesPart.Stylesheet = CreateStylesheet();
             stylesPart.Stylesheet.Save();
 
-            var managementPart = AddWorksheet(workbookPart, CreateManagementWorksheet(report));
-            var overviewPart = AddWorksheet(workbookPart, CreateOverviewWorksheet(report));
+            var worksheetPart = AddWorksheet(workbookPart, CreateCombinedWorksheet(report));
             workbookPart.Workbook.AppendChild(new Sheets()).Append(
-                Sheet(workbookPart, managementPart, 1U, "Báo cáo quản lý"),
-                Sheet(workbookPart, overviewPart, 2U, "Tổng quan"));
+                Sheet(workbookPart, worksheetPart, 1U, "Báo cáo quản lý"));
             workbookPart.Workbook.Save();
         }
         return stream.ToArray();
@@ -192,6 +190,219 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         }
         AddRow(data, row, Text("TỔNG", SectionStyle), Text(string.Empty), Num(report.Summary.HcQuantity), Num(report.Summary.TcQuantity), Num(report.Summary.TotalQuantity));
         return new Worksheet(OverviewColumns(), data);
+    }
+
+    private static Worksheet CreateDailyOrderWorksheet(ProductionReportData report)
+    {
+        const int lastColumn = 6;
+        var data = new SheetData();
+        var merges = new MergeCells();
+        AddRow(data, 1, At("A1", Text("TỔNG SẢN LƯỢNG THEO MÃ VÀ NGÀY", TitleStyle)));
+        merges.Append(new MergeCell { Reference = $"A1:{Col(lastColumn)}1" });
+        AddRow(data, 2, At("A2", Text($"Kỳ: {report.FromDate:dd/MM/yyyy} – {report.UntilDate:dd/MM/yyyy}", SectionStyle)));
+        merges.Append(new MergeCell { Reference = $"A2:{Col(lastColumn)}2" });
+        AddRow(data, 3);
+        AddRow(data, 4,
+            Text("Ngày", HeaderStyle),
+            Text("Mã SX", HeaderStyle),
+            Text("Sản phẩm", HeaderStyle),
+            Text("HC", HcHeaderStyle),
+            Text("TC", TcHeaderStyle),
+            Text("Tổng", HeaderStyle));
+
+        var row = 5U;
+        foreach (var item in report.ByOrderAndDay)
+        {
+            AddRow(data, row++,
+                Date(item.WorkDate),
+                Text(item.ProductionOrderCode),
+                Text(item.ProductName),
+                HcNum(item.HcQuantity),
+                TcNum(item.TcQuantity),
+                Num(item.TotalQuantity));
+        }
+
+        if (report.ByOrderAndDay.Count == 0)
+        {
+            AddRow(data, row, At($"A{row}", Text("Không có dữ liệu trong kỳ đã chọn.", SectionStyle)));
+            merges.Append(new MergeCell { Reference = $"A{row}:{Col(lastColumn)}{row}" });
+        }
+        else
+        {
+            AddRow(data, row,
+                Text("TỔNG", SectionStyle),
+                Text(string.Empty),
+                Text(string.Empty),
+                HcNum(report.ByOrderAndDay.Sum(item => item.HcQuantity)),
+                TcNum(report.ByOrderAndDay.Sum(item => item.TcQuantity)),
+                Num(report.ByOrderAndDay.Sum(item => item.TotalQuantity)));
+        }
+
+        return new Worksheet(
+            new SheetProperties(new PageSetupProperties { FitToPage = true }),
+            new SheetViews(new SheetView(new Pane
+            {
+                VerticalSplit = 4D,
+                TopLeftCell = "A5",
+                ActivePane = PaneValues.BottomRight,
+                State = PaneStateValues.Frozen
+            }) { WorkbookViewId = 0U }),
+            new Columns(Column(1, 14), Column(2, 14), Column(3, 26), Column(4, 14), Column(5, 14), Column(6, 14)),
+            data,
+            merges,
+            new PageMargins { Left = 0.25D, Right = 0.25D, Top = 0.5D, Bottom = 0.5D, Header = 0.2D, Footer = 0.2D },
+            new PageSetup { Orientation = OrientationValues.Landscape, FitToWidth = 1U, FitToHeight = 0U });
+    }
+
+    private static Worksheet CreateCombinedWorksheet(ProductionReportData report)
+    {
+        var sections = new[]
+        {
+            CreateOverviewWorksheet(report),
+            CreateDailyOrderWorksheet(report),
+            CreateWorkHoursWorksheet(report),
+            CreateManagementWorksheet(report)
+        };
+        var data = new SheetData();
+        var merges = new MergeCells();
+        uint nextRow = 1U;
+        foreach (var section in sections)
+        {
+            AppendWorksheetSection(data, merges, section, ref nextRow);
+        }
+
+        var management = sections[^1];
+        return new Worksheet(
+            management.GetFirstChild<SheetProperties>()!.CloneNode(true),
+            management.GetFirstChild<SheetViews>()!.CloneNode(true),
+            management.GetFirstChild<Columns>()!.CloneNode(true),
+            data,
+            merges,
+            management.GetFirstChild<PageMargins>()!.CloneNode(true),
+            management.GetFirstChild<PageSetup>()!.CloneNode(true));
+    }
+
+    private static void AppendWorksheetSection(SheetData targetData, MergeCells targetMerges, Worksheet source, ref uint nextRow)
+    {
+        var sourceData = source.GetFirstChild<SheetData>();
+        if (sourceData is null) return;
+
+        var sourceRows = sourceData.Elements<Row>().ToArray();
+        var sourceLastRow = sourceRows.Select(row => row.RowIndex?.Value ?? 0U).DefaultIfEmpty(0U).Max();
+        var offset = nextRow - 1U;
+        foreach (var sourceRow in sourceRows)
+        {
+            var row = (Row)sourceRow.CloneNode(true);
+            var rowIndex = (row.RowIndex?.Value ?? 0U) + offset;
+            row.RowIndex = rowIndex;
+            foreach (var cell in row.Elements<Cell>())
+            {
+                if (cell.CellReference?.Value is { } reference)
+                {
+                    cell.CellReference = ShiftReference(reference, offset);
+                }
+            }
+            targetData.Append(row);
+        }
+
+        var sourceMerges = source.GetFirstChild<MergeCells>();
+        if (sourceMerges is not null)
+        {
+            foreach (var merge in sourceMerges.Elements<MergeCell>())
+            {
+                if (merge.Reference?.Value is { } reference)
+                {
+                    targetMerges.Append(new MergeCell { Reference = ShiftReference(reference, offset) });
+                }
+            }
+        }
+
+        nextRow = sourceLastRow + offset + 2U;
+    }
+
+    private static string ShiftReference(string reference, uint rowOffset)
+    {
+        var separator = reference.IndexOf(':');
+        if (separator >= 0)
+        {
+            return $"{ShiftReference(reference[..separator], rowOffset)}:{ShiftReference(reference[(separator + 1)..], rowOffset)}";
+        }
+
+        var firstDigit = 0;
+        while (firstDigit < reference.Length && char.IsLetter(reference[firstDigit])) firstDigit++;
+        if (firstDigit == reference.Length || !uint.TryParse(reference[firstDigit..], out var row)) return reference;
+        return $"{reference[..firstDigit]}{row + rowOffset}";
+    }
+
+    private static Worksheet CreateWorkHoursWorksheet(ProductionReportData report)
+    {
+        const int lastColumn = 9;
+        var data = new SheetData();
+        var merges = new MergeCells();
+        AddRow(data, 1, At("A1", Text("GIỜ LÀM THEO NGÀY", TitleStyle)));
+        merges.Append(new MergeCell { Reference = $"A1:{Col(lastColumn)}1" });
+        AddRow(data, 2, At("A2", Text($"Kỳ: {report.FromDate:dd/MM/yyyy} – {report.UntilDate:dd/MM/yyyy}", SectionStyle)));
+        merges.Append(new MergeCell { Reference = $"A2:{Col(lastColumn)}2" });
+        AddRow(data, 3);
+        AddRow(data, 4,
+            Text("Ngày", HeaderStyle),
+            Text("Mã NV", HeaderStyle),
+            Text("Họ tên", HeaderStyle),
+            Text("Giờ HC", HcHeaderStyle),
+            Text("Giờ TC", TcHeaderStyle),
+            Text("Tổng giờ", HeaderStyle),
+            Text("Giờ P", HeaderStyle),
+            Text("Giờ Ô", HeaderStyle),
+            Text("Ghi chú", HeaderStyle));
+
+        var row = 5U;
+        foreach (var item in report.WorkHours)
+        {
+            AddRow(data, row++,
+                Date(item.WorkDate),
+                Text(item.EmployeeCode),
+                Text(item.EmployeeName),
+                HcNum(item.RegularHours),
+                TcNum(item.OvertimeHours),
+                Num(item.TotalHours),
+                Num(item.PaidLeaveHours),
+                Num(item.SickLeaveHours),
+                Text(item.Note));
+        }
+
+        if (report.WorkHours.Count == 0)
+        {
+            AddRow(data, row, At($"A{row}", Text("Không có dữ liệu giờ làm trong kỳ đã chọn.", SectionStyle)));
+            merges.Append(new MergeCell { Reference = $"A{row}:{Col(lastColumn)}{row}" });
+        }
+        else
+        {
+            AddRow(data, row,
+                Text("TỔNG", SectionStyle),
+                Text(string.Empty),
+                Text(string.Empty),
+                HcNum(report.WorkHours.Sum(item => item.RegularHours)),
+                TcNum(report.WorkHours.Sum(item => item.OvertimeHours)),
+                Num(report.WorkHours.Sum(item => item.TotalHours)),
+                Num(report.WorkHours.Sum(item => item.PaidLeaveHours)),
+                Num(report.WorkHours.Sum(item => item.SickLeaveHours)),
+                Text(string.Empty));
+        }
+
+        return new Worksheet(
+            new SheetProperties(new PageSetupProperties { FitToPage = true }),
+            new SheetViews(new SheetView(new Pane
+            {
+                VerticalSplit = 4D,
+                TopLeftCell = "A5",
+                ActivePane = PaneValues.BottomRight,
+                State = PaneStateValues.Frozen
+            }) { WorkbookViewId = 0U }),
+            new Columns(Column(1, 14), Column(2, 14), Column(3, 24), Column(4, 12), Column(5, 12), Column(6, 12), Column(7, 12), Column(8, 12), Column(9, 28)),
+            data,
+            merges,
+            new PageMargins { Left = 0.25D, Right = 0.25D, Top = 0.5D, Bottom = 0.5D, Header = 0.2D, Footer = 0.2D },
+            new PageSetup { Orientation = OrientationValues.Landscape, FitToWidth = 1U, FitToHeight = 0U });
     }
 
     private static void AddRow(SheetData data, uint index, params Cell[] cells) { var row = new Row { RowIndex = index }; row.Append(cells); data.Append(row); }

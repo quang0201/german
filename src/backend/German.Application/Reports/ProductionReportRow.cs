@@ -17,4 +17,7 @@ public sealed record ProductionReportRow(
     decimal? OvertimeHours,
     ProductionEntryMode EntryMode,
     string? Note,
-    bool IsExternal = false);
+    bool IsExternal = false)
+{
+    public Guid? EmployeeId { get; init; }
+}

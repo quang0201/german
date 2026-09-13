@@ -1,5 +1,6 @@
 using German.Application.Abstractions;
 using German.Application.Common;
+using German.Domain.Attendance;
 using German.Domain.Production;
 using Microsoft.EntityFrameworkCore;
 
@@ -398,7 +399,10 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 item.entry.TotalQuantity,
                 item.entry.OvertimeHours,
                 item.entry.EntryMode,
-                item.entry.Note))
+                item.entry.Note)
+            {
+                EmployeeId = item.entry.EmployeeId
+            })
             .ToListAsync(cancellationToken);
 
         var externalRows = new List<ProductionReportRow>();
@@ -507,6 +511,65 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 group.Sum(row => row.TotalQuantity),
                 group.All(row => row.IsExternal)))
             .ToArray();
+        var byOrderAndDay = rows
+            .GroupBy(row => new { row.WorkDate, row.ProductionOrderCode, row.ProductName })
+            .OrderBy(group => group.Key.WorkDate)
+            .ThenBy(group => group.Key.ProductionOrderCode, StringComparer.Ordinal)
+            .ThenBy(group => group.Key.ProductName, StringComparer.Ordinal)
+            .Select(group => new ProductionReportOrderDaySummary(
+                group.Key.WorkDate,
+                group.Key.ProductionOrderCode,
+                group.Key.ProductName,
+                group.Sum(row => row.HcQuantity),
+                group.Sum(row => row.TcQuantity),
+                group.Sum(row => row.TotalQuantity)))
+            .ToArray();
+
+        var employeeNames = internalRows
+            .Where(row => row.EmployeeId.HasValue)
+            .GroupBy(row => row.EmployeeId!.Value)
+            .ToDictionary(group => group.Key, group => (group.First().EmployeeCode, group.First().EmployeeName));
+        var attendanceQuery = db.AttendanceDays.AsNoTracking()
+            .Include(day => day.Shifts)
+            .Where(day => employeeNames.Keys.Contains(day.EmployeeId)
+                && day.WorkDate >= fromDate
+                && day.WorkDate <= untilDate);
+        if (filter.ExcludeSundays)
+        {
+            attendanceQuery = attendanceQuery.Where(day => day.WorkDate.DayOfWeek != DayOfWeek.Sunday);
+        }
+
+        var attendanceDays = employeeNames.Count == 0
+            ? []
+            : await attendanceQuery
+                .OrderBy(day => day.WorkDate)
+                .ThenBy(day => day.EmployeeId)
+                .ToListAsync(cancellationToken);
+        var workHours = attendanceDays
+            .Where(day => employeeNames.ContainsKey(day.EmployeeId))
+            .Select(day =>
+            {
+                var employee = employeeNames[day.EmployeeId];
+                var regularHours = day.Shifts
+                    .Where(shift => shift.ValueKind == AttendanceShiftValueKind.Hours)
+                    .Sum(shift => shift.WorkedHours ?? 0m);
+                var paidLeaveHours = day.Shifts
+                    .Where(shift => shift.ValueKind == AttendanceShiftValueKind.PaidLeave)
+                    .Sum(shift => shift.ScheduledHours);
+                var sickLeaveHours = day.Shifts
+                    .Where(shift => shift.ValueKind == AttendanceShiftValueKind.SickLeave)
+                    .Sum(shift => shift.ScheduledHours);
+                return new ProductionReportWorkHourSummary(
+                    day.WorkDate,
+                    employee.EmployeeCode,
+                    employee.EmployeeName,
+                    regularHours,
+                    day.OvertimeHours,
+                    paidLeaveHours,
+                    sickLeaveHours,
+                    day.Note);
+            })
+            .ToArray();
 
         return AppResult<ProductionReportData>.Success(
             new ProductionReportData(fromDate, untilDate, rows)
@@ -519,7 +582,9 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 ExcludeSundays = filter.ExcludeSundays,
                 Summary = summary,
                 ByDay = byDay,
-                ByEmployee = byEmployee
+                ByEmployee = byEmployee,
+                ByOrderAndDay = byOrderAndDay,
+                WorkHours = workHours
             });
     }
 

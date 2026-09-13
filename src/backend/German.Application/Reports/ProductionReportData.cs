@@ -14,4 +14,6 @@ public sealed record ProductionReportData(
     public ProductionReportSummary Summary { get; init; } = new(0, 0, 0m, 0m, 0m);
     public IReadOnlyList<ProductionReportDaySummary> ByDay { get; init; } = [];
     public IReadOnlyList<ProductionReportEmployeeSummary> ByEmployee { get; init; } = [];
+    public IReadOnlyList<ProductionReportOrderDaySummary> ByOrderAndDay { get; init; } = [];
+    public IReadOnlyList<ProductionReportWorkHourSummary> WorkHours { get; init; } = [];
 }
