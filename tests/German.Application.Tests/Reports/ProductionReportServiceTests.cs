@@ -318,6 +318,40 @@ public sealed class ProductionReportServiceTests
     }
 
     [TestMethod]
+    public async Task BuildAsync_GroupsMultipleProductionOrdersForAnEmployeeOnTheSameDay()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var secondOrder = new ProductionOrder
+        {
+            Code = "0520",
+            ProductName = "Túi 0520",
+            PlannedQuantity = 500m,
+            Status = ProductionOrderStatus.InProduction
+        };
+        var secondOperation = new ProductionOperation
+        {
+            ProductionOrderId = secondOrder.Id,
+            OperationNumber = 1,
+            Name = "May",
+            Unit = "cái",
+            SortOrder = 1
+        };
+        db.AddRange(secondOrder, secondOperation);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, seed.Employee, secondOrder, secondOperation, new DateOnly(2026, 8, 12), 30m, 5m);
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        CollectionAssert.AreEqual(
+            new[] { new ProductionReportEmployeeDaySummary(new DateOnly(2026, 8, 12), "E001", "Nguyễn Văn A", 130m, 25m, 155m) },
+            result.Value!.ByEmployeeAndDay.ToArray());
+    }
+
+    [TestMethod]
     public async Task BuildOperationSummaryAsync_AggregatesByOrderAndOperationIncludingZeroAndMixedUnits()
     {
         await using var db = CreateDb();

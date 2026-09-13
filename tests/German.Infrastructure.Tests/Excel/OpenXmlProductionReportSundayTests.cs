@@ -29,15 +29,18 @@ public sealed class OpenXmlProductionReportSundayTests
         var header = rows.Single(row => row.RowIndex!.Value == 4U).Elements<Cell>().Select(cell => cell.InnerText).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08/2026", "T2 17/08/2026", "Tổng HC", "Tổng TC", "Tổng" },
+            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08/2026", "T2 17/08/2026", "Tổng kỳ" },
             header);
         Assert.IsFalse(sheetData.InnerText.Contains("CN 16/08/2026", StringComparison.Ordinal));
         Assert.IsFalse(sheetData.InnerText.Contains("TỔNG THEO CÔNG ĐOẠN", StringComparison.Ordinal));
 
         var productionRow = rows.Single(row => row.RowIndex!.Value == 6U);
-        Assert.AreEqual("30", GetCell(productionRow, "H6").CellValue!.Text);
-        Assert.AreEqual("5", GetCell(productionRow, "I6").CellValue!.Text);
-        Assert.AreEqual("35", GetCell(productionRow, "J6").CellValue!.Text);
+        Assert.AreEqual("12", GetCell(productionRow, "D6").CellValue!.Text);
+        Assert.AreEqual("10", GetCell(productionRow, "E6").CellValue!.Text);
+        Assert.AreEqual("2", GetCell(productionRow, "F6").CellValue!.Text);
+        Assert.AreEqual("35", GetCell(productionRow, "P6").CellValue!.Text);
+        Assert.AreEqual("30", GetCell(productionRow, "Q6").CellValue!.Text);
+        Assert.AreEqual("5", GetCell(productionRow, "R6").CellValue!.Text);
     }
 
     [TestMethod]
@@ -75,7 +78,17 @@ public sealed class OpenXmlProductionReportSundayTests
         ],
         ByEmployee =
         [
-            new ProductionReportEmployeeSummary("E001", "Nguyễn Văn A", 30m, 5m, 35m)
+                new ProductionReportEmployeeSummary("E001", "Nguyễn Văn A", 30m, 5m, 35m)
+        ],
+        ByEmployeeAndDay =
+        [
+            new ProductionReportEmployeeDaySummary(new DateOnly(2026, 8, 15), "E001", "Nguyễn Văn A", 10m, 2m, 12m),
+            new ProductionReportEmployeeDaySummary(new DateOnly(2026, 8, 17), "E001", "Nguyễn Văn A", 20m, 3m, 23m)
+        ],
+        WorkHours =
+        [
+            new ProductionReportWorkHourSummary(new DateOnly(2026, 8, 15), "E001", "Nguyễn Văn A", 8m, 0m, 0m, 0m, ""),
+            new ProductionReportWorkHourSummary(new DateOnly(2026, 8, 17), "E001", "Nguyễn Văn A", 8m, 0m, 0m, 0m, "")
         ]
     };
 

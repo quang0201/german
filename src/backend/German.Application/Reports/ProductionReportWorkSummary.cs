@@ -1,5 +1,13 @@
 namespace German.Application.Reports;
 
+public sealed record ProductionReportEmployeeDaySummary(
+    DateOnly WorkDate,
+    string EmployeeCode,
+    string EmployeeName,
+    decimal HcQuantity,
+    decimal TcQuantity,
+    decimal TotalQuantity);
+
 public sealed record ProductionReportOrderDaySummary(
     DateOnly WorkDate,
     string ProductionOrderCode,

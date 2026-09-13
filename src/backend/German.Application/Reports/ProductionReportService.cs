@@ -524,6 +524,19 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 group.Sum(row => row.TcQuantity),
                 group.Sum(row => row.TotalQuantity)))
             .ToArray();
+        var byEmployeeAndDay = rows
+            .GroupBy(row => new { row.WorkDate, row.EmployeeCode, row.EmployeeName })
+            .OrderBy(group => group.Key.WorkDate)
+            .ThenBy(group => group.Key.EmployeeCode, StringComparer.Ordinal)
+            .ThenBy(group => group.Key.EmployeeName, StringComparer.Ordinal)
+            .Select(group => new ProductionReportEmployeeDaySummary(
+                group.Key.WorkDate,
+                group.Key.EmployeeCode,
+                group.Key.EmployeeName,
+                group.Sum(row => row.HcQuantity),
+                group.Sum(row => row.TcQuantity),
+                group.Sum(row => row.TotalQuantity)))
+            .ToArray();
 
         var employeeNames = internalRows
             .Where(row => row.EmployeeId.HasValue)
@@ -583,6 +596,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 Summary = summary,
                 ByDay = byDay,
                 ByEmployee = byEmployee,
+                ByEmployeeAndDay = byEmployeeAndDay,
                 ByOrderAndDay = byOrderAndDay,
                 WorkHours = workHours
             });

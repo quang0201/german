@@ -258,10 +258,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     {
         var sections = new[]
         {
-            CreateOverviewWorksheet(report),
-            CreateDailyOrderWorksheet(report),
-            CreateWorkHoursWorksheet(report),
-            CreateManagementWorksheet(report)
+            CreateEmployeeDailyMatrixWorksheet(report)
         };
         var data = new SheetData();
         var merges = new MergeCells();
@@ -271,15 +268,15 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             AppendWorksheetSection(data, merges, section, ref nextRow);
         }
 
-        var management = sections[^1];
+        var matrix = sections[0];
         return new Worksheet(
-            management.GetFirstChild<SheetProperties>()!.CloneNode(true),
-            management.GetFirstChild<SheetViews>()!.CloneNode(true),
-            management.GetFirstChild<Columns>()!.CloneNode(true),
+            matrix.GetFirstChild<SheetProperties>()!.CloneNode(true),
+            matrix.GetFirstChild<SheetViews>()!.CloneNode(true),
+            matrix.GetFirstChild<Columns>()!.CloneNode(true),
             data,
             merges,
-            management.GetFirstChild<PageMargins>()!.CloneNode(true),
-            management.GetFirstChild<PageSetup>()!.CloneNode(true));
+            matrix.GetFirstChild<PageMargins>()!.CloneNode(true),
+            matrix.GetFirstChild<PageSetup>()!.CloneNode(true));
     }
 
     private static void AppendWorksheetSection(SheetData targetData, MergeCells targetMerges, Worksheet source, ref uint nextRow)
@@ -318,6 +315,174 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         }
 
         nextRow = sourceLastRow + offset + 2U;
+    }
+
+    private static Worksheet CreateEmployeeDailyMatrixWorksheet(ProductionReportData report)
+    {
+        const int metricsPerDay = 6;
+        var days = Dates(report.FromDate, report.UntilDate)
+            .Where(date => !report.ExcludeSundays || date.DayOfWeek != DayOfWeek.Sunday)
+            .ToArray();
+        var totalStart = 4 + days.Length * metricsPerDay;
+        var lastColumn = totalStart + metricsPerDay - 1;
+        var data = new SheetData();
+        var merges = new MergeCells();
+        AddRow(data, 1, At("A1", Text("TỔNG HỢP SẢN LƯỢNG VÀ GIỜ LÀM THEO NGÀY", TitleStyle)));
+        merges.Append(new MergeCell { Reference = $"A1:{Col(lastColumn)}1" });
+        AddRow(data, 2, At("A2", Text($"Kỳ: {report.FromDate:dd/MM/yyyy} – {report.UntilDate:dd/MM/yyyy}", SectionStyle)));
+        merges.Append(new MergeCell { Reference = $"A2:{Col(lastColumn)}2" });
+        AddRow(data, 3);
+        AddCells(data, 4, At("A4", Text("Nhân viên", HeaderStyle)), At("B4", Text("CĐ", HeaderStyle)), At("C4", Text("ĐVT", HeaderStyle)));
+        merges.Append(new MergeCell { Reference = "A4:A5" }, new MergeCell { Reference = "B4:B5" }, new MergeCell { Reference = "C4:C5" });
+        for (var i = 0; i < days.Length; i++)
+        {
+            var start = 4 + i * metricsPerDay;
+            AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i]), HeaderStyle)));
+            merges.Append(new MergeCell { Reference = $"{Col(start)}4:{Col(start + metricsPerDay - 1)}4" });
+        }
+        AddCells(data, 4, At($"{Col(totalStart)}4", Text("Tổng kỳ", HeaderStyle)));
+        merges.Append(new MergeCell { Reference = $"{Col(totalStart)}4:{Col(lastColumn)}4" });
+
+        var metricLabels = new[] { "Tổng SP", "HC SP", "TC SP", "Giờ HC", "Giờ TC", "Tổng giờ" };
+        var metricCells = new[] { NumericStyle, HcHeaderStyle, TcHeaderStyle, HcHeaderStyle, TcHeaderStyle, HeaderStyle };
+        var row5Cells = new List<Cell>();
+        for (var i = 0; i < days.Length + 1; i++)
+        {
+            for (var metric = 0; metric < metricsPerDay; metric++)
+            {
+                row5Cells.Add(At($"{Col(4 + i * metricsPerDay + metric)}5", Text(metricLabels[metric], (uint)metricCells[metric])));
+            }
+        }
+        AddCells(data, 5, row5Cells.ToArray());
+
+        var employees = report.ByEmployeeAndDay
+            .Select(item => (item.EmployeeCode, item.EmployeeName))
+            .Concat(report.WorkHours.Select(item => (item.EmployeeCode, item.EmployeeName)))
+            .Distinct()
+            .OrderBy(item => item.EmployeeCode, StringComparer.Ordinal)
+            .ThenBy(item => item.EmployeeName, StringComparer.Ordinal)
+            .ToArray();
+        var productionByEmployeeDay = report.ByEmployeeAndDay.ToDictionary(
+            item => (item.EmployeeCode, item.EmployeeName, item.WorkDate));
+        var hoursByEmployeeDay = report.WorkHours.ToDictionary(
+            item => (item.EmployeeCode, item.EmployeeName, item.WorkDate));
+        var employeeDetails = report.Rows
+            .GroupBy(item => (item.EmployeeCode, item.EmployeeName))
+            .ToDictionary(
+                group => group.Key,
+                group => (
+                    Operations: string.Join(", ", group.Select(item => $"CĐ{item.OperationNumber}").Distinct().OrderBy(value => value, StringComparer.Ordinal)),
+                    Units: string.Join(", ", group.Select(item => item.Unit).Distinct(StringComparer.Ordinal).OrderBy(value => value, StringComparer.Ordinal))));
+
+        var row = 6U;
+        foreach (var employee in employees)
+        {
+            employeeDetails.TryGetValue(employee, out var details);
+            var employeeLabel = employee.EmployeeCode == "__EXTERNAL__"
+                ? employee.EmployeeName
+                : $"{employee.EmployeeCode} - {employee.EmployeeName}";
+            var cells = new List<Cell>
+            {
+                At($"A{row}", Text(employeeLabel)),
+                At($"B{row}", Text(details.Operations ?? string.Empty)),
+                At($"C{row}", Text(details.Units ?? string.Empty))
+            };
+            var employeeTotals = new decimal[metricsPerDay];
+            for (var i = 0; i < days.Length; i++)
+            {
+                productionByEmployeeDay.TryGetValue((employee.EmployeeCode, employee.EmployeeName, days[i]), out var production);
+                hoursByEmployeeDay.TryGetValue((employee.EmployeeCode, employee.EmployeeName, days[i]), out var hours);
+                var values = new[] { production?.TotalQuantity ?? 0m, production?.HcQuantity ?? 0m, production?.TcQuantity ?? 0m, hours?.RegularHours ?? 0m, hours?.OvertimeHours ?? 0m, hours?.TotalHours ?? 0m };
+                for (var metric = 0; metric < metricsPerDay; metric++)
+                {
+                    employeeTotals[metric] += values[metric];
+                    cells.Add(At($"{Col(4 + i * metricsPerDay + metric)}{row}", metric switch
+                    {
+                        1 or 3 => HcNum(values[metric]),
+                        2 or 4 => TcNum(values[metric]),
+                        _ => Num(values[metric])
+                    }));
+                }
+            }
+            for (var metric = 0; metric < metricsPerDay; metric++)
+            {
+                cells.Add(At($"{Col(totalStart + metric)}{row}", metric switch
+                {
+                    1 or 3 => HcNum(employeeTotals[metric]),
+                    2 or 4 => TcNum(employeeTotals[metric]),
+                    _ => Num(employeeTotals[metric])
+                }));
+            }
+            AddCells(data, row++, cells.ToArray());
+        }
+
+        if (employees.Length == 0)
+        {
+            AddRow(data, row, At($"A{row}", Text("Không có dữ liệu trong kỳ đã chọn.", SectionStyle)));
+            merges.Append(new MergeCell { Reference = $"A{row}:{Col(lastColumn)}{row}" });
+        }
+        else
+        {
+            var totalValues = new[]
+            {
+                report.ByEmployeeAndDay.Sum(item => item.TotalQuantity),
+                report.ByEmployeeAndDay.Sum(item => item.HcQuantity),
+                report.ByEmployeeAndDay.Sum(item => item.TcQuantity),
+                report.WorkHours.Sum(item => item.RegularHours),
+                report.WorkHours.Sum(item => item.OvertimeHours),
+                report.WorkHours.Sum(item => item.TotalHours)
+            };
+            var totalCells = new List<Cell> { At($"A{row}", Text("TỔNG", SectionStyle)), At($"B{row}", Text(string.Empty)), At($"C{row}", Text(string.Empty)) };
+            for (var i = 0; i < days.Length; i++)
+            {
+                var production = report.ByEmployeeAndDay.Where(item => item.WorkDate == days[i]);
+                var hours = report.WorkHours.Where(item => item.WorkDate == days[i]);
+                var values = new[] { production.Sum(item => item.TotalQuantity), production.Sum(item => item.HcQuantity), production.Sum(item => item.TcQuantity), hours.Sum(item => item.RegularHours), hours.Sum(item => item.OvertimeHours), hours.Sum(item => item.TotalHours) };
+                for (var metric = 0; metric < metricsPerDay; metric++)
+                {
+                    totalCells.Add(At($"{Col(4 + i * metricsPerDay + metric)}{row}", metric switch
+                    {
+                        1 or 3 => HcNum(values[metric]),
+                        2 or 4 => TcNum(values[metric]),
+                        _ => Num(values[metric])
+                    }));
+                }
+            }
+            for (var metric = 0; metric < metricsPerDay; metric++)
+            {
+                totalCells.Add(At($"{Col(totalStart + metric)}{row}", metric switch
+                {
+                    1 or 3 => HcNum(totalValues[metric]),
+                    2 or 4 => TcNum(totalValues[metric]),
+                    _ => Num(totalValues[metric])
+                }));
+            }
+            AddCells(data, row, totalCells.ToArray());
+        }
+
+        return new Worksheet(
+            new SheetProperties(new PageSetupProperties { FitToPage = true }),
+            new SheetViews(new SheetView(new Pane
+            {
+                HorizontalSplit = 3D,
+                VerticalSplit = 5D,
+                TopLeftCell = "D6",
+                ActivePane = PaneValues.BottomRight,
+                State = PaneStateValues.Frozen
+            }) { WorkbookViewId = 0U }),
+            MatrixColumns(days.Length, totalStart),
+            data,
+            merges,
+            new PageMargins { Left = 0.25D, Right = 0.25D, Top = 0.5D, Bottom = 0.5D, Header = 0.2D, Footer = 0.2D },
+            new PageSetup { Orientation = OrientationValues.Landscape, FitToWidth = 1U, FitToHeight = 0U });
+    }
+
+    private static Columns MatrixColumns(int days, int totalStart)
+    {
+        var columns = new Columns(Column(1, 28), Column(2, 14), Column(3, 16));
+        for (var i = 0; i < days * 6; i++) columns.Append(Column((uint)(3 + i), 12));
+        for (var i = 0; i < 6; i++) columns.Append(Column((uint)(totalStart + i), 12));
+        return columns;
     }
 
     private static string ShiftReference(string reference, uint rowOffset)
