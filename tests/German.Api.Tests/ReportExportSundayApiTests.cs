@@ -29,7 +29,7 @@ public sealed class ReportExportSundayApiTests
         Assert.AreEqual(HttpStatusCode.OK, excludedResponse.StatusCode);
         var excludedManagement = GetWorksheetText(
             await excludedResponse.Content.ReadAsByteArrayAsync(),
-            "Báo cáo quản lý");
+            "Báo cáo sản lượng");
         Assert.IsFalse(excludedManagement.Contains("CN 16/08/2026", StringComparison.Ordinal));
         Assert.IsTrue(excludedManagement.Contains("T2 17/08/2026", StringComparison.Ordinal));
 
@@ -39,7 +39,7 @@ public sealed class ReportExportSundayApiTests
         Assert.AreEqual(HttpStatusCode.OK, compatibleResponse.StatusCode);
         var compatibleManagement = GetWorksheetText(
             await compatibleResponse.Content.ReadAsByteArrayAsync(),
-            "Báo cáo quản lý");
+            "Báo cáo sản lượng");
         Assert.IsTrue(compatibleManagement.Contains("CN 16/08/2026", StringComparison.Ordinal));
         Assert.IsTrue(compatibleManagement.Contains("T2 17/08/2026", StringComparison.Ordinal));
     }

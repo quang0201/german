@@ -24,23 +24,23 @@ public sealed class OpenXmlProductionReportSundayTests
     public void Export_ExcludeSundays_RemovesSundayAxisUsesWeekdayLabelsAndHasNoOperationSubtotal()
     {
         using var document = OpenWorkbook(CreateReport(excludeSundays: true));
-        var sheetData = GetSheetData(document, "Báo cáo quản lý");
+        var sheetData = GetSheetData(document, "Báo cáo sản lượng");
         var rows = sheetData.Elements<Row>().ToList();
         var header = rows.Single(row => row.RowIndex!.Value == 4U).Elements<Cell>().Select(cell => cell.InnerText).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08/2026", "T2 17/08/2026", "Tổng kỳ" },
+            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08/2026", "T2 17/08/2026", "Tổng HC", "Tổng TC", "Tổng" },
             header);
         Assert.IsFalse(sheetData.InnerText.Contains("CN 16/08/2026", StringComparison.Ordinal));
         Assert.IsFalse(sheetData.InnerText.Contains("TỔNG THEO CÔNG ĐOẠN", StringComparison.Ordinal));
 
         var productionRow = rows.Single(row => row.RowIndex!.Value == 6U);
-        Assert.AreEqual("12", GetCell(productionRow, "D6").CellValue!.Text);
-        Assert.AreEqual("10", GetCell(productionRow, "E6").CellValue!.Text);
-        Assert.AreEqual("2", GetCell(productionRow, "F6").CellValue!.Text);
-        Assert.AreEqual("35", GetCell(productionRow, "P6").CellValue!.Text);
-        Assert.AreEqual("30", GetCell(productionRow, "Q6").CellValue!.Text);
-        Assert.AreEqual("5", GetCell(productionRow, "R6").CellValue!.Text);
+        Assert.AreEqual("10", GetCell(productionRow, "D6").CellValue!.Text);
+        Assert.AreEqual("2", GetCell(productionRow, "E6").CellValue!.Text);
+        Assert.AreEqual("12", GetCell(productionRow, "F6").CellValue!.Text);
+        Assert.AreEqual("30", GetCell(productionRow, "J6").CellValue!.Text);
+        Assert.AreEqual("5", GetCell(productionRow, "K6").CellValue!.Text);
+        Assert.AreEqual("35", GetCell(productionRow, "L6").CellValue!.Text);
     }
 
     [TestMethod]
@@ -49,7 +49,7 @@ public sealed class OpenXmlProductionReportSundayTests
         using var document = OpenWorkbook(CreateReport(excludeSundays: false));
         var headerText = string.Join(
             "|",
-            GetSheetData(document, "Báo cáo quản lý")
+            GetSheetData(document, "Báo cáo sản lượng")
                 .Elements<Row>()
                 .Single(row => row.RowIndex!.Value == 4U)
                 .Elements<Cell>()

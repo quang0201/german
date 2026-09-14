@@ -11,11 +11,11 @@ namespace German.Infrastructure.Tests.Excel;
 public sealed class OpenXmlProductionReportExporterTests
 {
     [TestMethod]
-    public void Export_CreatesOneCombinedSheetAndActivatesIt()
+    public void Export_CreatesProductionAndAttendanceSheetsAndActivatesProduction()
     {
         using var document = OpenWorkbook(CreateReport());
         var sheets = GetSheets(document);
-        CollectionAssert.AreEqual(new[] { "Báo cáo quản lý" }, sheets.Select(sheet => sheet.Name!.Value).ToArray());
+        CollectionAssert.AreEqual(new[] { "Báo cáo sản lượng", "Bảng công" }, sheets.Select(sheet => sheet.Name!.Value).ToArray());
         Assert.AreEqual(0U, document.WorkbookPart!.Workbook!.BookViews!.Elements<WorkbookView>().Single().ActiveTab?.Value);
     }
 
@@ -23,7 +23,7 @@ public sealed class OpenXmlProductionReportExporterTests
     public void Export_CombinedSheetFreezesEmployeeColumnsAndHeaderRows()
     {
         using var document = OpenWorkbook(CreateReport());
-        var pane = GetWorksheetPart(document, "Báo cáo quản lý").Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
+        var pane = GetWorksheetPart(document, "Báo cáo sản lượng").Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
         Assert.IsNotNull(pane);
         Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
         Assert.AreEqual(3D, pane.HorizontalSplit?.Value);
@@ -35,28 +35,28 @@ public sealed class OpenXmlProductionReportExporterTests
     public void Export_UsesDistinctHcAndTcColorsForTheDailyMatrix()
     {
         using var document = OpenWorkbook(CreateReport());
-        var rows = GetSheetData(document, "Báo cáo quản lý").Elements<Row>().ToList();
+        var rows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
         var header = rows.Single(row => row.RowIndex!.Value == 5U);
         var firstDataRow = rows.Single(row => row.RowIndex!.Value == 6U);
 
-        Assert.AreEqual("FF9DC3E6", GetFillColor(document, GetCell(header, "E5")));
-        Assert.AreEqual("FFF4B183", GetFillColor(document, GetCell(header, "F5")));
-        Assert.AreEqual("FFEAF4FB", GetFillColor(document, GetCell(firstDataRow, "E6")));
-        Assert.AreEqual("FFFFE6CC", GetFillColor(document, GetCell(firstDataRow, "F6")));
+        Assert.AreEqual("FF9DC3E6", GetFillColor(document, GetCell(header, "D5")));
+        Assert.AreEqual("FFF4B183", GetFillColor(document, GetCell(header, "E5")));
+        Assert.AreEqual("FFEAF4FB", GetFillColor(document, GetCell(firstDataRow, "D6")));
+        Assert.AreEqual("FFFFE6CC", GetFillColor(document, GetCell(firstDataRow, "E6")));
     }
 
     [TestMethod]
     public void Export_RemovesLegacyOverallAndDetailedSections()
     {
         using var document = OpenWorkbook(CreateReport());
-        var rows = GetSheetData(document, "Báo cáo quản lý").Elements<Row>().ToList();
+        var rows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
         Assert.IsFalse(rows.Any(row => GetCells(row).Any(cell => cell.InnerText == "BÁO CÁO SẢN LƯỢNG")));
-        Assert.IsFalse(GetSheetData(document, "Báo cáo quản lý").InnerText.Contains("MÃ SX:", StringComparison.Ordinal));
+        Assert.IsFalse(GetSheetData(document, "Báo cáo sản lượng").InnerText.Contains("MÃ SX:", StringComparison.Ordinal));
         var title = rows.First();
         var titleIndex = title.RowIndex!.Value;
-        CollectionAssert.AreEqual(new[] { "TỔNG HỢP SẢN LƯỢNG VÀ GIỜ LÀM THEO NGÀY" }, GetCells(title).Select(cell => cell.InnerText).ToArray());
+        CollectionAssert.AreEqual(new[] { "TỔNG SẢN LƯỢNG THEO NHÂN VIÊN VÀ CÔNG ĐOẠN" }, GetCells(title).Select(cell => cell.InnerText).ToArray());
         CollectionAssert.AreEqual(new[] { "Kỳ: 12/08/2026 – 15/08/2026" }, GetCells(rows.Single(row => row.RowIndex!.Value == titleIndex + 1U)).Select(cell => cell.InnerText).ToArray());
-        CollectionAssert.AreEqual(new[] { "Nhân viên", "CĐ", "ĐVT", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng kỳ" }, GetCells(rows.Single(row => row.RowIndex!.Value == titleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
+        CollectionAssert.AreEqual(new[] { "Nhân viên", "CĐ", "ĐVT", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng HC", "Tổng TC", "Tổng" }, GetCells(rows.Single(row => row.RowIndex!.Value == titleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
     }
 
     [TestMethod]
@@ -67,12 +67,13 @@ public sealed class OpenXmlProductionReportExporterTests
             Summary = new ProductionReportSummary(0, 0, 0m, 0m, 0m), ByDay = [], ByEmployee = []
         };
         using var document = OpenWorkbook(report);
-        Assert.AreEqual(1, GetSheets(document).Count);
-        StringAssert.Contains(GetSheetData(document, "Báo cáo quản lý").InnerText, "Không có dữ liệu trong kỳ đã chọn.");
+        Assert.AreEqual(2, GetSheets(document).Count);
+        StringAssert.Contains(GetSheetData(document, "Báo cáo sản lượng").InnerText, "Không có dữ liệu trong kỳ đã chọn.");
+        StringAssert.Contains(GetSheetData(document, "Bảng công").InnerText, "Không có dữ liệu chấm công trong kỳ đã chọn.");
     }
 
     [TestMethod]
-    public void Export_CombinesEmployeeProductionAndWorkHoursHorizontallyByDay()
+    public void Export_SeparatesProductionByOperationAndAttendanceIntoHorizontalSheets()
     {
         var report = CreateReport() with
         {
@@ -94,36 +95,42 @@ public sealed class OpenXmlProductionReportExporterTests
         };
 
         using var document = OpenWorkbook(report);
-        CollectionAssert.AreEqual(new[] { "Báo cáo quản lý" }, GetSheets(document).Select(sheet => sheet.Name!.Value).ToArray());
+        CollectionAssert.AreEqual(new[] { "Báo cáo sản lượng", "Bảng công" }, GetSheets(document).Select(sheet => sheet.Name!.Value).ToArray());
 
-        var combinedRows = GetSheetData(document, "Báo cáo quản lý").Elements<Row>().ToList();
-        var title = combinedRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "TỔNG HỢP SẢN LƯỢNG VÀ GIỜ LÀM THEO NGÀY"));
+        var productionRows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
+        var title = productionRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "TỔNG SẢN LƯỢNG THEO NHÂN VIÊN VÀ CÔNG ĐOẠN"));
         var titleIndex = title.RowIndex!.Value;
         CollectionAssert.AreEqual(
-            new[] { "Nhân viên", "CĐ", "ĐVT", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng kỳ" },
-            GetCells(combinedRows.Single(row => row.RowIndex!.Value == titleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
+            new[] { "Nhân viên", "CĐ", "ĐVT", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng HC", "Tổng TC", "Tổng" },
+            GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
         CollectionAssert.AreEqual(
-            new[] { "Tổng SP", "HC SP", "TC SP", "Giờ HC", "Giờ TC", "Tổng giờ" }.Concat(
-                new[] { "Tổng SP", "HC SP", "TC SP", "Giờ HC", "Giờ TC", "Tổng giờ" }).Concat(
-                new[] { "Tổng SP", "HC SP", "TC SP", "Giờ HC", "Giờ TC", "Tổng giờ" }).Concat(
-                new[] { "Tổng SP", "HC SP", "TC SP", "Giờ HC", "Giờ TC", "Tổng giờ" }).Concat(
-                new[] { "Tổng SP", "HC SP", "TC SP", "Giờ HC", "Giờ TC", "Tổng giờ" }).ToArray(),
-            GetCells(combinedRows.Single(row => row.RowIndex!.Value == titleIndex + 4U)).Select(cell => cell.InnerText).ToArray());
+            new[] { "HC", "TC", "Tổng" }.Concat(
+                new[] { "HC", "TC", "Tổng" }).Concat(
+                new[] { "HC", "TC", "Tổng" }).Concat(
+                new[] { "HC", "TC", "Tổng" }).ToArray(),
+            GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 4U)).Select(cell => cell.InnerText).ToArray());
 
-        var firstDataRow = GetCells(combinedRows.Single(row => row.RowIndex!.Value == titleIndex + 5U));
+        var firstDataRow = GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 5U));
         Assert.AreEqual("E001 - Nguyễn Văn A", firstDataRow[0].InnerText);
-        Assert.AreEqual("CĐ11, CĐ20", firstDataRow[1].InnerText);
-        Assert.AreEqual("cái, thùng", firstDataRow[2].InnerText);
-        CollectionAssert.AreEqual(new[] { "209", "180", "29", "8", "2", "10" }, firstDataRow.Skip(3).Take(6).Select(cell => cell.CellValue!.Text).ToArray());
-        CollectionAssert.AreEqual(new[] { "90", "80", "10", "7.5", "0", "7.5" }, firstDataRow.Skip(9).Take(6).Select(cell => cell.CellValue!.Text).ToArray());
+        Assert.AreEqual("CĐ11", firstDataRow[1].InnerText);
+        Assert.AreEqual("cái", firstDataRow[2].InnerText);
+        CollectionAssert.AreEqual(new[] { "150", "25", "175" }, firstDataRow.Skip(3).Take(3).Select(cell => cell.CellValue!.Text).ToArray());
 
-        var attendanceTitle = combinedRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "BẢNG CÔNG THEO DÕI CÔNG"));
+        var secondOperationRow = GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 6U));
+        Assert.AreEqual("CĐ20", secondOperationRow[1].InnerText);
+        Assert.AreEqual("thùng", secondOperationRow[2].InnerText);
+        CollectionAssert.AreEqual(new[] { "30", "4", "34" }, secondOperationRow.Skip(3).Take(3).Select(cell => cell.CellValue!.Text).ToArray());
+
+        var attendanceRows = GetSheetData(document, "Bảng công").Elements<Row>().ToList();
+        var attendanceTitle = attendanceRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "BẢNG CÔNG THEO DÕI CÔNG"));
         var attendanceTitleIndex = attendanceTitle.RowIndex!.Value;
         CollectionAssert.AreEqual(
-            new[] { "Ngày", "Mã NV", "Họ tên", "Giờ HC", "Giờ TC", "Tổng giờ", "Giờ P", "Giờ Ô", "Ghi chú" },
-            GetCells(combinedRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
-        Assert.AreEqual("10", GetCells(combinedRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 4U))[5].CellValue!.Text);
-        Assert.AreEqual("7.5", GetCells(combinedRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U))[5].CellValue!.Text);
+            new[] { "Mã NV", "Họ tên", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng HC", "Tổng TC", "Tổng P", "Tổng Ô", "Tổng giờ", "Ghi chú" },
+            GetCells(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
+        var attendanceEmployee = GetCells(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U));
+        Assert.AreEqual("E001", attendanceEmployee[0].InnerText);
+        Assert.AreEqual("10", attendanceEmployee[6].CellValue!.Text);
+        Assert.AreEqual("7.5", attendanceEmployee[11].CellValue!.Text);
     }
 
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)

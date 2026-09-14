@@ -152,13 +152,13 @@ public sealed class ReportExportApiTests
         var response = await client.GetAsync($"{ExportUrl}&search=not-a-match");
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        var management = GetWorksheetText(await response.Content.ReadAsByteArrayAsync(), "Báo cáo quản lý");
+        var management = GetWorksheetText(await response.Content.ReadAsByteArrayAsync(), "Báo cáo sản lượng");
         Assert.IsFalse(management.Contains("manager3", StringComparison.Ordinal));
 
         var matchingResponse = await client.GetAsync($"{ExportUrl}&search=manager3");
 
         Assert.AreEqual(HttpStatusCode.OK, matchingResponse.StatusCode);
-        var matchingManagement = GetWorksheetText(await matchingResponse.Content.ReadAsByteArrayAsync(), "Báo cáo quản lý");
+        var matchingManagement = GetWorksheetText(await matchingResponse.Content.ReadAsByteArrayAsync(), "Báo cáo sản lượng");
         Assert.IsTrue(matchingManagement.Contains("manager3", StringComparison.Ordinal));
     }
 
