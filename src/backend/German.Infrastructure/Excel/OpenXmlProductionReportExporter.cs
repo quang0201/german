@@ -258,7 +258,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     {
         var sections = new[]
         {
-            CreateEmployeeDailyMatrixWorksheet(report)
+            CreateEmployeeDailyMatrixWorksheet(report),
+            CreateWorkHoursWorksheet(report)
         };
         var data = new SheetData();
         var merges = new MergeCells();
@@ -504,7 +505,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         const int lastColumn = 9;
         var data = new SheetData();
         var merges = new MergeCells();
-        AddRow(data, 1, At("A1", Text("GIỜ LÀM THEO NGÀY", TitleStyle)));
+        AddRow(data, 1, At("A1", Text("BẢNG CÔNG THEO DÕI CÔNG", TitleStyle)));
         merges.Append(new MergeCell { Reference = $"A1:{Col(lastColumn)}1" });
         AddRow(data, 2, At("A2", Text($"Kỳ: {report.FromDate:dd/MM/yyyy} – {report.UntilDate:dd/MM/yyyy}", SectionStyle)));
         merges.Append(new MergeCell { Reference = $"A2:{Col(lastColumn)}2" });

@@ -116,6 +116,14 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual("cái, thùng", firstDataRow[2].InnerText);
         CollectionAssert.AreEqual(new[] { "209", "180", "29", "8", "2", "10" }, firstDataRow.Skip(3).Take(6).Select(cell => cell.CellValue!.Text).ToArray());
         CollectionAssert.AreEqual(new[] { "90", "80", "10", "7.5", "0", "7.5" }, firstDataRow.Skip(9).Take(6).Select(cell => cell.CellValue!.Text).ToArray());
+
+        var attendanceTitle = combinedRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "BẢNG CÔNG THEO DÕI CÔNG"));
+        var attendanceTitleIndex = attendanceTitle.RowIndex!.Value;
+        CollectionAssert.AreEqual(
+            new[] { "Ngày", "Mã NV", "Họ tên", "Giờ HC", "Giờ TC", "Tổng giờ", "Giờ P", "Giờ Ô", "Ghi chú" },
+            GetCells(combinedRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
+        Assert.AreEqual("10", GetCells(combinedRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 4U))[5].CellValue!.Text);
+        Assert.AreEqual("7.5", GetCells(combinedRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U))[5].CellValue!.Text);
     }
 
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)
