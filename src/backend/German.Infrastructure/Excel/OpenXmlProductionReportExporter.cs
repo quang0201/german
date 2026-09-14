@@ -370,10 +370,26 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             .ThenBy(group => group.Key.Unit, StringComparer.Ordinal)
             .ToArray();
         var row = 6U;
+        var employeeStartRow = 0U;
+        string? currentEmployeeCode = null;
+        string? currentEmployeeName = null;
         foreach (var group in groups)
         {
             var entries = group.ToArray();
             var first = entries[0];
+            var isNewEmployee = !string.Equals(currentEmployeeCode, first.EmployeeCode, StringComparison.Ordinal)
+                || !string.Equals(currentEmployeeName, first.EmployeeName, StringComparison.Ordinal);
+            if (isNewEmployee)
+            {
+                if (employeeStartRow > 0U && employeeStartRow < row - 1U)
+                {
+                    merges.Append(new MergeCell { Reference = $"A{employeeStartRow}:A{row - 1U}" });
+                }
+
+                employeeStartRow = row;
+                currentEmployeeCode = first.EmployeeCode;
+                currentEmployeeName = first.EmployeeName;
+            }
             var byDay = entries
                 .GroupBy(item => item.WorkDate)
                 .ToDictionary(item => item.Key, item => (Hc: item.Sum(value => value.HcQuantity), Tc: item.Sum(value => value.TcQuantity)));
@@ -382,7 +398,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var numberStyle = isExternal ? ExternalNumberStyle : NumericStyle;
             var cells = new List<Cell>
             {
-                At($"A{row}", Text(first.EmployeeCode == "__EXTERNAL__" ? first.EmployeeName : $"{first.EmployeeCode} - {first.EmployeeName}", textStyle)),
+                At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, textStyle)),
                 At($"B{row}", Text($"CĐ{first.OperationNumber}", textStyle)),
                 At($"C{row}", Text(first.Unit, textStyle))
             };
@@ -399,6 +415,11 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             cells.Add(At($"{Col(totalStart + 1)}{row}", Num(totalTc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
             cells.Add(At($"{Col(totalStart + 2)}{row}", Num(totalHc + totalTc, numberStyle)));
             AddCells(data, row++, cells.ToArray());
+        }
+
+        if (employeeStartRow > 0U && employeeStartRow < row - 1U)
+        {
+            merges.Append(new MergeCell { Reference = $"A{employeeStartRow}:A{row - 1U}" });
         }
 
         if (groups.Length == 0)

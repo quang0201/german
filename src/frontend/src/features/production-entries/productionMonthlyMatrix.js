@@ -36,6 +36,12 @@ export function monthDateAxis(monthKey, excludeSundays = true) {
   return dateRangeAxis(`${year}-${String(month).padStart(2, "0")}-01`, `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`, excludeSundays);
 }
 
+export function isEmployeeNewInPeriod(joinedDate, fromDate, untilDate) {
+  if (!joinedDate || !fromDate || !untilDate) return false;
+  const joined = String(joinedDate).slice(0, 10);
+  return joined >= fromDate && joined <= untilDate;
+}
+
 function parseIsoDate(isoDate) {
   const [year, month, day] = String(isoDate).split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));

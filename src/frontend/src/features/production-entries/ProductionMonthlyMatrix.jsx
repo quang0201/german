@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { dateRangeAxis, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
+import { dateRangeAxis, isEmployeeNewInPeriod, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
 
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
@@ -66,10 +66,11 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
             const attendanceDates = new Set(employee.attendanceDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
             const enteredDates = new Set(employee.productionDates ?? []);
+            const isNewEmployee = isEmployeeNewInPeriod(employee.joinedDate, range.fromDate, range.untilDate);
             (employee.operations ?? []).forEach((operation, operationIndex) => {
               const map = cellsByDate(operation);
-              rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`} className={inactive ? "erp-month-inactive" : ""}>
-                {operationIndex === 0 && <td className="erp-month-sticky-employee erp-month-employee" rowSpan={employee.operations.length}>{employee.employeeName}{inactive && <em>Đã tắt</em>}</td>}
+              rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`} className={[inactive ? "erp-month-inactive" : "", isNewEmployee ? "erp-month-new-employee" : ""].filter(Boolean).join(" ")}>
+                {operationIndex === 0 && <td className={["erp-month-sticky-employee", "erp-month-employee", isNewEmployee ? "erp-month-new-employee" : ""].filter(Boolean).join(" ")} rowSpan={employee.operations.length}>{employee.employeeName}{inactive && <em>Đã tắt</em>}</td>}
                 <td className="erp-month-sticky-operation erp-month-operation">CĐ{operation.operationNumber}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;

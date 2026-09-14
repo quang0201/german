@@ -31,6 +31,7 @@
 .erp-month-matrix-table tbody tr.erp-month-inactive td { background:var(--color-error-soft) !important; color:var(--color-error); }
 .erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-employee,
 .erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-operation { background:var(--color-error-soft) !important; }
+.erp-month-matrix-table tbody tr.erp-month-new-employee .erp-month-employee { background:var(--color-warning-soft) !important; color:var(--color-warning); }
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; }
 .erp-month-value-cell.erp-month-missing { background:var(--color-warning-soft) !important; box-shadow:inset 0 0 0 1px var(--color-warning); }

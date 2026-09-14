@@ -42,6 +42,7 @@ public sealed record ProductionMatrixEmployeeGroupDto(
     bool IsActive,
     IReadOnlyList<ProductionMatrixOperationRowDto> Operations)
 {
+    public DateOnly? JoinedDate { get; init; }
     public IReadOnlyList<DateOnly> ProductionDates { get; init; } = [];
     public IReadOnlyList<DateOnly> WorkedDates { get; init; } = [];
     public IReadOnlyList<DateOnly> AttendanceDates { get; init; } = [];

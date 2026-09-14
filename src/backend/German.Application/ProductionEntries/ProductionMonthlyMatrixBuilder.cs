@@ -116,6 +116,7 @@ internal static class ProductionMonthlyMatrixBuilder
         return new ProductionMatrixEmployeeGroupDto(
             group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, operations)
         {
+            JoinedDate = DateOnly.FromDateTime(group.First().EmployeeCreatedAt.Date),
             ProductionDates = productionDates,
             WorkedDates = employeeWorkedDates,
             AttendanceDates = employeeAttendanceDates,

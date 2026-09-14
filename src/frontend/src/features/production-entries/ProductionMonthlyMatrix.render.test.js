@@ -16,7 +16,7 @@ const operation = (id, number, cells = []) => ({
   cells,
 });
 
-function dataWithOneOrder() {
+function dataWithOneOrder(joinedDate = "2026-08-15") {
   return {
     availableOrders: [{ id: "o1", code: "0417", productName: "Mã hàng 0417" }],
     orders: [{
@@ -27,6 +27,7 @@ function dataWithOneOrder() {
         employeeId: "e1",
         employeeCode: "E001",
         employeeName: "Bạch Thị Đào",
+        joinedDate,
         operations: [operation("op1", 4), operation("op2", 5), operation("op3", 100)],
       }],
     }],
@@ -164,5 +165,13 @@ describe("ProductionMonthlyMatrix render", () => {
     const cellsOnDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
 
     expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
+  });
+
+  test("highlights only employees who joined during the selected month", () => {
+    const newEmployeeHtml = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder("2026-09-05")} monthKey="2026-09" excludeSundays />);
+    const previousEmployeeHtml = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder("2026-08-15")} monthKey="2026-09" excludeSundays />);
+
+    expect(newEmployeeHtml).toContain("erp-month-new-employee");
+    expect(previousEmployeeHtml).not.toContain("erp-month-new-employee");
   });
 });

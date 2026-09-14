@@ -111,15 +111,19 @@ public sealed class OpenXmlProductionReportExporterTests
             GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 4U)).Select(cell => cell.InnerText).ToArray());
 
         var firstDataRow = GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 5U));
-        Assert.AreEqual("E001 - Nguyễn Văn A", firstDataRow[0].InnerText);
+        Assert.AreEqual("Nguyễn Văn A", firstDataRow[0].InnerText);
         Assert.AreEqual("CĐ11", firstDataRow[1].InnerText);
         Assert.AreEqual("cái", firstDataRow[2].InnerText);
         CollectionAssert.AreEqual(new[] { "150", "25", "175" }, firstDataRow.Skip(3).Take(3).Select(cell => cell.CellValue!.Text).ToArray());
 
         var secondOperationRow = GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 6U));
+        Assert.AreEqual(string.Empty, secondOperationRow[0].InnerText);
         Assert.AreEqual("CĐ20", secondOperationRow[1].InnerText);
         Assert.AreEqual("thùng", secondOperationRow[2].InnerText);
         CollectionAssert.AreEqual(new[] { "30", "4", "34" }, secondOperationRow.Skip(3).Take(3).Select(cell => cell.CellValue!.Text).ToArray());
+        CollectionAssert.Contains(
+            GetWorksheetPart(document, "Báo cáo sản lượng").Worksheet!.GetFirstChild<MergeCells>()!.Elements<MergeCell>().Select(merge => merge.Reference!.Value).ToArray(),
+            "A6:A7");
 
         var attendanceRows = GetSheetData(document, "Bảng công").Elements<Row>().ToList();
         var attendanceTitle = attendanceRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "BẢNG CÔNG THEO DÕI CÔNG"));
