@@ -427,25 +427,6 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             AddRow(data, row, At($"A{row}", Text("Không có dữ liệu trong kỳ đã chọn.", SectionStyle)));
             merges.Append(new MergeCell { Reference = $"A{row}:{Col(lastColumn)}{row}" });
         }
-        else
-        {
-            var totalHc = report.Rows.Sum(item => item.HcQuantity);
-            var totalTc = report.Rows.Sum(item => item.TcQuantity);
-            var cells = new List<Cell> { At($"A{row}", Text("TỔNG", SectionStyle)), At($"B{row}", Text(string.Empty)), At($"C{row}", Text(string.Empty)) };
-            for (var i = 0; i < days.Length; i++)
-            {
-                var dayRows = report.Rows.Where(item => item.WorkDate == days[i]);
-                var dayHc = dayRows.Sum(item => item.HcQuantity);
-                var dayTc = dayRows.Sum(item => item.TcQuantity);
-                cells.Add(At($"{Col(4 + i * metricsPerDay)}{row}", HcNum(dayHc)));
-                cells.Add(At($"{Col(5 + i * metricsPerDay)}{row}", TcNum(dayTc)));
-                cells.Add(At($"{Col(6 + i * metricsPerDay)}{row}", Num(dayHc + dayTc)));
-            }
-            cells.Add(At($"{Col(totalStart)}{row}", HcNum(totalHc)));
-            cells.Add(At($"{Col(totalStart + 1)}{row}", TcNum(totalTc)));
-            cells.Add(At($"{Col(totalStart + 2)}{row}", Num(totalHc + totalTc)));
-            AddCells(data, row, cells.ToArray());
-        }
 
         return new Worksheet(
             new SheetProperties(new PageSetupProperties { FitToPage = true }),

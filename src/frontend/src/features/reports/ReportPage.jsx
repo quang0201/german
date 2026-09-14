@@ -4,8 +4,9 @@ import { Field } from "../../components/erp/Field.jsx";
 import { Icon } from "../../components/erp/Icon.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
+import { PeriodSelector } from "../production-entries/PeriodSelector.jsx";
 import { productionExportFileName } from "../production-entries/productionExport.js";
-import { localIsoDate } from "../production-entries/productionPeriod.js";
+import { derivePeriodRange, localIsoDate, shiftPeriod } from "../production-entries/productionPeriod.js";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
 
 export function currentReportMonthRange(today = new Date()) {
@@ -26,10 +27,20 @@ export function buildProductionReportSummaryUrl(orderId, fromDate, untilDate, re
   return `/api/reports/production/summary?${params.toString()}`;
 }
 
+function reportRangeError(fromDate, untilDate) {
+  if (!fromDate || !untilDate) return "Chọn đầy đủ từ ngày và đến ngày.";
+  if (fromDate > untilDate) return "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.";
+  return "";
+}
+
 export function ReportPage() {
   const initialRange = currentReportMonthRange();
+  const [today] = useState(() => localIsoDate());
   const [fromDate, setFromDate] = useState(initialRange.fromDate);
   const [untilDate, setUntilDate] = useState(initialRange.untilDate);
+  const [appliedPeriod, setAppliedPeriod] = useState(() => ({ periodMode: "month", anchorDate: today, customFromDate: initialRange.fromDate, customUntilDate: initialRange.untilDate }));
+  const [customDraft, setCustomDraft] = useState(() => ({ fromDate: initialRange.fromDate, untilDate: initialRange.untilDate }));
+  const [isCustomEditing, setIsCustomEditing] = useState(false);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -42,8 +53,46 @@ export function ReportPage() {
   const [refreshToken, setRefreshToken] = useState(0);
   const toast = useToast();
   const selectedOrder = orders.find((item) => String(item.id) === String(orderId));
+  const customEditorVisible = isCustomEditing || appliedPeriod.periodMode === "custom";
+  const customError = customEditorVisible ? reportRangeError(customDraft.fromDate, customDraft.untilDate) : "";
 
   const refreshing = refreshToken > 0 && (ordersLoading || summaryLoading);
+
+  function applyPeriod(nextPeriod) {
+    const range = derivePeriodRange(nextPeriod);
+    setAppliedPeriod(nextPeriod);
+    setIsCustomEditing(false);
+    setFromDate(range.fromDate);
+    setUntilDate(range.untilDate);
+  }
+
+  function selectPreset(preset) {
+    if (preset === "custom") {
+      setCustomDraft({ fromDate, untilDate });
+      setIsCustomEditing(true);
+      return;
+    }
+
+    const currentDay = localIsoDate();
+    const anchorDate = preset === "yesterday" ? shiftPeriod("day", currentDay, -1) : currentDay;
+    applyPeriod({ ...appliedPeriod, periodMode: preset === "today" || preset === "yesterday" ? "day" : preset, anchorDate });
+  }
+
+  function shiftCurrentPeriod(direction) {
+    applyPeriod({ ...appliedPeriod, anchorDate: shiftPeriod(appliedPeriod.periodMode, appliedPeriod.anchorDate, direction) });
+  }
+
+  function updateCustomDate(key, value) {
+    setCustomDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function submitCustomPeriod() {
+    if (customError) return;
+    setAppliedPeriod((current) => ({ ...current, periodMode: "custom", customFromDate: customDraft.fromDate, customUntilDate: customDraft.untilDate }));
+    setIsCustomEditing(false);
+    setFromDate(customDraft.fromDate);
+    setUntilDate(customDraft.untilDate);
+  }
 
   useEffect(() => {
     let active = true;
@@ -125,6 +174,22 @@ export function ReportPage() {
     <div className="erp-feature-page">
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
+      <PeriodSelector
+        periodMode={appliedPeriod.periodMode}
+        anchorDate={appliedPeriod.anchorDate}
+        customFromDate={customDraft.fromDate}
+        customUntilDate={customDraft.untilDate}
+        appliedCustomFromDate={appliedPeriod.customFromDate}
+        appliedCustomUntilDate={appliedPeriod.customUntilDate}
+        isCustomEditing={isCustomEditing}
+        onPreset={selectPreset}
+        onShift={shiftCurrentPeriod}
+        onCustomChange={updateCustomDate}
+      />
+      {customEditorVisible && <div className="erp-period-custom-actions">
+        {customError && <p className="erp-inline-message erp-inline-error" role="alert">{customError}</p>}
+        <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(customError)}>Áp dụng khoảng ngày</button>
+      </div>}
       <div className="erp-report-toolbar">
         <Field label="Mã SX">
           <select className="erp-control" value={orderId} onChange={(event) => setOrderId(event.target.value)} disabled={ordersLoading}>
@@ -132,8 +197,6 @@ export function ReportPage() {
             {orders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}
           </select>
         </Field>
-        <Field label="Từ ngày"><input className="erp-control" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></Field>
-        <Field label="Đến ngày"><input className="erp-control" type="date" value={untilDate} onChange={(event) => setUntilDate(event.target.value)} /></Field>
         <div className="erp-report-toolbar-actions">
           <button
             className={`erp-button erp-button-secondary erp-report-refresh-button${refreshing ? " is-refreshing" : ""}`}

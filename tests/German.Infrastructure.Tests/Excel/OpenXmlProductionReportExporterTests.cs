@@ -51,6 +51,7 @@ public sealed class OpenXmlProductionReportExporterTests
         using var document = OpenWorkbook(CreateReport());
         var rows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
         Assert.IsFalse(rows.Any(row => GetCells(row).Any(cell => cell.InnerText == "BÁO CÁO SẢN LƯỢNG")));
+        Assert.IsFalse(rows.Any(row => GetCells(row).Any(cell => cell.InnerText == "TỔNG")));
         Assert.IsFalse(GetSheetData(document, "Báo cáo sản lượng").InnerText.Contains("MÃ SX:", StringComparison.Ordinal));
         var title = rows.First();
         var titleIndex = title.RowIndex!.Value;
