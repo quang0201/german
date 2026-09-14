@@ -37,6 +37,11 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             workbookPart.Workbook.AppendChild(new Sheets()).Append(
                 Sheet(workbookPart, productionWorksheetPart, 1U, "Báo cáo sản lượng"),
                 Sheet(workbookPart, attendanceWorksheetPart, 2U, "Bảng công"));
+            workbookPart.Workbook.CalculationProperties = new CalculationProperties
+            {
+                ForceFullCalculation = true,
+                FullCalculationOnLoad = true
+            };
             workbookPart.Workbook.Save();
         }
         return stream.ToArray();
@@ -396,6 +401,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var isExternal = entries.All(item => item.IsExternal);
             var textStyle = isExternal ? ExternalTextStyle : 0U;
             var numberStyle = isExternal ? ExternalNumberStyle : NumericStyle;
+            var hcReferences = new List<string>();
+            var tcReferences = new List<string>();
             var cells = new List<Cell>
             {
                 At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, textStyle)),
@@ -405,15 +412,21 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             for (var i = 0; i < days.Length; i++)
             {
                 byDay.TryGetValue(days[i], out var quantity);
-                cells.Add(At($"{Col(4 + i * metricsPerDay)}{row}", Num(quantity.Hc, isExternal ? ExternalNumberStyle : HcBodyStyle)));
-                cells.Add(At($"{Col(5 + i * metricsPerDay)}{row}", Num(quantity.Tc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
-                cells.Add(At($"{Col(6 + i * metricsPerDay)}{row}", Num(quantity.Hc + quantity.Tc, numberStyle)));
+                var hcColumn = Col(4 + i * metricsPerDay);
+                var tcColumn = Col(5 + i * metricsPerDay);
+                hcReferences.Add($"{hcColumn}{row}");
+                tcReferences.Add($"{tcColumn}{row}");
+                cells.Add(At($"{hcColumn}{row}", Num(quantity.Hc, isExternal ? ExternalNumberStyle : HcBodyStyle)));
+                cells.Add(At($"{tcColumn}{row}", Num(quantity.Tc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
+                cells.Add(At($"{Col(6 + i * metricsPerDay)}{row}", Formula($"{hcColumn}{row}+{tcColumn}{row}", quantity.Hc + quantity.Tc, numberStyle)));
             }
             var totalHc = entries.Sum(item => item.HcQuantity);
             var totalTc = entries.Sum(item => item.TcQuantity);
-            cells.Add(At($"{Col(totalStart)}{row}", Num(totalHc, isExternal ? ExternalNumberStyle : HcBodyStyle)));
-            cells.Add(At($"{Col(totalStart + 1)}{row}", Num(totalTc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
-            cells.Add(At($"{Col(totalStart + 2)}{row}", Num(totalHc + totalTc, numberStyle)));
+            var totalHcColumn = Col(totalStart);
+            var totalTcColumn = Col(totalStart + 1);
+            cells.Add(At($"{totalHcColumn}{row}", Formula(SumFormula(hcReferences), totalHc, isExternal ? ExternalNumberStyle : HcBodyStyle)));
+            cells.Add(At($"{totalTcColumn}{row}", Formula(SumFormula(tcReferences), totalTc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
+            cells.Add(At($"{Col(totalStart + 2)}{row}", Formula($"{totalHcColumn}{row}+{totalTcColumn}{row}", totalHc + totalTc, numberStyle)));
             AddCells(data, row++, cells.ToArray());
         }
 
@@ -492,6 +505,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         {
             var cells = new List<Cell> { At($"A{row}", Text(employee.EmployeeCode)), At($"B{row}", Text(employee.EmployeeName)) };
             var totals = new decimal[metricsPerDay];
+            var metricReferences = Enumerable.Range(0, metricsPerDay).Select(_ => new List<string>()).ToArray();
             var notes = new List<string>();
             for (var i = 0; i < days.Length; i++)
             {
@@ -500,10 +514,13 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 for (var metric = 0; metric < metricsPerDay; metric++)
                 {
                     totals[metric] += values[metric];
+                    var column = 3 + i * metricsPerDay + metric;
+                    metricReferences[metric].Add($"{Col(column)}{row}");
                     cells.Add(At($"{Col(3 + i * metricsPerDay + metric)}{row}", metric switch
                     {
                         0 => HcNum(values[metric]),
                         1 => TcNum(values[metric]),
+                        4 => Formula($"{Col(3 + i * metricsPerDay)}{row}+{Col(4 + i * metricsPerDay)}{row}", values[metric]),
                         _ => Num(values[metric])
                     }));
                 }
@@ -511,11 +528,14 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             }
             for (var metric = 0; metric < metricsPerDay; metric++)
             {
+                var formula = metric == 4
+                    ? $"{Col(totalStart)}{row}+{Col(totalStart + 1)}{row}"
+                    : SumFormula(metricReferences[metric]);
                 cells.Add(At($"{Col(totalStart + metric)}{row}", metric switch
                 {
-                    0 => HcNum(totals[metric]),
-                    1 => TcNum(totals[metric]),
-                    _ => Num(totals[metric])
+                    0 => Formula(formula, totals[metric], HcBodyStyle),
+                    1 => Formula(formula, totals[metric], TcBodyStyle),
+                    _ => Formula(formula, totals[metric])
                 }));
             }
             cells.Add(At($"{Col(totalStart + 5)}{row}", Text(string.Join("; ", notes))));
@@ -819,6 +839,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private static Cell At(string reference, Cell cell) { cell.CellReference = reference; return cell; }
     private static Cell Text(string value, uint style = 0U) => new() { DataType = CellValues.InlineString, StyleIndex = style, InlineString = new InlineString(new Text(value)) };
     private static Cell Num(decimal value, uint style = NumericStyle) => new() { StyleIndex = style, CellValue = new CellValue(value.ToString(CultureInfo.InvariantCulture)) };
+    private static Cell Formula(string formula, decimal cachedValue, uint style = NumericStyle) => new() { StyleIndex = style, CellFormula = new CellFormula(formula), CellValue = new CellValue(cachedValue.ToString(CultureInfo.InvariantCulture)) };
+    private static string SumFormula(IEnumerable<string> references) => $"SUM({string.Join(",", references.DefaultIfEmpty("0"))})";
     private static Cell Blank(uint style) => new() { StyleIndex = style };
     private static Cell HcNum(decimal value) => Num(value, HcBodyStyle);
     private static Cell TcNum(decimal value) => Num(value, TcBodyStyle);

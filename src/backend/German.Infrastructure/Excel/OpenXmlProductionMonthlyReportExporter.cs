@@ -25,7 +25,6 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
         {
             var workbookPart = document.AddWorkbookPart();
             workbookPart.Workbook = new Workbook(new BookViews(new WorkbookView { ActiveTab = 0U }));
-
             var stylesPart = workbookPart.AddNewPart<WorkbookStylesPart>();
             stylesPart.Stylesheet = CreateStylesheet();
             stylesPart.Stylesheet.Save();
@@ -40,6 +39,11 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
                 SheetId = 1U,
                 Name = "Báo cáo tháng"
             });
+            workbookPart.Workbook.CalculationProperties = new CalculationProperties
+            {
+                ForceFullCalculation = true,
+                FullCalculationOnLoad = true
+            };
             workbookPart.Workbook.Save();
         }
 
@@ -101,20 +105,26 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
             };
 
             var monthValues = operation.Months.ToDictionary(item => item.MonthKey);
+            var hcReferences = new List<string>();
+            var tcReferences = new List<string>();
+            var externalReferences = new List<string>();
             for (var index = 0; index < report.Months.Count; index++)
             {
                 var month = report.Months[index];
                 monthValues.TryGetValue(month.Year.ToString("0000", CultureInfo.InvariantCulture) + "-" + month.Month.ToString("00", CultureInfo.InvariantCulture), out var value);
                 var column = monthColumnStart + index * 3;
+                hcReferences.Add($"{Col(column)}{row}");
+                tcReferences.Add($"{Col(column + 1)}{row}");
+                externalReferences.Add($"{Col(column + 2)}{row}");
                 cells.Add(At(Col(column) + row, Num(value?.HcQuantity ?? 0m, HcNumberStyle)));
                 cells.Add(At(Col(column + 1) + row, Num(value?.TcQuantity ?? 0m, TcNumberStyle)));
                 cells.Add(At(Col(column + 2) + row, Num(value?.ExternalQuantity ?? 0m, TotalNumberStyle)));
             }
 
-            cells.Add(At(Col(totalColumnStart) + row, Num(operation.HcQuantity, HcNumberStyle)));
-            cells.Add(At(Col(totalColumnStart + 1) + row, Num(operation.TcQuantity, TcNumberStyle)));
-            cells.Add(At(Col(totalColumnStart + 2) + row, Num(operation.ExternalQuantity, TotalNumberStyle)));
-            cells.Add(At(Col(totalColumnStart + 3) + row, Num(operation.CombinedTotalQuantity, TotalNumberStyle)));
+            cells.Add(At(Col(totalColumnStart) + row, Formula(SumFormula(hcReferences), operation.HcQuantity, HcNumberStyle)));
+            cells.Add(At(Col(totalColumnStart + 1) + row, Formula(SumFormula(tcReferences), operation.TcQuantity, TcNumberStyle)));
+            cells.Add(At(Col(totalColumnStart + 2) + row, Formula(SumFormula(externalReferences), operation.ExternalQuantity, TotalNumberStyle)));
+            cells.Add(At(Col(totalColumnStart + 3) + row, Formula($"{Col(totalColumnStart)}{row}+{Col(totalColumnStart + 1)}{row}+{Col(totalColumnStart + 2)}{row}", operation.CombinedTotalQuantity, TotalNumberStyle)));
             AddCells(data, row, cells.ToArray());
             row++;
         }
@@ -134,14 +144,14 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
                 .Where(value => value.MonthKey == monthKey)
                 .ToArray();
             var column = monthColumnStart + index * 3;
-            totalCells.Add(At(Col(column) + row, Num(monthValues.Sum(value => value.HcQuantity), HcNumberStyle)));
-            totalCells.Add(At(Col(column + 1) + row, Num(monthValues.Sum(value => value.TcQuantity), TcNumberStyle)));
-            totalCells.Add(At(Col(column + 2) + row, Num(monthValues.Sum(value => value.ExternalQuantity), TotalNumberStyle)));
+            totalCells.Add(At(Col(column) + row, Formula(SumRangeFormula(Col(column), 6U, row - 1U), monthValues.Sum(value => value.HcQuantity), HcNumberStyle)));
+            totalCells.Add(At(Col(column + 1) + row, Formula(SumRangeFormula(Col(column + 1), 6U, row - 1U), monthValues.Sum(value => value.TcQuantity), TcNumberStyle)));
+            totalCells.Add(At(Col(column + 2) + row, Formula(SumRangeFormula(Col(column + 2), 6U, row - 1U), monthValues.Sum(value => value.ExternalQuantity), TotalNumberStyle)));
         }
-        totalCells.Add(At(Col(totalColumnStart) + row, Num(report.Operations.Sum(operation => operation.HcQuantity), HcNumberStyle)));
-        totalCells.Add(At(Col(totalColumnStart + 1) + row, Num(report.Operations.Sum(operation => operation.TcQuantity), TcNumberStyle)));
-        totalCells.Add(At(Col(totalColumnStart + 2) + row, Num(report.Operations.Sum(operation => operation.ExternalQuantity), TotalNumberStyle)));
-        totalCells.Add(At(Col(totalColumnStart + 3) + row, Num(report.Operations.Sum(operation => operation.CombinedTotalQuantity), TotalNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart) + row, Formula(SumRangeFormula(Col(totalColumnStart), 6U, row - 1U), report.Operations.Sum(operation => operation.HcQuantity), HcNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 1) + row, Formula(SumRangeFormula(Col(totalColumnStart + 1), 6U, row - 1U), report.Operations.Sum(operation => operation.TcQuantity), TcNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 2) + row, Formula(SumRangeFormula(Col(totalColumnStart + 2), 6U, row - 1U), report.Operations.Sum(operation => operation.ExternalQuantity), TotalNumberStyle)));
+        totalCells.Add(At(Col(totalColumnStart + 3) + row, Formula(SumRangeFormula(Col(totalColumnStart + 3), 6U, row - 1U), report.Operations.Sum(operation => operation.CombinedTotalQuantity), TotalNumberStyle)));
         AddCells(data, row, totalCells.ToArray());
 
         return new Worksheet(
@@ -214,6 +224,19 @@ public sealed class OpenXmlProductionMonthlyReportExporter : IProductionMonthlyR
         StyleIndex = style,
         CellValue = new CellValue(value.ToString(CultureInfo.InvariantCulture))
     };
+
+    private static Cell Formula(string formula, decimal cachedValue, uint style) => new()
+    {
+        StyleIndex = style,
+        CellFormula = new CellFormula(formula),
+        CellValue = new CellValue(cachedValue.ToString(CultureInfo.InvariantCulture))
+    };
+
+    private static string SumFormula(IEnumerable<string> references) => $"SUM({string.Join(",", references)})";
+
+    private static string SumRangeFormula(string column, uint firstRow, uint lastRow) => lastRow < firstRow
+        ? "SUM(0)"
+        : $"SUM({column}{firstRow}:{column}{lastRow})";
 
     private static string Col(int value)
     {

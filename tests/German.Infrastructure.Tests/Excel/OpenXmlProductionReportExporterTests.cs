@@ -116,6 +116,10 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual("CĐ11", firstDataRow[1].InnerText);
         Assert.AreEqual("cái", firstDataRow[2].InnerText);
         CollectionAssert.AreEqual(new[] { "150", "25", "175" }, firstDataRow.Skip(3).Take(3).Select(cell => cell.CellValue!.Text).ToArray());
+        Assert.AreEqual("D6+E6", firstDataRow[5].CellFormula!.Text);
+        Assert.AreEqual("SUM(D6,G6,J6,M6)", GetCell(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 5U), "P6").CellFormula!.Text);
+        Assert.AreEqual("SUM(E6,H6,K6,N6)", GetCell(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 5U), "Q6").CellFormula!.Text);
+        Assert.AreEqual("P6+Q6", GetCell(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 5U), "R6").CellFormula!.Text);
 
         var secondOperationRow = GetCells(productionRows.Single(row => row.RowIndex!.Value == titleIndex + 6U));
         Assert.AreEqual(string.Empty, secondOperationRow[0].InnerText);
@@ -136,6 +140,10 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual("E001", attendanceEmployee[0].InnerText);
         Assert.AreEqual("10", attendanceEmployee[6].CellValue!.Text);
         Assert.AreEqual("7.5", attendanceEmployee[11].CellValue!.Text);
+        Assert.AreEqual("C6+D6", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "G6").CellFormula!.Text);
+        Assert.AreEqual("SUM(C6,H6,M6,R6)", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "W6").CellFormula!.Text);
+        Assert.AreEqual("SUM(D6,I6,N6,S6)", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "X6").CellFormula!.Text);
+        Assert.AreEqual("W6+X6", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "AA6").CellFormula!.Text);
     }
 
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)

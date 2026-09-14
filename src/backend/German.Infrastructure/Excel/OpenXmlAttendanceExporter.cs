@@ -47,6 +47,11 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
                 SheetId = 1U,
                 Name = "Bảng chấm công"
             });
+            workbookPart.Workbook.CalculationProperties = new CalculationProperties
+            {
+                ForceFullCalculation = true,
+                FullCalculationOnLoad = true
+            };
             workbookPart.Workbook.Save();
         }
         return stream.ToArray();
@@ -78,6 +83,21 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
             var startRow = row;
             var endRow = row + (uint)rowCount - 1U;
             var byDate = employee.Days.ToDictionary(day => day.WorkDate);
+            var paidLeaveTerms = new List<string>();
+            var sickLeaveTerms = new List<string>();
+            var dayIndexes = days.Select((day, index) => (day, index)).ToDictionary(item => item.day, item => item.index);
+            foreach (var savedDay in employee.Days)
+            {
+                if (!dayIndexes.TryGetValue(savedDay.WorkDate, out var dayIndex)) continue;
+                foreach (var savedShift in savedDay.Shifts)
+                {
+                    var cellReference = $"{Col(5 + dayIndex)}{startRow + (uint)savedShift.SlotNumber - 1U}";
+                    var leaveCode = savedShift.ValueKind == AttendanceShiftValueKind.PaidLeave ? "P" : "Ô";
+                    var term = $"IF({cellReference}=\"{leaveCode}\",{savedShift.ScheduledHours.ToString(CultureInfo.InvariantCulture)},0)";
+                    if (savedShift.ValueKind == AttendanceShiftValueKind.PaidLeave) paidLeaveTerms.Add(term);
+                    if (savedShift.ValueKind == AttendanceShiftValueKind.SickLeave) sickLeaveTerms.Add(term);
+                }
+            }
             for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
             {
                 var isTc = rowIndex == maxSlot;
@@ -105,10 +125,15 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
                 }
                 if (rowIndex == 0)
                 {
-                    cells.Add(At($"{Col(totalStart)}{row}", Num(employee.Totals.RegularWorkedHours, TotalStyle)));
-                    cells.Add(At($"{Col(totalStart + 1)}{row}", Num(employee.Totals.OvertimeHours, TotalStyle)));
-                    cells.Add(At($"{Col(totalStart + 2)}{row}", Num(employee.Totals.PaidLeaveHours, TotalStyle)));
-                    cells.Add(At($"{Col(totalStart + 3)}{row}", Num(employee.Totals.SickLeaveHours, TotalStyle)));
+                    var shiftRows = endRow >= startRow + 1U ? $"{startRow}:{endRow - 1U}" : string.Empty;
+                    var regularFormula = shiftRows.Length == 0
+                        ? "SUM(0)"
+                        : $"SUM({string.Join(",", days.Select((_, index) => $"{Col(5 + index)}{startRow}:{Col(5 + index)}{endRow - 1U}"))})";
+                    var overtimeFormula = $"SUM({string.Join(",", days.Select((_, index) => $"{Col(5 + index)}{endRow}"))})";
+                    cells.Add(At($"{Col(totalStart)}{row}", Formula(regularFormula, employee.Totals.RegularWorkedHours)));
+                    cells.Add(At($"{Col(totalStart + 1)}{row}", Formula(overtimeFormula, employee.Totals.OvertimeHours)));
+                    cells.Add(At($"{Col(totalStart + 2)}{row}", Formula(SumFormula(paidLeaveTerms), employee.Totals.PaidLeaveHours)));
+                    cells.Add(At($"{Col(totalStart + 3)}{row}", Formula(SumFormula(sickLeaveTerms), employee.Totals.SickLeaveHours)));
                     var note = string.Join("; ", employee.Days.Select(day => day.Note).Where(note => !string.IsNullOrWhiteSpace(note)).Distinct());
                     cells.Add(At($"{Col(totalStart + 4)}{row}", Text(note, NoteStyle)));
                 }
@@ -276,6 +301,8 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
     private static Cell At(string reference, Cell cell) { cell.CellReference = reference; return cell; }
     private static Cell Text(string value, uint style = 0U) => new() { DataType = CellValues.InlineString, StyleIndex = style, InlineString = new InlineString(new Text(value)) };
     private static Cell Num(decimal value, uint style = BodyStyle) => new() { StyleIndex = style, CellValue = new CellValue(value.ToString(CultureInfo.InvariantCulture)) };
+    private static Cell Formula(string formula, decimal cachedValue) => new() { StyleIndex = TotalStyle, CellFormula = new CellFormula(formula), CellValue = new CellValue(cachedValue.ToString(CultureInfo.InvariantCulture)) };
+    private static string SumFormula(IEnumerable<string> terms) => $"SUM({string.Join(",", terms.DefaultIfEmpty("0"))})";
     private static Cell Blank(uint style) => new() { StyleIndex = style };
     private static Column Column(uint index, double width) => new() { Min = index, Max = index, Width = width, CustomWidth = true };
     private static string Col(int value) { var result = string.Empty; while (value > 0) { value--; result = (char)('A' + value % 26) + result; value /= 26; } return result; }

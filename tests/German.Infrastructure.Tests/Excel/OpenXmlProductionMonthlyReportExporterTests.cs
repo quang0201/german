@@ -42,6 +42,10 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         Assert.AreEqual("30", Cell(data, "K6").CellValue!.Text);
         Assert.AreEqual("30", Cell(data, "L6").CellValue!.Text);
         Assert.AreEqual("200", Cell(data, "M6").CellValue!.Text);
+        Assert.AreEqual("SUM(D6,G6)", Cell(data, "J6").CellFormula!.Text);
+        Assert.AreEqual("SUM(E6,H6)", Cell(data, "K6").CellFormula!.Text);
+        Assert.AreEqual("SUM(F6,I6)", Cell(data, "L6").CellFormula!.Text);
+        Assert.AreEqual("J6+K6+L6", Cell(data, "M6").CellFormula!.Text);
 
         var grandTotal = rows.Single(row => row.RowIndex!.Value == 7U);
         Assert.AreEqual("TỔNG CỘNG", Cell(grandTotal, "A7").InnerText);
@@ -55,6 +59,9 @@ public sealed class OpenXmlProductionMonthlyReportExporterTests
         Assert.AreEqual("30", Cell(grandTotal, "K7").CellValue!.Text);
         Assert.AreEqual("30", Cell(grandTotal, "L7").CellValue!.Text);
         Assert.AreEqual("200", Cell(grandTotal, "M7").CellValue!.Text);
+        Assert.AreEqual("SUM(D6:D6)", Cell(grandTotal, "D7").CellFormula!.Text);
+        Assert.AreEqual("SUM(J6:J6)", Cell(grandTotal, "J7").CellFormula!.Text);
+        Assert.AreEqual("SUM(M6:M6)", Cell(grandTotal, "M7").CellFormula!.Text);
         Assert.IsTrue(worksheet.Worksheet.InnerText.Contains("Ngoài", StringComparison.Ordinal));
     }
 

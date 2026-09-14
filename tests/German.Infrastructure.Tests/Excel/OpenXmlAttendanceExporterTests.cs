@@ -42,7 +42,10 @@ public sealed class OpenXmlAttendanceExporterTests
         Assert.AreEqual("2", GetCell(data, "E8").CellValue!.Text);
         Assert.AreEqual("Ô", GetCell(data, "F6").InnerText);
         Assert.IsNull(GetCell(data, "F8").CellValue);
-        Assert.IsTrue(data.Descendants<Cell>().All(cell => cell.CellFormula is null));
+        Assert.AreEqual("SUM(E6:E7,F6:F7,G6:G7,H6:H7,I6:I7,J6:J7,K6:K7,L6:L7,M6:M7,N6:N7,O6:O7,P6:P7,Q6:Q7,R6:R7,S6:S7,T6:T7,U6:U7,V6:V7,W6:W7,X6:X7,Y6:Y7,Z6:Z7,AA6:AA7,AB6:AB7,AC6:AC7,AD6:AD7,AE6:AE7,AF6:AF7,AG6:AG7,AH6:AH7,AI6:AI7)", GetCell(data, "AJ6").CellFormula!.Text);
+        Assert.AreEqual("SUM(E8,F8,G8,H8,I8,J8,K8,L8,M8,N8,O8,P8,Q8,R8,S8,T8,U8,V8,W8,X8,Y8,Z8,AA8,AB8,AC8,AD8,AE8,AF8,AG8,AH8,AI8)", GetCell(data, "AK6").CellFormula!.Text);
+        StringAssert.Contains(GetCell(data, "AL6").CellFormula!.Text, "IF(E7=\"P\",4,0)");
+        StringAssert.Contains(GetCell(data, "AM6").CellFormula!.Text, "IF(F6=\"Ô\",4,0)");
     }
 
     [TestMethod]
