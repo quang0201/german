@@ -4,6 +4,8 @@ Tài liệu này là hướng dẫn vận hành chính cho German Production tr�
 
 Ứng dụng và PostgreSQL không nằm chung một Compose stack. `compose.yaml` chỉ chứa `german-app`. PostgreSQL có thể nằm trên cùng máy Linux hoặc trên một máy/IP/domain khác.
 
+`compose.yaml` lưu khóa mã hóa cookie đăng nhập trong volume Docker `german-app-keys`. Vì vậy việc recreate container bằng `./deploy.sh update` không làm mất phiên đăng nhập. Không xóa volume này khi bảo trì nếu muốn giữ các cookie hiện tại; xóa volume sẽ yêu cầu đăng nhập lại một lần.
+
 ## 1. Yêu cầu
 
 Máy deploy cần có:

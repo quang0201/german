@@ -22,6 +22,7 @@ var startMode = StartModeParser.Parse(args);
 var builder = WebApplication.CreateBuilder(StartModeParser.GetHostArguments(args));
 
 builder.Services.AddGermanInfrastructure(builder.Configuration);
+builder.Services.AddGermanDataProtection();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<McpSessionService>();
