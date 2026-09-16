@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 const INPUT_MODES = [
   { value: "attendance-only", label: "Chỉ chấm công" },
@@ -218,6 +218,19 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setError("");
   }
 
+  function markPaidLeave() {
+    const nextHourDraft = buildPaidLeaveHourDraft(hourDraft);
+    attendanceDirtyRef.current = {
+      hcHours: true,
+      tcHours: true,
+      shifts: Object.fromEntries(nextHourDraft.shifts.map((shift) => [String(shift.slotNumber), true])),
+    };
+    setHourDraft(nextHourDraft);
+    setInputMode("attendance-only");
+    setDrafts({});
+    setError("");
+  }
+
   function previewFor(draft) {
     if (inputMode === "direct" || attendanceOnly) return null;
     try {
@@ -316,6 +329,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
           </div>}
           <div className="erp-matrix-batch-mode-picker" role="group" aria-label="Kiểu nhập batch">
             {INPUT_MODES.map((mode) => <button key={mode.value} type="button" className={`erp-button erp-button-secondary ${inputMode === mode.value ? "is-selected" : ""}`} aria-pressed={inputMode === mode.value} onClick={() => { setInputMode(mode.value); setError(""); }}>{mode.label}</button>)}
+            <button type="button" className="erp-button erp-button-secondary" onClick={markPaidLeave} disabled={!employeeId || attendanceLoading || !hourDraft.shifts.length}>Nghỉ (P)</button>
           </div>
           {inputMode !== "direct" && <div className="erp-matrix-batch-hours" aria-label={attendanceOnly ? "Giờ chấm công" : "Giờ phân bổ"}>
             {inputMode === "total-hours" && <><label><span>Giờ HC</span><input className="erp-control" type="number" min="0" step="any" value={hourDraft.hcHours} onChange={(event) => changeHour("hcHours", event.target.value)} /></label><label><span>Giờ TC</span><input className="erp-control" type="number" min="0" step="any" value={hourDraft.tcHours} onChange={(event) => changeHour("tcHours", event.target.value)} /></label></>}

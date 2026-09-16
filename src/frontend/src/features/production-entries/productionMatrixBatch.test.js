@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("batch production preload", () => {
   test("builds the day employee order lookup path", () => {
@@ -57,6 +57,24 @@ describe("batch production preload", () => {
       totalQuantity: 1875,
       note: "Đã nhập",
     })).toEqual({ hc: "1364", tc: "511", total: "1875", note: "Đã nhập" });
+  });
+
+  test("marks every configured shift as paid leave", () => {
+    expect(buildPaidLeaveHourDraft({
+      hcHours: "8",
+      tcHours: "2",
+      shifts: [
+        { slotNumber: 1, kind: "Hours", valueKind: "Hours", workedHours: "8" },
+        { slotNumber: 2, kind: "Hours", valueKind: "Hours", workedHours: "4" },
+      ],
+    })).toEqual({
+      hcHours: "0",
+      tcHours: "0",
+      shifts: [
+        { slotNumber: 1, kind: "PaidLeave", valueKind: "PaidLeave", workedHours: "P" },
+        { slotNumber: 2, kind: "PaidLeave", valueKind: "PaidLeave", workedHours: "P" },
+      ],
+    });
   });
 });
 

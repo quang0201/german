@@ -49,6 +49,20 @@ export function buildExistingOperationDraft(entry = {}) {
   };
 }
 
+export function buildPaidLeaveHourDraft(hourDraft = {}) {
+  return {
+    ...hourDraft,
+    hcHours: "0",
+    tcHours: "0",
+    shifts: (hourDraft.shifts ?? []).map((shift) => ({
+      ...shift,
+      kind: "PaidLeave",
+      valueKind: "PaidLeave",
+      workedHours: "P",
+    })),
+  };
+}
+
 export function buildBatchExistingEntryUpdatePayload(entry, { workDate, employeeId, productionOrderId, productionOperationId, directHcQuantity, directTcQuantity, note }) {
   return {
     version: entry.version,
