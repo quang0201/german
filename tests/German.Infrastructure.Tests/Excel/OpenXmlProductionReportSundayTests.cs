@@ -29,9 +29,9 @@ public sealed class OpenXmlProductionReportSundayTests
         var header = rows.Single(row => row.RowIndex!.Value == 4U).Elements<Cell>().Select(cell => cell.InnerText).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08/2026", "T2 17/08/2026", "Tổng HC", "Tổng TC", "Tổng" },
+            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08", "T2 17/08", "Tổng HC", "Tổng TC", "Tổng" },
             header);
-        Assert.IsFalse(sheetData.InnerText.Contains("CN 16/08/2026", StringComparison.Ordinal));
+        Assert.IsFalse(sheetData.InnerText.Contains("CN 16/08", StringComparison.Ordinal));
         Assert.IsFalse(sheetData.InnerText.Contains("TỔNG THEO CÔNG ĐOẠN", StringComparison.Ordinal));
 
         var productionRow = rows.Single(row => row.RowIndex!.Value == 6U);
@@ -55,9 +55,9 @@ public sealed class OpenXmlProductionReportSundayTests
                 .Elements<Cell>()
                 .Select(cell => cell.InnerText));
 
-        StringAssert.Contains(headerText, "T7 15/08/2026");
-        StringAssert.Contains(headerText, "CN 16/08/2026");
-        StringAssert.Contains(headerText, "T2 17/08/2026");
+        StringAssert.Contains(headerText, "T7 15/08");
+        StringAssert.Contains(headerText, "CN 16/08");
+        StringAssert.Contains(headerText, "T2 17/08");
     }
 
     private static ProductionReportData CreateReport(bool excludeSundays) => new(

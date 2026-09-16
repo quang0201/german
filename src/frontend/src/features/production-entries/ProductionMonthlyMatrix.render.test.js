@@ -163,7 +163,6 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(cellsOnDate("2026-08-07").every((className) => className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate("2026-08-08").every((className) => className.includes("erp-month-no-attendance"))).toBe(true);
     expect(matrixSource).toContain("workedDates");
-    expect(matrixSource).toContain("attendanceDates");
     expect(matrixSource).toContain("erp-month-no-attendance");
     expect(matrixSource).toContain("paidLeaveDates");
   });
@@ -210,6 +209,19 @@ describe("ProductionMonthlyMatrix render", () => {
 
     expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate.every((className) => !className.includes("erp-month-no-attendance"))).toBe(true);
+  });
+
+  test("warns when an hourly employee has no worked hours", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].compensationType = "Hourly";
+    data.orders[0].employees[0].workedDates = [];
+    data.orders[0].employees[0].attendanceDates = ["2026-08-05"];
+    data.orders[0].employees[0].productionDates = [];
+
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+    const cellsOnDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
+
+    expect(cellsOnDate.every((className) => className.includes("erp-month-no-attendance"))).toBe(true);
   });
 
   test("highlights only employees who joined during the selected month", () => {

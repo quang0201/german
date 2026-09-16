@@ -65,7 +65,6 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
           for (const employee of order.employees ?? []) {
             const inactive = employee.isActive === false;
             const workedDates = new Set(employee.workedDates ?? []);
-            const attendanceDates = new Set(employee.attendanceDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
             const enteredDates = new Set(employee.productionDates ?? []);
             const hourly = employee.compensationType === "Hourly";
@@ -81,8 +80,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
                   const noAttendance = !inactive
-                    && !hourly
-                    && !attendanceDates.has(day.isoDate)
+                    && !workedDates.has(day.isoDate)
                     && !paidLeaveDates.has(day.isoDate);
                   const missingOperation = !cell
                     && !hourly
