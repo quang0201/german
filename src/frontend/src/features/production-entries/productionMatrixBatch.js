@@ -8,6 +8,41 @@ export function isCurrentBatchOrdersRequest(active, requestedDay, currentDay) {
     && String(requestedDay?.preferredOrderId ?? "") === String(currentDay?.preferredOrderId ?? "");
 }
 
+export function buildBatchExistingEntriesPath({ date, employeeId, orderId }) {
+  const params = new URLSearchParams({
+    date,
+    employeeId,
+    orderId,
+    page: "1",
+    pageSize: "100",
+  });
+  return `/api/production-entries?${params}`;
+}
+
+export function mergeExistingOperationDrafts(operations = [], entries = []) {
+  const entriesByOperation = new Map(
+    (entries ?? []).map((entry) => [String(entry.productionOperationId), entry]),
+  );
+  const drafts = {};
+  const existingOperationIds = [];
+  for (const operation of operations ?? []) {
+    const id = String(operation.id);
+    const entry = entriesByOperation.get(id);
+    if (!entry) continue;
+    const hc = entry.directHcQuantity ?? entry.hcQuantity ?? 0;
+    const tc = entry.directTcQuantity ?? entry.tcQuantity ?? 0;
+    const total = entry.totalInputQuantity ?? entry.totalQuantity ?? Number(hc) + Number(tc);
+    existingOperationIds.push(id);
+    drafts[id] = {
+      hc: String(hc),
+      tc: String(tc),
+      total: String(total),
+      note: entry.note ?? "",
+    };
+  }
+  return { drafts, existingOperationIds };
+}
+
 export function isCurrentAttendanceRequest(
   active,
   requestedEmployeeId,
