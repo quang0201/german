@@ -167,6 +167,37 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
   });
 
+  test("shows hourly employees without requiring production entries", () => {
+    const data = dataWithOneOrder();
+    data.hourlyEmployees = [{
+      employeeId: "e-hourly",
+      employeeCode: "5",
+      employeeName: "Trần Thị Loan",
+      compensationType: "Hourly",
+    }];
+
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+
+    expect(html).toContain("Nhân viên theo giờ");
+    expect(html).toContain("Trần Thị Loan");
+    expect(html).toContain("không yêu cầu nhập sản lượng");
+    expect(html).not.toContain("Trần Thị Loan CĐ");
+  });
+
+  test("does not warn for an hourly employee who has an existing production row", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].compensationType = "Hourly";
+    data.orders[0].employees[0].workedDates = ["2026-08-05"];
+    data.orders[0].employees[0].attendanceDates = ["2026-08-05"];
+    data.orders[0].employees[0].productionDates = [];
+
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+    const cellsOnDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
+
+    expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
+    expect(cellsOnDate.every((className) => !className.includes("erp-month-no-attendance"))).toBe(true);
+  });
+
   test("highlights only employees who joined during the selected month", () => {
     const newEmployeeHtml = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder("2026-09-05")} monthKey="2026-09" excludeSundays />);
     const previousEmployeeHtml = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder("2026-08-15")} monthKey="2026-09" excludeSundays />);

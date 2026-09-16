@@ -16,6 +16,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
   const scrollLeftRef = useRef(0);
   const orders = data?.orders ?? [];
   const availableOrders = data?.availableOrders ?? [];
+  const hourlyEmployees = data?.hourlyEmployees ?? [];
   const totalColumns = 2 + axis.length * 2 + 3;
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
       {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
       {loading && <div className="erp-table-state">Đang tải sản lượng...</div>}
       {!loading && !error && <>
+        {hourlyEmployees.length > 0 && <div className="erp-month-hourly-note" role="note"><strong>Nhân viên theo giờ</strong><span>{hourlyEmployees.map((employee) => employee.employeeName).join(", ")} — không yêu cầu nhập sản lượng</span></div>}
         <div ref={horizontalScrollRef} className="erp-month-matrix-horizontal-scroll" aria-label="Cuộn ngang ma trận" role="region" tabIndex="0" onScroll={(event) => { const nextScrollLeft = event.currentTarget.scrollLeft; scrollLeftRef.current = nextScrollLeft; if (scrollRef.current && scrollRef.current.scrollLeft !== nextScrollLeft) scrollRef.current.scrollLeft = nextScrollLeft; }}><div ref={horizontalScrollContentRef} aria-hidden="true" /></div>
           <div ref={scrollRef} onScroll={(event) => { const nextScrollLeft = event.currentTarget.scrollLeft; scrollLeftRef.current = nextScrollLeft; if (horizontalScrollRef.current && horizontalScrollRef.current.scrollLeft !== nextScrollLeft) horizontalScrollRef.current.scrollLeft = nextScrollLeft; }} className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => { const isToday = day.isoDate === todayIso; const dayClass = `erp-month-day-head${day.isSunday ? " erp-month-sunday" : ""}${isToday ? " erp-month-today" : ""}`; return <th key={day.isoDate} className={dayClass} colSpan="2" aria-current={isToday ? "date" : undefined}><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>; })}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
         {orders.length === 0 && <tr><td colSpan={totalColumns} className="erp-table-state">Chưa có sản lượng. Bấm vào ngày phía trên để nhập nhanh nhiều công đoạn.</td></tr>}
@@ -66,6 +68,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
             const attendanceDates = new Set(employee.attendanceDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
             const enteredDates = new Set(employee.productionDates ?? []);
+            const hourly = employee.compensationType === "Hourly";
             const isNewEmployee = isEmployeeNewInPeriod(employee.joinedDate, range.fromDate, range.untilDate);
             (employee.operations ?? []).forEach((operation, operationIndex) => {
               const map = cellsByDate(operation);
@@ -75,9 +78,11 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
                   const noAttendance = !inactive
+                    && !hourly
                     && !attendanceDates.has(day.isoDate)
                     && !paidLeaveDates.has(day.isoDate);
                   const missingOperation = !cell
+                    && !hourly
                     && workedDates.has(day.isoDate)
                     && !paidLeaveDates.has(day.isoDate)
                     && !enteredDates.has(day.isoDate);

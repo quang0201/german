@@ -50,6 +50,8 @@
 .erp-month-matrix-table thead .erp-month-total { z-index:12; background:var(--color-primary-soft) !important; color:var(--color-primary-strong); }
 .erp-month-order-row th { height:38px; background:var(--color-primary-soft); color:var(--color-primary-strong); text-align:left; font-size:13px; letter-spacing:normal; text-transform:none; }
 .erp-month-order-row span { margin-left:10px; color:var(--color-text-subtle); font-size:12px; font-weight:500; }
+.erp-month-hourly-note { display:flex; align-items:center; gap:8px; border:1px solid var(--color-border); border-bottom:0; background:var(--color-surface-soft); padding:10px 12px; color:var(--color-text-muted); font-size:13px; }
+.erp-month-hourly-note strong { color:var(--color-primary-strong); }
 .erp-production-month-nav { display:flex; align-items:center; gap:8px; }
 .erp-production-month-nav-button { min-width:112px; gap:6px; padding:0 10px; }
 .erp-production-month-nav strong { min-width:90px; text-align:center; font-size:15px; }

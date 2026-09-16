@@ -1,3 +1,4 @@
+using German.Domain.Employees;
 using German.Domain.Production;
 
 namespace German.Application.ProductionEntries;
@@ -40,6 +41,7 @@ public sealed record ProductionMatrixEmployeeGroupDto(
     string EmployeeCode,
     string EmployeeName,
     bool IsActive,
+    EmployeeCompensationType CompensationType,
     IReadOnlyList<ProductionMatrixOperationRowDto> Operations)
 {
     public DateOnly? JoinedDate { get; init; }
@@ -48,6 +50,14 @@ public sealed record ProductionMatrixEmployeeGroupDto(
     public IReadOnlyList<DateOnly> AttendanceDates { get; init; } = [];
     public IReadOnlyList<DateOnly> PaidLeaveDates { get; init; } = [];
 }
+
+public sealed record ProductionMatrixHourlyEmployeeDto(
+    Guid EmployeeId,
+    string EmployeeCode,
+    string EmployeeName,
+    bool IsActive,
+    EmployeeCompensationType CompensationType,
+    DateOnly? JoinedDate);
 
 public sealed record ProductionMatrixOrderBlockDto(
     Guid OrderId,
@@ -63,4 +73,5 @@ public sealed record ProductionMonthlyMatrixResult(
     bool ExcludeSundays,
     ProductionMonthlyMatrixSummary Summary,
     IReadOnlyList<ProductionMatrixOrderOptionDto> AvailableOrders,
-    IReadOnlyList<ProductionMatrixOrderBlockDto> Orders);
+    IReadOnlyList<ProductionMatrixOrderBlockDto> Orders,
+    IReadOnlyList<ProductionMatrixHourlyEmployeeDto> HourlyEmployees);

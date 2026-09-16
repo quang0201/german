@@ -123,6 +123,37 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetAsync_ListsActiveHourlyEmployeesWithoutProductionSeparately()
+    {
+        await using var db = CreateDb();
+        var pieceRateEmployee = new Employee { EmployeeCode = "E001", FullName = "Nhân sự sản lượng" };
+        var hourlyEmployee = new Employee
+        {
+            EmployeeCode = "5",
+            FullName = "Trần Thị Loan",
+            CompensationType = EmployeeCompensationType.Hourly,
+            CreatedAt = new DateTimeOffset(2026, 8, 1, 8, 0, 0, TimeSpan.FromHours(7))
+        };
+        var order = NewOrder("0417", "Mã hàng 0417");
+        var operation = NewOperation(order, 1, "Cắt quai");
+        db.AddRange(pieceRateEmployee, hourlyEmployee, order, operation);
+        AddEntry(db, pieceRateEmployee, order, operation, new DateOnly(2026, 8, 5), 100m, 0m);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 8, null, null, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var hourly = result.Value!.HourlyEmployees.Single();
+        Assert.AreEqual("5", hourly.EmployeeCode);
+        Assert.AreEqual("Trần Thị Loan", hourly.EmployeeName);
+        Assert.AreEqual(EmployeeCompensationType.Hourly, hourly.CompensationType);
+        Assert.AreEqual(1, result.Value.Orders.Single().Employees.Count);
+        Assert.AreEqual("E001", result.Value.Orders.Single().Employees.Single().EmployeeCode);
+    }
+
+    [TestMethod]
     public async Task GetAsync_ExcludesSundayBeforeSummaryAndCells()
     {
         await using var db = CreateDb();

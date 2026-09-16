@@ -10,6 +10,7 @@ internal static class ProductionMonthlyMatrixBuilder
         IReadOnlyList<ProductionMonthlyMatrixRow> rows,
         IReadOnlyList<ProductionMonthlyMatrixRow> groupRows,
         IReadOnlyList<ProductionMonthlyMatrixRow> activityRows,
+        IReadOnlyList<ProductionMatrixHourlyEmployeeDto> hourlyEmployees,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> workedDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> attendanceDates,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> paidLeaveDates)
@@ -51,7 +52,7 @@ internal static class ProductionMonthlyMatrixBuilder
             .ToList();
 
         return new ProductionMonthlyMatrixResult(
-            fromDate, untilDate, excludeSundays, summary, availableOrders, orders);
+            fromDate, untilDate, excludeSundays, summary, availableOrders, orders, hourlyEmployees);
     }
 
     private static ProductionMatrixOrderBlockDto BuildOrder(
@@ -114,7 +115,7 @@ internal static class ProductionMonthlyMatrixBuilder
             .ToArray();
 
         return new ProductionMatrixEmployeeGroupDto(
-            group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, operations)
+            group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, group.First().CompensationType, operations)
         {
             JoinedDate = DateOnly.FromDateTime(group.First().EmployeeCreatedAt.Date),
             ProductionDates = productionDates,

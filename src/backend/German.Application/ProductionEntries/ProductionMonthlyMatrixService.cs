@@ -1,6 +1,7 @@
 using German.Application.Abstractions;
 using German.Application.Common;
 using German.Domain.Attendance;
+using German.Domain.Employees;
 using German.Domain.Production;
 using Microsoft.EntityFrameworkCore;
 
@@ -110,7 +111,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.entry.Id, item.entry.Version, item.entry.WorkDate, item.entry.EntryMode,
                 item.entry.HcQuantity, item.entry.TcQuantity, item.entry.TotalQuantity,
                 item.entry.Note, item.entry.CreatedAt,
-                item.employee.Id, item.employee.EmployeeCode, item.employee.FullName, item.employee.IsActive, item.employee.CreatedAt,
+                item.employee.Id, item.employee.EmployeeCode, item.employee.FullName, item.employee.IsActive, item.employee.CompensationType, item.employee.CreatedAt,
                 item.order.Id, item.order.Code, item.order.ProductName,
                 item.order.CreatedAt,
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
@@ -122,7 +123,50 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
             .Where(row => row.WorkDate >= fromDate && row.WorkDate <= untilDate)
             .ToList();
 
-        var employeeIds = groupRows.Select(row => row.EmployeeId).Distinct().ToArray();
+        var hourlyEmployeeQuery = db.Employees.AsNoTracking()
+            .Where(employee => employee.CompensationType == EmployeeCompensationType.Hourly)
+            .Where(employee => employee.IsActive
+                || !employee.DeactivatedAt.HasValue
+                || employee.DeactivatedAt.Value >= groupFromDate);
+        if (employeeId.HasValue)
+        {
+            hourlyEmployeeQuery = hourlyEmployeeQuery.Where(employee => employee.Id == employeeId.Value);
+        }
+        if (search is not null)
+        {
+            var text = search.LoweredText;
+            hourlyEmployeeQuery = hourlyEmployeeQuery.Where(employee =>
+                employee.EmployeeCode.ToLower().Contains(text)
+                || employee.FullName.ToLower().Contains(text));
+        }
+
+        var hourlyEmployeeRecords = await hourlyEmployeeQuery
+            .OrderBy(employee => employee.EmployeeCode)
+            .Select(employee => new
+            {
+                employee.Id,
+                employee.EmployeeCode,
+                employee.FullName,
+                employee.IsActive,
+                employee.CompensationType,
+                employee.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+        var hourlyEmployees = hourlyEmployeeRecords
+            .Where(employee => DateOnly.FromDateTime(employee.CreatedAt.Date) <= untilDate)
+            .Select(employee => new ProductionMatrixHourlyEmployeeDto(
+                employee.Id,
+                employee.EmployeeCode,
+                employee.FullName,
+                employee.IsActive,
+                employee.CompensationType,
+                DateOnly.FromDateTime(employee.CreatedAt.Date)))
+            .ToList();
+
+        var employeeIds = groupRows.Select(row => row.EmployeeId)
+            .Concat(hourlyEmployees.Select(employee => employee.EmployeeId))
+            .Distinct()
+            .ToArray();
         var attendanceDates = employeeIds.Length == 0
             ? new HashSet<(Guid EmployeeId, DateOnly WorkDate)>()
             : (await db.AttendanceDays.AsNoTracking()
@@ -158,7 +202,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToHashSet();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, allGroupRows, workedDates, attendanceDates, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, allGroupRows, hourlyEmployees, workedDates, attendanceDates, paidLeaveDates));
     }
 }
 
@@ -166,6 +210,6 @@ internal sealed record ProductionMonthlyMatrixRow(
     Guid Id, int Version, DateOnly WorkDate, ProductionEntryMode EntryMode,
     decimal HcQuantity, decimal TcQuantity, decimal TotalQuantity,
     string? Note, DateTimeOffset CreatedAt,
-    Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive, DateTimeOffset EmployeeCreatedAt,
+    Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive, EmployeeCompensationType CompensationType, DateTimeOffset EmployeeCreatedAt,
     Guid OrderId, string OrderCode, string ProductName, DateTimeOffset OrderCreatedAt,
     Guid OperationId, int OperationNumber, string OperationName);
