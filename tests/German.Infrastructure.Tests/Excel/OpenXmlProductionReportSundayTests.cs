@@ -60,6 +60,18 @@ public sealed class OpenXmlProductionReportSundayTests
         StringAssert.Contains(headerText, "T2 17/08");
     }
 
+    [TestMethod]
+    public void Export_WeekendHeadersUseSubtleDistinctColors()
+    {
+        using var document = OpenWorkbook(CreateReport(excludeSundays: false));
+        var worksheet = GetWorksheetPart(document, "Báo cáo sản lượng");
+        var header = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().Single(row => row.RowIndex!.Value == 4U);
+
+        Assert.AreEqual("FFD9D9D9", GetFillColor(document, GetCell(header, "D4")));
+        Assert.AreEqual("FFE4B7A0", GetFillColor(document, GetCell(header, "G4")));
+        Assert.AreEqual(PaneStateValues.Frozen, worksheet.Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>()?.State?.Value);
+    }
+
     private static ProductionReportData CreateReport(bool excludeSundays) => new(
         new DateOnly(2026, 8, 15),
         new DateOnly(2026, 8, 17),
@@ -136,4 +148,20 @@ public sealed class OpenXmlProductionReportSundayTests
     private static Cell GetCell(Row row, string reference) =>
         row.Elements<Cell>().SingleOrDefault(cell => cell.CellReference?.Value == reference)
         ?? throw new AssertFailedException($"Cell '{reference}' is missing.");
+
+    private static WorksheetPart GetWorksheetPart(SpreadsheetDocument document, string sheetName)
+    {
+        var workbookPart = document.WorkbookPart ?? throw new AssertFailedException("Workbook part is missing.");
+        var sheet = workbookPart.Workbook?.Sheets?.Elements<Sheet>().Single(item => item.Name?.Value == sheetName)
+            ?? throw new AssertFailedException($"Worksheet '{sheetName}' is missing.");
+        return (WorksheetPart)workbookPart.GetPartById(sheet.Id!.Value!);
+    }
+
+    private static string? GetFillColor(SpreadsheetDocument document, Cell cell)
+    {
+        var styles = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!;
+        var format = styles.CellFormats!.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
+        var fill = styles.Fills!.Elements<Fill>().ElementAt((int)(format.FillId?.Value ?? 0U));
+        return fill.PatternFill?.ForegroundColor?.Rgb?.Value;
+    }
 }

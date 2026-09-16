@@ -21,6 +21,19 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private const uint ExternalTextStyle = 11U;
     private const uint ExternalNumberStyle = 12U;
     private const uint ShortDateStyle = 13U;
+    private const uint AttendanceCa1BodyStyle = 14U;
+    private const uint AttendanceCa2BodyStyle = 15U;
+    private const uint AttendanceSaturdayCa1BodyStyle = 16U;
+    private const uint AttendanceSaturdayCa2BodyStyle = 17U;
+    private const uint AttendanceSundayCa1BodyStyle = 18U;
+    private const uint AttendanceSundayCa2BodyStyle = 19U;
+    private const uint PaidLeaveStyle = 20U;
+    private const uint AttendanceCa1LabelStyle = 21U;
+    private const uint AttendanceCa2LabelStyle = 22U;
+    private const uint SaturdayHeaderStyle = 23U;
+    private const uint SundayHeaderStyle = 24U;
+    private const uint AttendanceTcLabelStyle = 25U;
+    private const uint BaseCellFormatCount = 26U;
 
     public byte[] Export(ProductionReportData report)
     {
@@ -130,7 +143,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         for (var i = 0; i < days.Count; i++)
         {
             var hc = 4 + i * 2;
-            AddCells(data, row, At($"{Col(hc)}{row}", Text(ManagementDateLabel(days[i], includeYear), HeaderStyle)));
+            AddCells(data, row, At($"{Col(hc)}{row}", Text(ManagementDateLabel(days[i], includeYear), DateHeaderStyle(days[i]))));
             merges.Append(new MergeCell { Reference = $"{Col(hc)}{row}:{Col(hc + 1)}{row}" });
             AddCells(data, row + 1, At($"{Col(hc)}{row + 1}", Text("HC", HcHeaderStyle)), At($"{Col(hc + 1)}{row + 1}", Text("TC", TcHeaderStyle)));
         }
@@ -352,7 +365,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         for (var i = 0; i < days.Length; i++)
         {
             var start = 4 + i * metricsPerDay;
-            AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), HeaderStyle)));
+            AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), DateHeaderStyle(days[i]))));
             merges.Append(new MergeCell { Reference = $"{Col(start)}4:{Col(start + metricsPerDay - 1)}4" });
             AddCells(data, 5,
                 At($"{Col(start)}5", Text("HC", HcHeaderStyle)),
@@ -379,12 +392,16 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         var employeeStartRow = 0U;
         string? currentEmployeeCode = null;
         string? currentEmployeeName = null;
-        foreach (var group in groups)
+        for (var groupIndex = 0; groupIndex < groups.Length; groupIndex++)
         {
+            var group = groups[groupIndex];
             var entries = group.ToArray();
             var first = entries[0];
             var isNewEmployee = !string.Equals(currentEmployeeCode, first.EmployeeCode, StringComparison.Ordinal)
                 || !string.Equals(currentEmployeeName, first.EmployeeName, StringComparison.Ordinal);
+            var isLastEmployeeRow = groupIndex == groups.Length - 1
+                || !string.Equals(groups[groupIndex + 1].Key.EmployeeCode, first.EmployeeCode, StringComparison.Ordinal)
+                || !string.Equals(groups[groupIndex + 1].Key.EmployeeName, first.EmployeeName, StringComparison.Ordinal);
             if (isNewEmployee)
             {
                 if (employeeStartRow > 0U && employeeStartRow < row - 1U)
@@ -428,6 +445,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             cells.Add(At($"{totalHcColumn}{row}", Formula(SumFormula(hcReferences), totalHc, isExternal ? ExternalNumberStyle : HcBodyStyle)));
             cells.Add(At($"{totalTcColumn}{row}", Formula(SumFormula(tcReferences), totalTc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
             cells.Add(At($"{Col(totalStart + 2)}{row}", Formula($"{totalHcColumn}{row}+{totalTcColumn}{row}", totalHc + totalTc, numberStyle)));
+            ApplyGroupBorder(cells, isNewEmployee
+                ? isLastEmployeeRow ? GroupBorder.TopAndBottom : GroupBorder.Top
+                : isLastEmployeeRow ? GroupBorder.Bottom : GroupBorder.None);
             AddCells(data, row++, cells.ToArray());
         }
 
@@ -446,8 +466,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 3D,
-                VerticalSplit = 5D,
+                HorizontalSplit = 5D,
+                VerticalSplit = 3D,
                 TopLeftCell = "D6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
@@ -478,7 +498,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         for (var i = 0; i < days.Length; i++)
         {
             var column = 4 + i;
-            AddCells(data, 4, At($"{Col(column)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), HeaderStyle)));
+            AddCells(data, 4, At($"{Col(column)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), DateHeaderStyle(days[i]))));
             merges.Append(new MergeCell { Reference = $"{Col(column)}4:{Col(column)}5" });
         }
         AddCells(data, 4, At($"{Col(totalStart)}4", Text("Tổng HC", HcHeaderStyle)), At($"{Col(totalStart + 1)}4", Text("Tổng TC", TcHeaderStyle)), At($"{Col(totalStart + 2)}4", Text("Ghi chú", HeaderStyle)));
@@ -521,7 +541,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                     cells.Add(At($"A{currentRow}", Blank(0U)));
                     cells.Add(At($"B{currentRow}", Blank(0U)));
                 }
-                cells.Add(At($"C{currentRow}", Text(isTc ? "TC" : ShiftLabel(employeeDays, rowIndex + 1), isTc ? TcHeaderStyle : HeaderStyle)));
+                cells.Add(At($"C{currentRow}", Text(isTc ? "TC" : ShiftLabel(employeeDays, rowIndex + 1), AttendanceShiftLabelStyle(rowIndex + 1, isTc))));
                 for (var i = 0; i < days.Length; i++)
                 {
                     byEmployeeDay.TryGetValue((employee.EmployeeCode, employee.EmployeeName, days[i]), out var item);
@@ -539,14 +559,21 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                     }
                     if (rowIndex == 0 && !string.IsNullOrWhiteSpace(item?.Note)) notes.Add($"{days[i]:dd/MM}: {item.Note}");
                 }
+                ApplyGroupBorder(cells, currentRow == startRow
+                    ? currentRow == endRow ? GroupBorder.TopAndBottom : GroupBorder.Top
+                    : currentRow == endRow ? GroupBorder.Bottom : GroupBorder.None);
                 AddCells(data, currentRow, cells.ToArray());
             }
             var totalRegularHours = employeeDays.Sum(item => item.RegularHours);
             var totalOvertimeHours = employeeDays.Sum(item => item.OvertimeHours);
-            AddCells(data, startRow,
+            var totalCells = new[]
+            {
                 At($"{Col(totalStart)}{startRow}", Formula(SumFormula(regularReferences), totalRegularHours, HcBodyStyle)),
                 At($"{Col(totalStart + 1)}{startRow}", Formula(SumFormula(overtimeReferences), totalOvertimeHours, TcBodyStyle)),
-                At($"{Col(totalStart + 2)}{startRow}", Text(string.Join("; ", notes))));
+                At($"{Col(totalStart + 2)}{startRow}", Text(string.Join("; ", notes)))
+            };
+            ApplyGroupBorder(totalCells, GroupBorder.TopAndBottom);
+            AddCells(data, startRow, totalCells);
             merges.Append(
                 new MergeCell { Reference = $"A{startRow}:A{endRow}" },
                 new MergeCell { Reference = $"B{startRow}:B{endRow}" },
@@ -565,8 +592,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 3D,
-                VerticalSplit = 5D,
+                HorizontalSplit = 5D,
+                VerticalSplit = 3D,
                 TopLeftCell = "D6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
@@ -598,7 +625,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         for (var i = 0; i < days.Length; i++)
         {
             var start = 4 + i * metricsPerDay;
-            AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), HeaderStyle)));
+            AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), DateHeaderStyle(days[i]))));
             merges.Append(new MergeCell { Reference = $"{Col(start)}4:{Col(start + metricsPerDay - 1)}4" });
         }
         AddCells(data, 4, At($"{Col(totalStart)}4", Text("Tổng kỳ", HeaderStyle)));
@@ -725,8 +752,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 3D,
-                VerticalSplit = 5D,
+                HorizontalSplit = 5D,
+                VerticalSplit = 3D,
                 TopLeftCell = "D6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
@@ -773,12 +800,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
 
     private static Cell AttendanceShiftCell(ProductionReportWorkHourSummary? item, int slotNumber, DateOnly date)
     {
-        var style = date.DayOfWeek switch
-        {
-            DayOfWeek.Saturday => NumericStyle,
-            DayOfWeek.Sunday => NumericStyle,
-            _ => HcBodyStyle
-        };
+        var style = AttendanceBodyStyle(slotNumber, date);
         var shift = item?.Shifts.SingleOrDefault(shift => shift.SlotNumber == slotNumber);
         if (shift is null)
         {
@@ -790,9 +812,23 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         return shift.ValueKind switch
         {
             German.Domain.Attendance.AttendanceShiftValueKind.Hours => Num(shift.Hours, style),
-            German.Domain.Attendance.AttendanceShiftValueKind.PaidLeave => Text("P", style),
+            German.Domain.Attendance.AttendanceShiftValueKind.PaidLeave => Text("P", PaidLeaveStyle),
             German.Domain.Attendance.AttendanceShiftValueKind.SickLeave => Text("Ô", style),
             _ => Blank(style)
+        };
+    }
+
+    private static uint AttendanceShiftLabelStyle(int slotNumber, bool isTc)
+        => isTc ? AttendanceTcLabelStyle : slotNumber == 1 ? AttendanceCa1LabelStyle : AttendanceCa2LabelStyle;
+
+    private static uint AttendanceBodyStyle(int slotNumber, DateOnly date)
+    {
+        var isCa1 = slotNumber == 1;
+        return date.DayOfWeek switch
+        {
+            DayOfWeek.Saturday => isCa1 ? AttendanceSaturdayCa1BodyStyle : AttendanceSaturdayCa2BodyStyle,
+            DayOfWeek.Sunday => isCa1 ? AttendanceSundayCa1BodyStyle : AttendanceSundayCa2BodyStyle,
+            _ => isCa1 ? AttendanceCa1BodyStyle : AttendanceCa2BodyStyle
         };
     }
 
@@ -902,7 +938,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         return $"Kỳ: {report.FromDate.ToString(format, CultureInfo.InvariantCulture)} – {report.UntilDate.ToString(format, CultureInfo.InvariantCulture)}";
     }
 
-    private static SheetViews FrozenManagementViews() => new(new SheetView(new Pane { HorizontalSplit = 3D, VerticalSplit = 5D, TopLeftCell = "D6", ActivePane = PaneValues.BottomRight, State = PaneStateValues.Frozen }) { WorkbookViewId = 0U });
+    private static SheetViews FrozenManagementViews() => new(new SheetView(new Pane { HorizontalSplit = 5D, VerticalSplit = 3D, TopLeftCell = "D6", ActivePane = PaneValues.BottomRight, State = PaneStateValues.Frozen }) { WorkbookViewId = 0U });
     private static Columns ManagementColumns(int days, int totalStart) { var columns = new Columns(Column(1, 26), Column(2, 9), Column(3, 10)); for (var i = 0; i < days * 2; i++) columns.Append(Column((uint)(4 + i), 10)); columns.Append(Column((uint)totalStart, 12), Column((uint)totalStart + 1, 12), Column((uint)totalStart + 2, 12)); return columns; }
     private static Columns OverviewColumns() => new(Column(1, 18), Column(2, 22), Column(3, 14), Column(4, 22), Column(5, 22));
     private static Column Column(uint index, double width) => new() { Min = index, Max = index, Width = width, CustomWidth = true };
@@ -926,6 +962,39 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         return $"{weekday} {date.ToString(format, CultureInfo.InvariantCulture)}";
     }
 
+    private static uint DateHeaderStyle(DateOnly date) => date.DayOfWeek switch
+    {
+        DayOfWeek.Saturday => SaturdayHeaderStyle,
+        DayOfWeek.Sunday => SundayHeaderStyle,
+        _ => HeaderStyle
+    };
+
+    private enum GroupBorder
+    {
+        None,
+        Top,
+        Bottom,
+        TopAndBottom
+    }
+
+    private static void ApplyGroupBorder(IEnumerable<Cell> cells, GroupBorder border)
+    {
+        if (border == GroupBorder.None) return;
+        foreach (var cell in cells)
+        {
+            var style = cell.StyleIndex?.Value ?? 0U;
+            cell.StyleIndex = GroupStyle(style, border);
+        }
+    }
+
+    private static uint GroupStyle(uint baseStyle, GroupBorder border) => border switch
+    {
+        GroupBorder.Top => BaseCellFormatCount + baseStyle,
+        GroupBorder.Bottom => BaseCellFormatCount * 2U + baseStyle,
+        GroupBorder.TopAndBottom => BaseCellFormatCount * 3U + baseStyle,
+        _ => baseStyle
+    };
+
     private static string Col(int value) { var result = string.Empty; while (value > 0) { value--; result = (char)('A' + value % 26) + result; value /= 26; } return result; }
     private static int ColumnNumber(string? reference) { if (string.IsNullOrEmpty(reference)) return int.MaxValue; var result = 0; foreach (var c in reference) { if (!char.IsLetter(c)) break; result = result * 26 + char.ToUpperInvariant(c) - 'A' + 1; } return result; }
 
@@ -934,7 +1003,11 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         var formats = new NumberingFormats(
             new NumberingFormat { NumberFormatId = 164U, FormatCode = "dd/MM/yyyy" },
             new NumberingFormat { NumberFormatId = 165U, FormatCode = "dd/MM" }) { Count = 2U };
-        var fonts = new Fonts(new Font(), new Font(new Bold()), new Font(new Bold(), new FontSize { Val = 14D })) { Count = 3U };
+        var fonts = new Fonts(
+            new Font(),
+            new Font(new Bold()),
+            new Font(new Bold(), new FontSize { Val = 14D }),
+            new Font(new Bold(), new Color { Rgb = "FFC00000" })) { Count = 4U };
         var fills = new Fills(
             new Fill(new PatternFill { PatternType = PatternValues.None }),
             new Fill(new PatternFill { PatternType = PatternValues.Gray125 }),
@@ -943,7 +1016,13 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFFFE6CC" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FF9DC3E6" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFF4B183" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
-            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFD9D2E9" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid })) { Count = 8U };
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFD9D2E9" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFF2F2F2" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFF4F8FC" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFFFF6F0" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFFFE2E2" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFD9D9D9" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFE4B7A0" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid })) { Count = 14U };
         var formatsForCells = new CellFormats(
             new CellFormat(),
             new CellFormat { NumberFormatId = 164U, ApplyNumberFormat = true },
@@ -958,8 +1037,41 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new CellFormat { FontId = 1U, FillId = 6U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
             new CellFormat { FillId = 7U, ApplyFill = true },
             new CellFormat { FillId = 7U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
-            new CellFormat { NumberFormatId = 165U, ApplyNumberFormat = true })
-        { Count = 14U };
-        return new Stylesheet(formats, fonts, fills, new Borders(new Border()) { Count = 1U }, new CellStyleFormats(new CellFormat()) { Count = 1U }, formatsForCells);
+            new CellFormat { NumberFormatId = 165U, ApplyNumberFormat = true },
+            new CellFormat { ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { FillId = 3U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { FillId = 8U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { FillId = 9U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { FillId = 10U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { FillId = 9U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { FontId = 3U, FillId = 11U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Right } },
+            new CellFormat { ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
+            new CellFormat { FillId = 3U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
+            new CellFormat { FontId = 1U, FillId = 12U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
+            new CellFormat { FontId = 1U, FillId = 13U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
+            new CellFormat { FontId = 1U, FillId = 4U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } })
+        { Count = BaseCellFormatCount };
+        var borders = new Borders(
+            new Border(),
+            new Border { TopBorder = new TopBorder { Style = BorderStyleValues.Medium, Color = new Color { Rgb = "FF000000" } } },
+            new Border { BottomBorder = new BottomBorder { Style = BorderStyleValues.Medium, Color = new Color { Rgb = "FF000000" } } },
+            new Border
+            {
+                TopBorder = new TopBorder { Style = BorderStyleValues.Medium, Color = new Color { Rgb = "FF000000" } },
+                BottomBorder = new BottomBorder { Style = BorderStyleValues.Medium, Color = new Color { Rgb = "FF000000" } }
+            }) { Count = 4U };
+        var baseFormats = formatsForCells.Elements<CellFormat>().ToArray();
+        foreach (var borderId in new[] { 1U, 2U, 3U })
+        {
+            foreach (var baseFormat in baseFormats)
+            {
+                var borderedFormat = (CellFormat)baseFormat.CloneNode(true);
+                borderedFormat.BorderId = borderId;
+                borderedFormat.ApplyBorder = true;
+                formatsForCells.Append(borderedFormat);
+            }
+        }
+        formatsForCells.Count = BaseCellFormatCount * 4U;
+        return new Stylesheet(formats, fonts, fills, borders, new CellStyleFormats(new CellFormat()) { Count = 1U }, formatsForCells);
     }
 }

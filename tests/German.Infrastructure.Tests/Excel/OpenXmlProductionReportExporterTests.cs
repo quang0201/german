@@ -27,8 +27,21 @@ public sealed class OpenXmlProductionReportExporterTests
         var pane = GetWorksheetPart(document, "Báo cáo sản lượng").Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
         Assert.IsNotNull(pane);
         Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
-        Assert.AreEqual(3D, pane.HorizontalSplit?.Value);
-        Assert.AreEqual(5D, pane.VerticalSplit?.Value);
+        Assert.AreEqual(5D, pane.HorizontalSplit?.Value);
+        Assert.AreEqual(3D, pane.VerticalSplit?.Value);
+        Assert.AreEqual("D6", pane.TopLeftCell?.Value);
+    }
+
+    [TestMethod]
+    public void Export_AttendanceFreezesThreeEmployeeColumnsAndHeaderRows()
+    {
+        using var document = OpenWorkbook(CreateReport());
+        var pane = GetWorksheetPart(document, "Bảng công").Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
+
+        Assert.IsNotNull(pane);
+        Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
+        Assert.AreEqual(5D, pane.HorizontalSplit?.Value);
+        Assert.AreEqual(3D, pane.VerticalSplit?.Value);
         Assert.AreEqual("D6", pane.TopLeftCell?.Value);
     }
 
@@ -265,6 +278,51 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.IsTrue(employeeCodeColumn!.Hidden?.Value == true);
     }
 
+    [TestMethod]
+    public void Export_StylesAttendanceShiftsAndEmployeeGroupBorders()
+    {
+        var report = CreateReport() with
+        {
+            WorkHours =
+            [
+                new ProductionReportWorkHourSummary(new DateOnly(2026, 8, 12), "E001", "Nguyễn Văn A", 8m, 2m, 0m, 0m, "")
+                {
+                    Shifts =
+                    [
+                        new ProductionReportWorkShiftSummary(1, "Ca 1", 4m, AttendanceShiftValueKind.Hours),
+                        new ProductionReportWorkShiftSummary(2, "Ca 2", 4m, AttendanceShiftValueKind.Hours)
+                    ]
+                },
+                new ProductionReportWorkHourSummary(new DateOnly(2026, 8, 13), "E001", "Nguyễn Văn A", 0m, 0m, 8m, 0m, "")
+                {
+                    Shifts = [new ProductionReportWorkShiftSummary(1, "Ca 1", 8m, AttendanceShiftValueKind.PaidLeave)]
+                }
+            ]
+        };
+
+        using var document = OpenWorkbook(report);
+        var attendance = GetWorksheetPart(document, "Bảng công");
+        var attendanceRows = GetSheetData(document, "Bảng công").Elements<Row>().ToList();
+        var firstShift = attendanceRows.Single(row => row.RowIndex!.Value == 6U);
+        var secondShift = attendanceRows.Single(row => row.RowIndex!.Value == 7U);
+        var overtime = attendanceRows.Single(row => row.RowIndex!.Value == 8U);
+
+        Assert.IsNull(GetFillColor(document, GetCell(firstShift, "C6")));
+        Assert.AreEqual("FFEAF4FB", GetFillColor(document, GetCell(secondShift, "C7")));
+        Assert.AreEqual("FFFFE6CC", GetFillColor(document, GetCell(overtime, "C8")));
+        Assert.AreEqual("FFFFE2E2", GetFillColor(document, GetCell(firstShift, "E6")));
+        Assert.AreEqual("FFC00000", GetFontColor(document, GetCell(firstShift, "E6")));
+        Assert.AreEqual(BorderStyleValues.Medium, GetBorder(document, GetCell(firstShift, "A6")).TopBorder?.Style?.Value);
+        Assert.AreEqual(BorderStyleValues.Medium, GetBorder(document, GetCell(overtime, "A8")).BottomBorder?.Style?.Value);
+        CollectionAssert.Contains(
+            attendance.Worksheet!.GetFirstChild<MergeCells>()!.Elements<MergeCell>().Select(merge => merge.Reference!.Value!).ToArray(),
+            "A6:A8");
+
+        var productionRows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
+        Assert.AreEqual(BorderStyleValues.Medium, GetBorder(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 6U), "A6")).TopBorder?.Style?.Value);
+        Assert.AreEqual(BorderStyleValues.Medium, GetBorder(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 7U), "A7")).BottomBorder?.Style?.Value);
+    }
+
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)
     {
         var bytes = new OpenXmlProductionReportExporter().Export(report);
@@ -318,6 +376,21 @@ public sealed class OpenXmlProductionReportExporterTests
         var fills = document.WorkbookPart.WorkbookStylesPart.Stylesheet.Fills!;
         var fill = fills.Elements<Fill>().ElementAt((int)(format.FillId?.Value ?? 0U));
         return fill.PatternFill?.ForegroundColor?.Rgb?.Value;
+    }
+
+    private static string? GetFontColor(SpreadsheetDocument document, Cell cell)
+    {
+        var formats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!;
+        var format = formats.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
+        var font = document.WorkbookPart.WorkbookStylesPart.Stylesheet.Fonts!.Elements<Font>().ElementAt((int)(format.FontId?.Value ?? 0U));
+        return font.Color?.Rgb?.Value;
+    }
+
+    private static Border GetBorder(SpreadsheetDocument document, Cell cell)
+    {
+        var formats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!;
+        var format = formats.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
+        return document.WorkbookPart.WorkbookStylesPart.Stylesheet.Borders!.Elements<Border>().ElementAt((int)(format.BorderId?.Value ?? 0U));
     }
 
     private static ProductionReportData CreateReport() => new(
