@@ -460,12 +460,11 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
 
     private static Worksheet CreateAttendanceWorksheet(ProductionReportData report)
     {
-        const int metricsPerDay = 5;
         var days = Dates(report.FromDate, report.UntilDate)
             .Where(date => !report.ExcludeSundays || date.DayOfWeek != DayOfWeek.Sunday)
             .ToArray();
-        var totalStart = 3 + days.Length * metricsPerDay;
-        var lastColumn = totalStart + metricsPerDay + 1;
+        var totalStart = 4 + days.Length;
+        var lastColumn = totalStart + 2;
         var data = new SheetData();
         var merges = new MergeCells();
         AddRow(data, 1, At("A1", Text("BẢNG CÔNG THEO DÕI CÔNG", TitleStyle)));
@@ -473,22 +472,16 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         AddRow(data, 2, At("A2", Text($"Kỳ: {report.FromDate:dd/MM/yyyy} – {report.UntilDate:dd/MM/yyyy}", SectionStyle)));
         merges.Append(new MergeCell { Reference = $"A2:{Col(lastColumn)}2" });
         AddRow(data, 3);
-        AddCells(data, 4, At("A4", Text("Mã NV", HeaderStyle)), At("B4", Text("Họ tên", HeaderStyle)));
-        merges.Append(new MergeCell { Reference = "A4:A5" }, new MergeCell { Reference = "B4:B5" });
+        AddCells(data, 4, At("A4", Text("Mã NV", HeaderStyle)), At("B4", Text("Họ tên", HeaderStyle)), At("C4", Text("Ca", HeaderStyle)));
+        merges.Append(new MergeCell { Reference = "A4:A5" }, new MergeCell { Reference = "B4:B5" }, new MergeCell { Reference = "C4:C5" });
         for (var i = 0; i < days.Length; i++)
         {
-            var start = 3 + i * metricsPerDay;
-            AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i]), HeaderStyle)));
-            merges.Append(new MergeCell { Reference = $"{Col(start)}4:{Col(start + metricsPerDay - 1)}4" });
-            AddCells(data, 5,
-                At($"{Col(start)}5", Text("Giờ HC", HcHeaderStyle)),
-                At($"{Col(start + 1)}5", Text("Giờ TC", TcHeaderStyle)),
-                At($"{Col(start + 2)}5", Text("Giờ P", HeaderStyle)),
-                At($"{Col(start + 3)}5", Text("Giờ Ô", HeaderStyle)),
-                At($"{Col(start + 4)}5", Text("Tổng giờ", HeaderStyle)));
+            var column = 4 + i;
+            AddCells(data, 4, At($"{Col(column)}4", Text(ManagementDateLabel(days[i]), HeaderStyle)));
+            merges.Append(new MergeCell { Reference = $"{Col(column)}4:{Col(column)}5" });
         }
-        AddCells(data, 4, At($"{Col(totalStart)}4", Text("Tổng HC", HcHeaderStyle)), At($"{Col(totalStart + 1)}4", Text("Tổng TC", TcHeaderStyle)), At($"{Col(totalStart + 2)}4", Text("Tổng P", HeaderStyle)), At($"{Col(totalStart + 3)}4", Text("Tổng Ô", HeaderStyle)), At($"{Col(totalStart + 4)}4", Text("Tổng giờ", HeaderStyle)), At($"{Col(totalStart + 5)}4", Text("Ghi chú", HeaderStyle)));
-        for (var column = totalStart; column <= totalStart + 5; column++)
+        AddCells(data, 4, At($"{Col(totalStart)}4", Text("Tổng HC", HcHeaderStyle)), At($"{Col(totalStart + 1)}4", Text("Tổng TC", TcHeaderStyle)), At($"{Col(totalStart + 2)}4", Text("Ghi chú", HeaderStyle)));
+        for (var column = totalStart; column <= totalStart + 2; column++)
         {
             merges.Append(new MergeCell { Reference = $"{Col(column)}4:{Col(column)}5" });
         }
@@ -503,43 +496,63 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         var row = 6U;
         foreach (var employee in employees)
         {
-            var cells = new List<Cell> { At($"A{row}", Text(employee.EmployeeCode)), At($"B{row}", Text(employee.EmployeeName)) };
-            var totals = new decimal[metricsPerDay];
-            var metricReferences = Enumerable.Range(0, metricsPerDay).Select(_ => new List<string>()).ToArray();
+            var employeeDays = report.WorkHours
+                .Where(item => item.EmployeeCode == employee.EmployeeCode && item.EmployeeName == employee.EmployeeName)
+                .ToArray();
+            var shiftCount = Math.Max(employeeDays.SelectMany(item => item.Shifts).Select(shift => shift.SlotNumber).DefaultIfEmpty(0).Max(), 1);
+            var startRow = row;
+            var endRow = row + (uint)shiftCount;
+            var regularReferences = new List<string>();
+            var overtimeReferences = new List<string>();
             var notes = new List<string>();
-            for (var i = 0; i < days.Length; i++)
+            for (var rowIndex = 0; rowIndex <= shiftCount; rowIndex++)
             {
-                byEmployeeDay.TryGetValue((employee.EmployeeCode, employee.EmployeeName, days[i]), out var item);
-                var values = new[] { item?.RegularHours ?? 0m, item?.OvertimeHours ?? 0m, item?.PaidLeaveHours ?? 0m, item?.SickLeaveHours ?? 0m, item?.TotalHours ?? 0m };
-                for (var metric = 0; metric < metricsPerDay; metric++)
+                var currentRow = row + (uint)rowIndex;
+                var isTc = rowIndex == shiftCount;
+                var cells = new List<Cell>();
+                if (rowIndex == 0)
                 {
-                    totals[metric] += values[metric];
-                    var column = 3 + i * metricsPerDay + metric;
-                    metricReferences[metric].Add($"{Col(column)}{row}");
-                    cells.Add(At($"{Col(3 + i * metricsPerDay + metric)}{row}", metric switch
-                    {
-                        0 => HcNum(values[metric]),
-                        1 => TcNum(values[metric]),
-                        4 => Formula($"{Col(3 + i * metricsPerDay)}{row}+{Col(4 + i * metricsPerDay)}{row}", values[metric]),
-                        _ => Num(values[metric])
-                    }));
+                    cells.Add(At($"A{currentRow}", Text(employee.EmployeeCode)));
+                    cells.Add(At($"B{currentRow}", Text(employee.EmployeeName)));
                 }
-                if (!string.IsNullOrWhiteSpace(item?.Note)) notes.Add($"{days[i]:dd/MM}: {item.Note}");
-            }
-            for (var metric = 0; metric < metricsPerDay; metric++)
-            {
-                var formula = metric == 4
-                    ? $"{Col(totalStart)}{row}+{Col(totalStart + 1)}{row}"
-                    : SumFormula(metricReferences[metric]);
-                cells.Add(At($"{Col(totalStart + metric)}{row}", metric switch
+                else
                 {
-                    0 => Formula(formula, totals[metric], HcBodyStyle),
-                    1 => Formula(formula, totals[metric], TcBodyStyle),
-                    _ => Formula(formula, totals[metric])
-                }));
+                    cells.Add(At($"A{currentRow}", Blank(0U)));
+                    cells.Add(At($"B{currentRow}", Blank(0U)));
+                }
+                cells.Add(At($"C{currentRow}", Text(isTc ? "TC" : ShiftLabel(employeeDays, rowIndex + 1), isTc ? TcHeaderStyle : HeaderStyle)));
+                for (var i = 0; i < days.Length; i++)
+                {
+                    byEmployeeDay.TryGetValue((employee.EmployeeCode, employee.EmployeeName, days[i]), out var item);
+                    var column = 4 + i;
+                    var reference = $"{Col(column)}{currentRow}";
+                    if (isTc)
+                    {
+                        cells.Add(At(reference, item?.OvertimeHours > 0m ? TcNum(item.OvertimeHours) : Blank(TcBodyStyle)));
+                        overtimeReferences.Add(reference);
+                    }
+                    else
+                    {
+                        cells.Add(At(reference, AttendanceShiftCell(item, rowIndex + 1, days[i])));
+                        regularReferences.Add(reference);
+                    }
+                    if (rowIndex == 0 && !string.IsNullOrWhiteSpace(item?.Note)) notes.Add($"{days[i]:dd/MM}: {item.Note}");
+                }
+                AddCells(data, currentRow, cells.ToArray());
             }
-            cells.Add(At($"{Col(totalStart + 5)}{row}", Text(string.Join("; ", notes))));
-            AddCells(data, row++, cells.ToArray());
+            var totalRegularHours = employeeDays.Sum(item => item.RegularHours);
+            var totalOvertimeHours = employeeDays.Sum(item => item.OvertimeHours);
+            AddCells(data, startRow,
+                At($"{Col(totalStart)}{startRow}", Formula(SumFormula(regularReferences), totalRegularHours, HcBodyStyle)),
+                At($"{Col(totalStart + 1)}{startRow}", Formula(SumFormula(overtimeReferences), totalOvertimeHours, TcBodyStyle)),
+                At($"{Col(totalStart + 2)}{startRow}", Text(string.Join("; ", notes))));
+            merges.Append(
+                new MergeCell { Reference = $"A{startRow}:A{endRow}" },
+                new MergeCell { Reference = $"B{startRow}:B{endRow}" },
+                new MergeCell { Reference = $"{Col(totalStart)}{startRow}:{Col(totalStart)}{endRow}" },
+                new MergeCell { Reference = $"{Col(totalStart + 1)}{startRow}:{Col(totalStart + 1)}{endRow}" },
+                new MergeCell { Reference = $"{Col(totalStart + 2)}{startRow}:{Col(totalStart + 2)}{endRow}" });
+            row = endRow + 1U;
         }
         if (employees.Length == 0)
         {
@@ -551,9 +564,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 2D,
+                HorizontalSplit = 3D,
                 VerticalSplit = 5D,
-                TopLeftCell = "C6",
+                TopLeftCell = "D6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
             }) { WorkbookViewId = 0U }),
@@ -742,11 +755,41 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
 
     private static Columns AttendanceSummaryColumns(int days, int totalStart)
     {
-        var columns = new Columns(Column(1, 12), Column(2, 26));
-        for (var i = 0; i < days * 5; i++) columns.Append(Column((uint)(3 + i), 11));
-        for (var i = 0; i < 5; i++) columns.Append(Column((uint)(totalStart + i), 12));
-        columns.Append(Column((uint)(totalStart + 5), 30));
+        var columns = new Columns(Column(1, 12), Column(2, 26), Column(3, 10));
+        for (var i = 0; i < days; i++) columns.Append(Column((uint)(4 + i), 12));
+        columns.Append(Column((uint)totalStart, 12), Column((uint)(totalStart + 1), 12), Column((uint)(totalStart + 2), 30));
         return columns;
+    }
+
+    private static string ShiftLabel(IEnumerable<ProductionReportWorkHourSummary> employeeDays, int slotNumber)
+    {
+        var shift = employeeDays.SelectMany(item => item.Shifts).FirstOrDefault(item => item.SlotNumber == slotNumber);
+        return string.IsNullOrWhiteSpace(shift?.ShiftName) ? $"Ca {slotNumber}" : shift.ShiftName;
+    }
+
+    private static Cell AttendanceShiftCell(ProductionReportWorkHourSummary? item, int slotNumber, DateOnly date)
+    {
+        var style = date.DayOfWeek switch
+        {
+            DayOfWeek.Saturday => NumericStyle,
+            DayOfWeek.Sunday => NumericStyle,
+            _ => HcBodyStyle
+        };
+        var shift = item?.Shifts.SingleOrDefault(shift => shift.SlotNumber == slotNumber);
+        if (shift is null)
+        {
+            return item?.Shifts.Count == 0 && slotNumber == 1 && item.RegularHours > 0m
+                ? Num(item.RegularHours, style)
+                : Blank(style);
+        }
+
+        return shift.ValueKind switch
+        {
+            German.Domain.Attendance.AttendanceShiftValueKind.Hours => Num(shift.Hours, style),
+            German.Domain.Attendance.AttendanceShiftValueKind.PaidLeave => Text("P", style),
+            German.Domain.Attendance.AttendanceShiftValueKind.SickLeave => Text("Ô", style),
+            _ => Blank(style)
+        };
     }
 
     private static string ShiftReference(string reference, uint rowOffset)

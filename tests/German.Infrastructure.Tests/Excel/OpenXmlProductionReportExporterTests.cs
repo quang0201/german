@@ -1,6 +1,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using German.Application.Reports;
+using German.Domain.Attendance;
 using German.Domain.Production;
 using German.Infrastructure.Excel;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -134,16 +135,65 @@ public sealed class OpenXmlProductionReportExporterTests
         var attendanceTitle = attendanceRows.Single(row => GetCells(row).Any(cell => cell.InnerText == "BẢNG CÔNG THEO DÕI CÔNG"));
         var attendanceTitleIndex = attendanceTitle.RowIndex!.Value;
         CollectionAssert.AreEqual(
-            new[] { "Mã NV", "Họ tên", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng HC", "Tổng TC", "Tổng P", "Tổng Ô", "Tổng giờ", "Ghi chú" },
+            new[] { "Mã NV", "Họ tên", "Ca", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng HC", "Tổng TC", "Ghi chú" },
             GetCells(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 3U)).Select(cell => cell.InnerText).ToArray());
-        var attendanceEmployee = GetCells(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U));
+        var attendanceEmployeeRow = attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U);
+        var attendanceEmployee = GetCells(attendanceEmployeeRow);
         Assert.AreEqual("E001", attendanceEmployee[0].InnerText);
-        Assert.AreEqual("10", attendanceEmployee[6].CellValue!.Text);
-        Assert.AreEqual("7.5", attendanceEmployee[11].CellValue!.Text);
-        Assert.AreEqual("C6+D6", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "G6").CellFormula!.Text);
-        Assert.AreEqual("SUM(C6,H6,M6,R6)", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "W6").CellFormula!.Text);
-        Assert.AreEqual("SUM(D6,I6,N6,S6)", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "X6").CellFormula!.Text);
-        Assert.AreEqual("W6+X6", GetCell(attendanceRows.Single(row => row.RowIndex!.Value == attendanceTitleIndex + 5U), "AA6").CellFormula!.Text);
+        Assert.AreEqual("Ca 1", attendanceEmployee[2].InnerText);
+        Assert.AreEqual("8", attendanceEmployee[3].CellValue!.Text);
+        Assert.AreEqual("15.5", GetCell(attendanceEmployeeRow, "H6").CellValue!.Text);
+        Assert.AreEqual("2", GetCell(attendanceEmployeeRow, "I6").CellValue!.Text);
+    }
+
+    [TestMethod]
+    public void Export_AttendanceShowsShiftBreakdownWithoutLeaveOrTotalHourColumns()
+    {
+        var report = CreateReport() with
+        {
+            WorkHours =
+            [
+                new ProductionReportWorkHourSummary(new DateOnly(2026, 8, 12), "E001", "Nguyễn Văn A", 8m, 2m, 0m, 0m, "Ca chiều")
+                {
+                    Shifts =
+                    [
+                        new ProductionReportWorkShiftSummary(1, "Ca 1", 4m, AttendanceShiftValueKind.Hours),
+                        new ProductionReportWorkShiftSummary(2, "Ca 2", 4m, AttendanceShiftValueKind.Hours)
+                    ]
+                },
+                new ProductionReportWorkHourSummary(new DateOnly(2026, 8, 13), "E001", "Nguyễn Văn A", 7.5m, 0m, 0m, 0m, "")
+                {
+                    Shifts = [new ProductionReportWorkShiftSummary(1, "Ca 1", 7.5m, AttendanceShiftValueKind.Hours)]
+                }
+            ]
+        };
+
+        using var document = OpenWorkbook(report);
+        var data = GetSheetData(document, "Bảng công");
+        var rows = data.Elements<Row>().ToList();
+        var header = rows.Single(row => GetCells(row).Any(cell => cell.InnerText == "BẢNG CÔNG THEO DÕI CÔNG")).RowIndex!.Value + 3U;
+
+        CollectionAssert.AreEqual(
+            new[] { "Mã NV", "Họ tên", "Ca", "T4 12/08/2026", "T5 13/08/2026", "T6 14/08/2026", "T7 15/08/2026", "Tổng HC", "Tổng TC", "Ghi chú" },
+            GetCells(rows.Single(row => row.RowIndex!.Value == header)).Select(cell => cell.InnerText).ToArray());
+
+        var firstShift = rows.Single(row => row.RowIndex!.Value == header + 2U);
+        var secondShift = rows.Single(row => row.RowIndex!.Value == header + 3U);
+        var overtime = rows.Single(row => row.RowIndex!.Value == header + 4U);
+        Assert.AreEqual("Ca 1", GetCell(firstShift, "C6").InnerText);
+        Assert.AreEqual("4", GetCell(firstShift, "D6").CellValue!.Text);
+        Assert.AreEqual("Ca 2", GetCell(secondShift, "C7").InnerText);
+        Assert.AreEqual("4", GetCell(secondShift, "D7").CellValue!.Text);
+        Assert.AreEqual("TC", GetCell(overtime, "C8").InnerText);
+        Assert.AreEqual("2", GetCell(overtime, "D8").CellValue!.Text);
+        Assert.AreEqual("15.5", GetCell(firstShift, "H6").CellValue!.Text);
+        Assert.AreEqual("2", GetCell(firstShift, "I6").CellValue!.Text);
+        Assert.IsFalse(data.InnerText.Contains("Giờ P", StringComparison.Ordinal));
+        Assert.IsFalse(data.InnerText.Contains("Giờ Ô", StringComparison.Ordinal));
+        Assert.IsFalse(data.InnerText.Contains("Tổng giờ", StringComparison.Ordinal));
+        CollectionAssert.Contains(
+            GetWorksheetPart(document, "Bảng công").Worksheet!.GetFirstChild<MergeCells>()!.Elements<MergeCell>().Select(merge => merge.Reference!.Value!).ToArray(),
+            "D4:D5");
     }
 
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)

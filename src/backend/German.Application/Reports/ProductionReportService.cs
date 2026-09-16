@@ -580,7 +580,20 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                     day.OvertimeHours,
                     paidLeaveHours,
                     sickLeaveHours,
-                    day.Note);
+                    day.Note)
+                {
+                    Shifts = day.Shifts
+                        .Where(shift => shift.ValueKind != AttendanceShiftValueKind.Empty)
+                        .OrderBy(shift => shift.SlotNumber)
+                        .Select(shift => new ProductionReportWorkShiftSummary(
+                            shift.SlotNumber,
+                            string.IsNullOrWhiteSpace(shift.ShiftName) ? $"Ca {shift.SlotNumber}" : shift.ShiftName,
+                            shift.ValueKind == AttendanceShiftValueKind.Hours
+                                ? shift.WorkedHours ?? 0m
+                                : shift.ScheduledHours,
+                            shift.ValueKind))
+                        .ToArray()
+                };
             })
             .ToArray();
 

@@ -1,5 +1,7 @@
 namespace German.Application.Reports;
 
+using German.Domain.Attendance;
+
 public sealed record ProductionReportEmployeeDaySummary(
     DateOnly WorkDate,
     string EmployeeCode,
@@ -27,4 +29,11 @@ public sealed record ProductionReportWorkHourSummary(
     string Note)
 {
     public decimal TotalHours => RegularHours + OvertimeHours;
+    public IReadOnlyList<ProductionReportWorkShiftSummary> Shifts { get; init; } = [];
 }
+
+public sealed record ProductionReportWorkShiftSummary(
+    int SlotNumber,
+    string ShiftName,
+    decimal Hours,
+    AttendanceShiftValueKind ValueKind);
