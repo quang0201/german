@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
+import { mergeHourlyEmployeesIntoOrders } from "./productionMonthlyMatrix.js";
 
 const matrixSource = readFileSync(new URL("./ProductionMonthlyMatrix.jsx", import.meta.url), "utf8");
 
@@ -52,6 +53,19 @@ function dataWithMissingOperationWarning() {
 }
 
 describe("ProductionMonthlyMatrix render", () => {
+  test("adds hourly employees to each order even without production entries", () => {
+    const result = mergeHourlyEmployeesIntoOrders(dataWithOneOrder().orders, [{
+      employeeId: "e-hourly",
+      employeeCode: "5",
+      employeeName: "Trần Thị Loan",
+      compensationType: "Hourly",
+    }]);
+
+    expect(result[0].employees[1].employeeName).toBe("Trần Thị Loan");
+    expect(result[0].employees[1].operations).toHaveLength(3);
+    expect(result[0].employees[1].operations[0].totalQuantity).toBe(0);
+  });
+
   test("renders one shared day axis, order block and rowspan employee", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" excludeSundays />);
 
@@ -181,7 +195,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("Nhân viên theo giờ");
     expect(html).toContain("Trần Thị Loan");
     expect(html).toContain("không yêu cầu nhập sản lượng");
-    expect(html).not.toContain("Trần Thị Loan CĐ");
+    expect(html).toContain("Trần Thị Loan CĐ");
   });
 
   test("does not warn for an hourly employee who has an existing production row", () => {

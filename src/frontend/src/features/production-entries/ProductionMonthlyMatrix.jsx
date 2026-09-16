@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { dateRangeAxis, isEmployeeNewInPeriod, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
+import { dateRangeAxis, isEmployeeNewInPeriod, mergeHourlyEmployeesIntoOrders, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
 
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
@@ -14,9 +14,9 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
   const horizontalScrollRef = useRef(null);
   const horizontalScrollContentRef = useRef(null);
   const scrollLeftRef = useRef(0);
-  const orders = data?.orders ?? [];
   const availableOrders = data?.availableOrders ?? [];
   const hourlyEmployees = data?.hourlyEmployees ?? [];
+  const orders = useMemo(() => mergeHourlyEmployeesIntoOrders(data?.orders ?? [], hourlyEmployees), [data?.orders, hourlyEmployees]);
   const totalColumns = 2 + axis.length * 2 + 3;
 
   useEffect(() => {
