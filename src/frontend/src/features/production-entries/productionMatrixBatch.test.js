@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("batch production preload", () => {
   test("builds the day employee order lookup path", () => {
@@ -15,12 +15,38 @@ describe("batch production preload", () => {
   test("marks existing operations and loads their quantities", () => {
     const result = mergeExistingOperationDrafts(
       [{ id: "operation-1" }, { id: "operation-2" }],
-      [{ productionOperationId: "operation-1", directHcQuantity: 120, directTcQuantity: 30, note: "Đã nhập" }],
+      [{ id: "entry-1", version: 3, productionOperationId: "operation-1", directHcQuantity: 120, directTcQuantity: 30, note: "Đã nhập" }],
     );
 
     expect(result.existingOperationIds).toEqual(["operation-1"]);
     expect(result.drafts).toEqual({
       "operation-1": { hc: "120", tc: "30", total: "150", note: "Đã nhập" },
+    });
+    expect(result.existingEntries["operation-1"].id).toBe("entry-1");
+  });
+
+  test("builds an update payload for an existing entry", () => {
+    expect(buildBatchExistingEntryUpdatePayload(
+      { id: "entry-1", version: 4, workStart: "08:00:00", workEnd: "17:00:00" },
+      {
+        workDate: "2026-09-16",
+        employeeId: "employee-1",
+        productionOrderId: "order-1",
+        productionOperationId: "operation-1",
+        directHcQuantity: 120,
+        directTcQuantity: 30,
+        note: "Đã sửa",
+      },
+    )).toMatchObject({
+      version: 4,
+      workDate: "2026-09-16",
+      employeeId: "employee-1",
+      productionOrderId: "order-1",
+      productionOperationId: "operation-1",
+      entryMode: "Direct",
+      directHcQuantity: 120,
+      directTcQuantity: 30,
+      note: "Đã sửa",
     });
   });
 });
@@ -42,6 +68,7 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("resolveBatchEntryQuantities");
     expect(source).toContain("/api/production-entries/batch-direct");
     expect(source).toContain("buildBatchExistingEntriesPath");
+    expect(source).toContain("buildBatchExistingEntryUpdatePayload");
     expect(source).toContain("mergeExistingOperationDrafts");
     expect(source).toContain("existingOperationIds");
     expect(source).toContain("đã nhập: HC");

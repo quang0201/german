@@ -25,6 +25,7 @@ export function mergeExistingOperationDrafts(operations = [], entries = []) {
   );
   const drafts = {};
   const existingOperationIds = [];
+  const existingEntries = {};
   for (const operation of operations ?? []) {
     const id = String(operation.id);
     const entry = entriesByOperation.get(id);
@@ -33,6 +34,7 @@ export function mergeExistingOperationDrafts(operations = [], entries = []) {
     const tc = entry.directTcQuantity ?? entry.tcQuantity ?? 0;
     const total = entry.totalInputQuantity ?? entry.totalQuantity ?? Number(hc) + Number(tc);
     existingOperationIds.push(id);
+    existingEntries[id] = entry;
     drafts[id] = {
       hc: String(hc),
       tc: String(tc),
@@ -40,7 +42,29 @@ export function mergeExistingOperationDrafts(operations = [], entries = []) {
       note: entry.note ?? "",
     };
   }
-  return { drafts, existingOperationIds };
+  return { drafts, existingOperationIds, existingEntries };
+}
+
+export function buildBatchExistingEntryUpdatePayload(entry, { workDate, employeeId, productionOrderId, productionOperationId, directHcQuantity, directTcQuantity, note }) {
+  return {
+    version: entry.version,
+    workDate,
+    employeeId,
+    productionOrderId,
+    productionOperationId,
+    entryMode: "Direct",
+    shift1Quantity: null,
+    shift2Quantity: null,
+    directHcQuantity,
+    directTcQuantity,
+    totalInputQuantity: null,
+    overtimeHours: null,
+    overtimeQuantity: null,
+    workStart: entry.workStart ?? null,
+    workEnd: entry.workEnd ?? null,
+    note: note?.trim() || null,
+    hcHours: null,
+  };
 }
 
 export function isCurrentAttendanceRequest(
