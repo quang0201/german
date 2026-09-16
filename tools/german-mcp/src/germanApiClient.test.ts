@@ -58,4 +58,26 @@ describe("German API client", () => {
     expect(requests[0].init?.body).toContain("reusable-token");
     expect((requests[1].init?.headers as Headers).get("Cookie")).toBe("german.auth=exchanged123");
   });
+
+  test("re-exchanges a reusable MCP token when the session expires", async () => {
+    const requests: Array<{ url: string; init?: RequestInit }> = [];
+    let exchanges = 0;
+    const fetchImpl: typeof fetch = async (input, init) => {
+      requests.push({ url: String(input), init });
+      if (String(input).endsWith("/api/auth/mcp-token/exchange")) {
+        exchanges += 1;
+        return new Response(JSON.stringify({ role: "Manager" }), {
+          status: 200,
+          headers: { "content-type": "application/json", "set-cookie": `german.auth=session-${exchanges}; Path=/; HttpOnly` },
+        });
+      }
+      if (exchanges === 1) return new Response("", { status: 401 });
+      return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
+    };
+
+    const client = new GermanApiClient({ baseUrl: "https://hr.quangt.com", mcpToken: "reusable-token" }, fetchImpl);
+    await expect(client.get("/api/production-entries/")).resolves.toEqual([]);
+    expect(exchanges).toBe(2);
+    expect((requests.at(-1)?.init?.headers as Headers).get("Cookie")).toBe("german.auth=session-2");
+  });
 });

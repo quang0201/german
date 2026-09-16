@@ -55,13 +55,42 @@ Ví dụ cấu hình client:
 
 Các tool chính:
 
+- `german_find_employees`: tìm nhân viên theo mã hoặc họ tên.
 - `german_find_production_orders`: tìm mã sản xuất.
+- `german_get_attendance_hours`: lấy giờ HC, giờ TC và ca chấm công của một ngày.
+- `german_list_production_entries`: tra cứu sản lượng nội bộ theo bộ lọc.
+- `german_preview_production_batch`: preview nhiều công đoạn sản lượng nội bộ trước khi ghi.
+- `german_create_production_batch`: ghi nhiều công đoạn sản lượng nội bộ trong một ngày.
+- `german_preview_production_update`: preview sửa một entry theo `entryId` và `version`.
+- `german_update_production_entry`: sửa một entry sản lượng nội bộ.
+- `german_delete_production_entry`: xóa mềm một entry sản lượng nội bộ.
 - `german_list_external_sources`: xem nguồn gia công đang dùng hoặc toàn bộ.
 - `german_list_external_quantities`: kiểm tra dữ liệu gia công ngoài theo mã và ngày.
 - `german_preview_external_quantity`: kiểm tra mã, công đoạn, nguồn và số lượng trước khi ghi.
 - `german_create_external_quantity`: ghi dữ liệu; bắt buộc truyền `confirm: true`.
 
 Quy trình ghi khuyến nghị là gọi `preview` trước, kiểm tra kết quả, sau đó mới gọi `create` với đúng dữ liệu đã xác nhận. MCP không cho ghi khi thiếu `confirm: true`, không cho dùng nguồn đã tắt, và không tự suy đoán mã/công đoạn nếu không tìm thấy khớp duy nhất.
+
+### Nhập sản lượng nội bộ
+
+Tool `german_create_production_batch` nhận mã nhân viên hoặc họ tên chính xác, mã sản xuất và danh sách công đoạn. Mỗi công đoạn có thể dùng một trong hai cách:
+
+```json
+{
+  "workDate": "2026-09-11",
+  "employeeCode": "0417-BHD",
+  "orderCode": "4004 đen",
+  "items": [
+    { "operationNumber": 1, "totalQuantity": 2500 },
+    { "operationNumber": 2, "totalQuantity": 2500 }
+  ],
+  "confirm": true
+}
+```
+
+`totalQuantity` được MCP tự chia thành HC/TC theo giờ chấm công thực tế của ngày đó. Nếu cần nhập số đã tách sẵn, dùng `directHcQuantity` và/hoặc `directTcQuantity`. Tool tự lấy chấm công để gửi cùng batch; ngày chưa có giờ chấm công sẽ bị từ chối khi yêu cầu chia theo tổng giờ.
+
+Nên gọi `german_preview_production_batch` với cùng dữ liệu nhưng không cần `confirm`, kiểm tra `request`, rồi mới gọi `german_create_production_batch` với `confirm: true`. API tiếp tục kiểm tra quyền Manager/Admin, mã, công đoạn, xung đột ô và ghi audit log nghiệp vụ.
 
 ## Audit log
 

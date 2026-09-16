@@ -2,6 +2,7 @@ export interface GermanApiConfig {
   baseUrl: string;
   username?: string;
   password?: string;
+  mcpToken?: string;
   sessionCookie?: string;
   timeoutMs?: number;
 }
@@ -32,6 +33,14 @@ export class GermanApiClient {
 
   async post<T = unknown>(path: string, body: unknown): Promise<T> {
     return this.request<T>(path, { method: "POST", body: JSON.stringify(body) });
+  }
+
+  async put<T = unknown>(path: string, body: unknown): Promise<T> {
+    return this.request<T>(path, { method: "PUT", body: JSON.stringify(body) });
+  }
+
+  async delete<T = unknown>(path: string): Promise<T> {
+    return this.request<T>(path, { method: "DELETE" });
   }
 
   private async ensureAuthenticated(): Promise<void> {
@@ -71,7 +80,7 @@ export class GermanApiClient {
     if (init.body !== undefined) headers.set("Content-Type", "application/json");
     try {
       const response = await this.fetchImpl(`${this.baseUrl}${path}`, { ...init, headers, signal: controller.signal });
-      if (response.status === 401 && retry && this.config.username && this.config.password) {
+      if (response.status === 401 && retry && (this.config.mcpToken || (this.config.username && this.config.password))) {
         this.cookie = null;
         await this.ensureAuthenticated();
         return this.request<T>(path, init, false);
