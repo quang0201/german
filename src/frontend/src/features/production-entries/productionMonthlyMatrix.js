@@ -100,24 +100,11 @@ export function mergeHourlyEmployeesIntoOrders(orders = [], hourlyEmployees = []
   return orders.map((order) => {
     const employees = order.employees ?? [];
     const employeeIds = new Set(employees.map((employee) => String(employee.employeeId)));
-    const operationTemplates = [...new Map(
-      employees
-        .flatMap((employee) => employee.operations ?? [])
-        .map((operation) => [String(operation.operationId), operation]),
-    ).values()];
     const missingHourlyEmployees = hourlyEmployees
       .filter((employee) => !employeeIds.has(String(employee.employeeId)))
       .map((employee) => ({
         ...employee,
-        operations: operationTemplates.map((operation) => ({
-          operationId: operation.operationId,
-          operationNumber: operation.operationNumber,
-          operationName: operation.operationName,
-          hcQuantity: 0,
-          tcQuantity: 0,
-          totalQuantity: 0,
-          cells: [],
-        })),
+        operations: [],
         productionDates: [],
         workedDates: [],
         attendanceDates: [],

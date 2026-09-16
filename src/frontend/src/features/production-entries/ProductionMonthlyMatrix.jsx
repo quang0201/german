@@ -70,11 +70,14 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
             const enteredDates = new Set(employee.productionDates ?? []);
             const hourly = employee.compensationType === "Hourly";
             const isNewEmployee = isEmployeeNewInPeriod(employee.joinedDate, range.fromDate, range.untilDate);
-            (employee.operations ?? []).forEach((operation, operationIndex) => {
+            const employeeOperations = employee.operations?.length > 0
+              ? employee.operations
+              : [{ operationId: `empty-${employee.employeeId}`, operationNumber: "", operationName: "", hcQuantity: 0, tcQuantity: 0, totalQuantity: 0, cells: [] }];
+            employeeOperations.forEach((operation, operationIndex) => {
               const map = cellsByDate(operation);
               rows.push(<tr key={`${order.orderId}-${employee.employeeId}-${operation.operationId}`} className={[inactive ? "erp-month-inactive" : "", isNewEmployee ? "erp-month-new-employee" : ""].filter(Boolean).join(" ")}>
-                {operationIndex === 0 && <td className={["erp-month-sticky-employee", "erp-month-employee", isNewEmployee ? "erp-month-new-employee" : ""].filter(Boolean).join(" ")} rowSpan={employee.operations.length}>{employee.employeeName}{inactive && <em>Đã tắt</em>}</td>}
-                <td className="erp-month-sticky-operation erp-month-operation">CĐ{operation.operationNumber}</td>
+                {operationIndex === 0 && <td className={["erp-month-sticky-employee", "erp-month-employee", isNewEmployee ? "erp-month-new-employee" : ""].filter(Boolean).join(" ")} rowSpan={employeeOperations.length}>{employee.employeeName}{inactive && <em>Đã tắt</em>}</td>}
+                <td className="erp-month-sticky-operation erp-month-operation">{operation.operationNumber ? `CĐ${operation.operationNumber}` : ""}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
                   const noAttendance = !inactive

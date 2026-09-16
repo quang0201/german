@@ -62,8 +62,7 @@ describe("ProductionMonthlyMatrix render", () => {
     }]);
 
     expect(result[0].employees[1].employeeName).toBe("Trần Thị Loan");
-    expect(result[0].employees[1].operations).toHaveLength(3);
-    expect(result[0].employees[1].operations[0].totalQuantity).toBe(0);
+    expect(result[0].employees[1].operations).toHaveLength(0);
   });
 
   test("renders one shared day axis, order block and rowspan employee", () => {
@@ -195,7 +194,8 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("Nhân viên theo giờ");
     expect(html).toContain("Trần Thị Loan");
     expect(html).toContain("không yêu cầu nhập sản lượng");
-    expect(html).toContain("Trần Thị Loan CĐ");
+    expect(html).toContain("Trần Thị Loan");
+    expect(html).toMatch(/Trần Thị Loan[^<]*<\/td><td class="erp-month-sticky-operation erp-month-operation"><\/td>/);
   });
 
   test("does not warn for an hourly employee who has an existing production row", () => {
