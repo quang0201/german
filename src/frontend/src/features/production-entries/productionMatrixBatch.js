@@ -30,19 +30,23 @@ export function mergeExistingOperationDrafts(operations = [], entries = []) {
     const id = String(operation.id);
     const entry = entriesByOperation.get(id);
     if (!entry) continue;
-    const hc = entry.directHcQuantity ?? entry.hcQuantity ?? 0;
-    const tc = entry.directTcQuantity ?? entry.tcQuantity ?? 0;
-    const total = entry.totalInputQuantity ?? entry.totalQuantity ?? Number(hc) + Number(tc);
     existingOperationIds.push(id);
     existingEntries[id] = entry;
-    drafts[id] = {
-      hc: String(hc),
-      tc: String(tc),
-      total: String(total),
-      note: entry.note ?? "",
-    };
+    drafts[id] = buildExistingOperationDraft(entry);
   }
   return { drafts, existingOperationIds, existingEntries };
+}
+
+export function buildExistingOperationDraft(entry = {}) {
+  const hc = entry.directHcQuantity ?? entry.hcQuantity ?? 0;
+  const tc = entry.directTcQuantity ?? entry.tcQuantity ?? 0;
+  const total = entry.totalInputQuantity ?? entry.totalQuantity ?? Number(hc) + Number(tc);
+  return {
+    hc: String(hc),
+    tc: String(tc),
+    total: String(total),
+    note: entry.note ?? "",
+  };
 }
 
 export function buildBatchExistingEntryUpdatePayload(entry, { workDate, employeeId, productionOrderId, productionOperationId, directHcQuantity, directTcQuantity, note }) {

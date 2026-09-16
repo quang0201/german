@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 const INPUT_MODES = [
   { value: "attendance-only", label: "Chỉ chấm công" },
@@ -188,7 +188,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     const id = String(operation.id);
     setDrafts((current) => {
       if (current[id]) { const next = { ...current }; delete next[id]; return next; }
-      return { ...current, [id]: emptyOperationDraft() };
+      return { ...current, [id]: existingEntries[id] ? buildExistingOperationDraft(existingEntries[id]) : emptyOperationDraft() };
     });
   }
 
@@ -310,15 +310,9 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
             {orderId && !operationsLoading && !operations.length && <span>Mã SX này chưa có công đoạn hoạt động.</span>}
             {operations.map((operation) => {
               const operationId = String(operation.id);
-              const existing = existingOperationIdSet.has(operationId);
               const selected = Boolean(drafts[operationId]);
-              const existingDraft = drafts[operationId];
-              const existingLabel = existing
-                ? ` (đã nhập: HC ${quantityFormat.format(Number(existingDraft?.hc ?? 0))}, TC ${quantityFormat.format(Number(existingDraft?.tc ?? 0))})`
-                : "";
-              return <button key={operation.id} type="button" className={`erp-button erp-button-secondary ${selected ? "is-selected" : ""}`} aria-pressed={selected} title={existing ? "Công đoạn này đã nhập; có thể sửa trong bảng bên dưới." : undefined} onClick={() => toggle(operation)}>CĐ{operation.operationNumber} — {operation.name}{existingLabel}</button>;
+              return <button key={operation.id} type="button" className={`erp-button erp-button-secondary ${selected ? "is-selected" : ""}`} aria-pressed={selected} onClick={() => toggle(operation)}>CĐ{operation.operationNumber} — {operation.name}</button>;
             })}
-            {existingOperationIds.length > 0 && <span className="erp-matrix-batch-existing-note" role="note">Các CĐ đã nhập được nạp vào bảng bên dưới để chỉnh sửa trực tiếp.</span>}
           </div>}
           <div className="erp-matrix-batch-mode-picker" role="group" aria-label="Kiểu nhập batch">
             {INPUT_MODES.map((mode) => <button key={mode.value} type="button" className={`erp-button erp-button-secondary ${inputMode === mode.value ? "is-selected" : ""}`} aria-pressed={inputMode === mode.value} onClick={() => { setInputMode(mode.value); setError(""); }}>{mode.label}</button>)}

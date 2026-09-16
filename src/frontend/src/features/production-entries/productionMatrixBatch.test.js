@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("batch production preload", () => {
   test("builds the day employee order lookup path", () => {
@@ -49,6 +49,15 @@ describe("batch production preload", () => {
       note: "Đã sửa",
     });
   });
+
+  test("restores the saved quantities when an existing operation is selected again", () => {
+    expect(buildExistingOperationDraft({
+      hcQuantity: 1364,
+      tcQuantity: 511,
+      totalQuantity: 1875,
+      note: "Đã nhập",
+    })).toEqual({ hc: "1364", tc: "511", total: "1875", note: "Đã nhập" });
+  });
 });
 
 describe("production matrix batch attendance", () => {
@@ -69,9 +78,10 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("/api/production-entries/batch-direct");
     expect(source).toContain("buildBatchExistingEntriesPath");
     expect(source).toContain("buildBatchExistingEntryUpdatePayload");
+    expect(source).toContain("buildExistingOperationDraft");
     expect(source).toContain("mergeExistingOperationDrafts");
     expect(source).toContain("existingOperationIds");
-    expect(source).toContain("đã nhập: HC");
+    expect(source).not.toContain("đã nhập: HC");
     expect(source).toContain("attendance");
     expect(source).toContain('tcHours: "0"');
     expect(source).toContain('hcHours: "0"');
