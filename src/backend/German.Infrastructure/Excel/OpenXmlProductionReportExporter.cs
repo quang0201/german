@@ -34,6 +34,25 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private const uint SundayHeaderStyle = 24U;
     private const uint AttendanceTcLabelStyle = 25U;
     private const uint BaseCellFormatCount = 26U;
+    private static readonly uint[] BorderedBaseStyles =
+    [
+        0U,
+        NumericStyle,
+        HcBodyStyle,
+        TcBodyStyle,
+        ExternalTextStyle,
+        ExternalNumberStyle,
+        AttendanceCa1BodyStyle,
+        AttendanceCa2BodyStyle,
+        AttendanceSaturdayCa1BodyStyle,
+        AttendanceSaturdayCa2BodyStyle,
+        AttendanceSundayCa1BodyStyle,
+        AttendanceSundayCa2BodyStyle,
+        PaidLeaveStyle,
+        AttendanceCa1LabelStyle,
+        AttendanceCa2LabelStyle,
+        AttendanceTcLabelStyle
+    ];
 
     public byte[] Export(ProductionReportData report)
     {
@@ -987,13 +1006,20 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         }
     }
 
-    private static uint GroupStyle(uint baseStyle, GroupBorder border) => border switch
+    private static uint GroupStyle(uint baseStyle, GroupBorder border)
     {
-        GroupBorder.Top => BaseCellFormatCount + baseStyle,
-        GroupBorder.Bottom => BaseCellFormatCount * 2U + baseStyle,
-        GroupBorder.TopAndBottom => BaseCellFormatCount * 3U + baseStyle,
-        _ => baseStyle
-    };
+        var styleIndex = Array.IndexOf(BorderedBaseStyles, baseStyle);
+        if (styleIndex < 0 || border == GroupBorder.None) return baseStyle;
+
+        var borderIndex = border switch
+        {
+            GroupBorder.Top => 0U,
+            GroupBorder.Bottom => 1U,
+            GroupBorder.TopAndBottom => 2U,
+            _ => throw new ArgumentOutOfRangeException(nameof(border))
+        };
+        return BaseCellFormatCount + borderIndex * (uint)BorderedBaseStyles.Length + (uint)styleIndex;
+    }
 
     private static string Col(int value) { var result = string.Empty; while (value > 0) { value--; result = (char)('A' + value % 26) + result; value /= 26; } return result; }
     private static int ColumnNumber(string? reference) { if (string.IsNullOrEmpty(reference)) return int.MaxValue; var result = 0; foreach (var c in reference) { if (!char.IsLetter(c)) break; result = result * 26 + char.ToUpperInvariant(c) - 'A' + 1; } return result; }
@@ -1063,15 +1089,15 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         var baseFormats = formatsForCells.Elements<CellFormat>().ToArray();
         foreach (var borderId in new[] { 1U, 2U, 3U })
         {
-            foreach (var baseFormat in baseFormats)
+            foreach (var baseStyle in BorderedBaseStyles)
             {
-                var borderedFormat = (CellFormat)baseFormat.CloneNode(true);
+                var borderedFormat = (CellFormat)baseFormats[baseStyle].CloneNode(true);
                 borderedFormat.BorderId = borderId;
                 borderedFormat.ApplyBorder = true;
                 formatsForCells.Append(borderedFormat);
             }
         }
-        formatsForCells.Count = BaseCellFormatCount * 4U;
+        formatsForCells.Count = BaseCellFormatCount + (uint)BorderedBaseStyles.Length * 3U;
         return new Stylesheet(formats, fonts, fills, borders, new CellStyleFormats(new CellFormat()) { Count = 1U }, formatsForCells);
     }
 }
