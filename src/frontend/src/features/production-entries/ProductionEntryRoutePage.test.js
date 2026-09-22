@@ -22,10 +22,12 @@ describe("ProductionEntryRoutePage", () => {
     expect(html).not.toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
   });
 
-  test("routes Manager and Admin to the weekly matrix flow without a second workspace tab bar", () => {
+  test("routes Manager and Admin to the grouped weekly matrix flow without a second workspace tab bar", () => {
     for (const role of ["Manager", "Admin"]) {
       const html = renderFor(role);
-      expect(html).toContain("Theo dõi và nhập sản lượng theo ma trận tuần");
+      expect(html).toContain("erp-production-controls");
+      expect(html).toContain("Xuất Excel");
+      expect(html).toContain("+ Nhập sản lượng");
       expect(html).toContain("Tuần trước");
       expect(html).toContain("Tuần sau");
       expect(html).not.toContain("Tổng lượt công đoạn");
@@ -49,5 +51,14 @@ describe("ProductionEntryRoutePage", () => {
     expect(source).toContain('excludeSundays={false}');
     expect(source).toContain('showSundayToggle={false}');
     expect(source).toContain("availableOrders[0].id");
+  });
+
+  test("groups manager production controls and removes the duplicate page heading", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
+
+    expect(source).toContain("erp-production-controls");
+    expect(source).toContain("showOrderFilter={false}");
+    expect(source).toContain("<Field label=\"Mã sản xuất\">");
+    expect(source).not.toContain("<PageHeader");
   });
 });

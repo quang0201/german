@@ -5,7 +5,7 @@ const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
 const cellsByDate = (operation) => new Map((operation.cells ?? []).map((cell) => [cell.workDate, cell]));
 
-export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDate = "", selectedOrderId = "", excludeSundays = true, showSundayToggle = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick, today = new Date() }) {
+export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDate = "", selectedOrderId = "", excludeSundays = true, showSundayToggle = true, showOrderFilter = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick, today = new Date() }) {
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const range = useMemo(() => fromDate && untilDate ? { fromDate, untilDate } : monthBounds(monthKey), [fromDate, untilDate, monthKey]);
   const axis = useMemo(() => fromDate && untilDate ? dateRangeAxis(fromDate, untilDate, excludeSundays) : monthDateAxis(monthKey, excludeSundays), [fromDate, untilDate, monthKey, excludeSundays]);
@@ -47,16 +47,15 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
 
   return (
     <section className="erp-month-matrix-section" aria-label={`Sản lượng ${rangeLabel}`}>
-      <div className="erp-month-matrix-toolbar">
-        <div className="erp-month-order-filter" role="group" aria-label="Lọc Mã SX">
+      {(showOrderFilter || showSundayToggle) && <div className="erp-month-matrix-toolbar">
+        {showOrderFilter && <div className="erp-month-order-filter" role="group" aria-label="Lọc Mã SX">
           {availableOrders.length === 0 ? <strong>{rangeLabel}</strong> : <select className="erp-control erp-month-order-filter-select" aria-label="Lọc Mã SX" value={selectedOrderId} onChange={(event) => onSelectOrder?.(event.target.value)}>{availableOrders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select>}
-        </div>
+        </div>}
         {showSundayToggle && <label className="erp-month-sunday-toggle"><input type="checkbox" checked={excludeSundays} onChange={(event) => onToggleSundays?.(event.target.checked)} /><span>Ẩn Chủ nhật</span></label>}
-      </div>
+      </div>}
       {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
       {loading && <div className="erp-table-state">Đang tải sản lượng...</div>}
       {!loading && !error && <>
-        {hourlyEmployees.length > 0 && <div className="erp-month-hourly-note" role="note"><strong>Nhân viên theo giờ</strong><span>{hourlyEmployees.map((employee) => employee.employeeName).join(", ")} — không yêu cầu nhập sản lượng</span></div>}
         <div ref={horizontalScrollRef} className="erp-month-matrix-horizontal-scroll" aria-label="Cuộn ngang ma trận" role="region" tabIndex="0" onScroll={(event) => { const nextScrollLeft = event.currentTarget.scrollLeft; scrollLeftRef.current = nextScrollLeft; if (scrollRef.current && scrollRef.current.scrollLeft !== nextScrollLeft) scrollRef.current.scrollLeft = nextScrollLeft; }}><div ref={horizontalScrollContentRef} aria-hidden="true" /></div>
           <div ref={scrollRef} onScroll={(event) => { const nextScrollLeft = event.currentTarget.scrollLeft; scrollLeftRef.current = nextScrollLeft; if (horizontalScrollRef.current && horizontalScrollRef.current.scrollLeft !== nextScrollLeft) horizontalScrollRef.current.scrollLeft = nextScrollLeft; }} className="erp-month-matrix-scroll"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => { const isToday = day.isoDate === todayIso; const dayClass = `erp-month-day-head${day.isSunday ? " erp-month-sunday" : ""}${isToday ? " erp-month-today" : ""}`; return <th key={day.isoDate} className={dayClass} colSpan="2" aria-current={isToday ? "date" : undefined}><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Chọn Mã SX và công đoạn để nhập nhanh"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong></button></th>; })}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
         {orders.length === 0 && <tr><td colSpan={totalColumns} className="erp-table-state">Chưa có sản lượng. Bấm vào ngày phía trên để nhập nhanh nhiều công đoạn.</td></tr>}

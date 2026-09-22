@@ -267,6 +267,14 @@
 }
 .erp-production-manager-page .erp-filter-fields .erp-field:last-child { grid-column: auto; }
 .erp-production-manager-page .erp-filter-actions { flex: 0 0 auto; gap: 8px; padding-top: 0; }
+.erp-production-controls { display: flex; flex: 0 0 auto; flex-direction: column; gap: 4px; }
+.erp-production-controls-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.erp-production-controls-header .erp-production-month-nav { flex: 1 1 auto; justify-content: flex-start; }
+.erp-production-controls-header .erp-page-actions { display: flex; flex: 0 0 auto; gap: 8px; }
+.erp-production-controls .erp-filter-bar { align-items: flex-end; padding: 6px 0; }
+.erp-production-controls .erp-filter-fields { grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(220px, 1.5fr); gap: 8px; }
+.erp-production-controls .erp-filter-fields .erp-field:last-child { grid-column: auto; }
+.erp-production-controls .erp-filter-actions { flex: 0 0 auto; gap: 8px; padding-top: 0; }
 .erp-production-manager-page .erp-month-matrix-section {
   display: flex;
   flex: 1;
@@ -577,6 +585,12 @@
   .erp-production-manager-page .erp-filter-bar { align-items: stretch; flex-direction: column; }
   .erp-production-manager-page .erp-filter-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .erp-production-manager-page .erp-filter-actions { justify-content: flex-end; }
+  .erp-production-controls-header { align-items: stretch; flex-direction: column; }
+  .erp-production-controls-header .erp-production-month-nav { justify-content: space-between; }
+  .erp-production-controls-header .erp-page-actions { justify-content: flex-end; }
+  .erp-production-controls .erp-filter-bar { align-items: stretch; flex-direction: column; }
+  .erp-production-controls .erp-filter-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .erp-production-controls .erp-filter-actions { justify-content: flex-end; }
 }
 
 @media (max-width: 900px) {
@@ -588,6 +602,8 @@
   .erp-production-manager-page .erp-filter-fields { grid-template-columns: 1fr; }
   .erp-production-manager-page .erp-filter-fields .erp-field:last-child { grid-column: auto; }
   .erp-production-manager-page .erp-filter-actions > * { flex: 1; }
+  .erp-production-controls .erp-filter-fields { grid-template-columns: 1fr; }
+  .erp-production-controls .erp-filter-actions > * { flex: 1; }
 }
 
 @media (max-width: 640px) {
@@ -595,6 +611,8 @@
   .erp-production-manager-page .erp-page-actions { justify-content: stretch; }
   .erp-production-manager-page .erp-page-actions > * { flex: 1; }
   .erp-production-manager-page .erp-production-month-header { align-items: flex-start; flex-direction: column; }
+  .erp-production-controls-header .erp-page-actions { justify-content: stretch; }
+  .erp-production-controls-header .erp-page-actions > * { flex: 1; }
 }
 
 @media (max-width: 767px) {

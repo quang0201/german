@@ -3,7 +3,6 @@ import { navigate } from "../../app/navigation.js";
 import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { FilterBar } from "../../components/erp/FilterBar.jsx";
-import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { employeeVisibleForMonth } from "../employees/employeeVisibility.js";
@@ -145,16 +144,19 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
 
   return (
     <div className="erp-feature-page erp-production-manager-page">
-      <PageHeader title="Sản lượng" description="Theo dõi và nhập sản lượng theo ma trận tuần" actions={<><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>} />
-      <div className="erp-production-manager-overview">
-        <div className="erp-production-month-header"><ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} /></div>
+      <div className="erp-production-controls">
+        <div className="erp-production-controls-header">
+          <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} />
+          <div className="erp-page-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></div>
+        </div>
+        <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
+          <Field label="Mã sản xuất"><select className="erp-control" value={selectedOrderId} onChange={(event) => selectOrder(event.target.value)}><option value="">Chọn Mã SX</option>{(data.availableOrders ?? []).map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select></Field>
+          <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
+          <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
+          <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
+        </FilterBar>
       </div>
-      <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
-        <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
-        <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
-        <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
-      </FilterBar>
-      <ProductionMonthlyMatrix data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} selectedOrderId={selectedOrderId} excludeSundays={false} showSundayToggle={false} loading={loading} error={error} onSelectOrder={selectOrder} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} />
+      <ProductionMonthlyMatrix data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} selectedOrderId={selectedOrderId} excludeSundays={false} showSundayToggle={false} showOrderFilter={false} loading={loading} error={error} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} />
       <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} onReload={reload} />
       <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />

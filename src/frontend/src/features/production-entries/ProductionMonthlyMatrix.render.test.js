@@ -82,6 +82,13 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("erp-month-order-filter-select");
   });
 
+  test("can hide the order selector and hourly employee note when embedded in the manager controls", () => {
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" selectedOrderId="o1" showOrderFilter={false} />);
+
+    expect(html).not.toContain("erp-month-order-filter-select");
+    expect(html).not.toContain("Nhân viên theo giờ");
+  });
+
   test("keeps a sole production order selectable so operation filtering can be enabled", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" selectedOrderId="o1" excludeSundays />);
 
@@ -190,9 +197,8 @@ describe("ProductionMonthlyMatrix render", () => {
 
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
 
-    expect(html).toContain("Nhân viên theo giờ");
     expect(html).toContain("Trần Thị Loan");
-    expect(html).toContain("không yêu cầu nhập sản lượng");
+    expect(html).not.toContain("không yêu cầu nhập sản lượng");
     expect(html).toContain("Trần Thị Loan");
     expect(html).toMatch(/Trần Thị Loan[^<]*<\/td><td class="erp-month-sticky-operation erp-month-operation"><\/td>/);
   });

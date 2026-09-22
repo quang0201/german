@@ -94,7 +94,7 @@ describe("ERP responsive CSS contract", () => {
     expect(styles).toContain(".erp-production-manager-page .erp-month-matrix-scroll {");
     expect(styles).toContain("max-height: none;");
     expect(productionManagerMatrixPage).toContain("erp-production-manager-page");
-    expect(productionManagerMatrixPage).toContain("erp-production-manager-overview");
+    expect(productionManagerMatrixPage).toContain("erp-production-controls");
   });
 
   test("lets the manager page scroll on mobile so the matrix cannot be clipped", () => {
