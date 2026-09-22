@@ -3,13 +3,8 @@ import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate.js";
 import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
+import { formatEmployeeDate } from "./employeeDate.js";
 import "./EmployeeDialog.css";
-
-function formatEmployeeDate(value) {
-  if (!value) return "—";
-  const [year, month, day] = String(value).split("-");
-  return year && month && day ? `${day}/${month}/${year}` : String(value);
-}
 
 export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], shiftLoading = false, loading = false, assignmentLoading = false, error = "", assignmentError = "", onClose, onSubmit, onAssignShift, onChange }) {
   const [draft, setDraft] = useState(() => mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));

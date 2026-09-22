@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { resolve } from "node:path";
 import { EmployeeListPage } from "./EmployeeListPage.jsx";
+import { formatEmployeeDate } from "./employeeDate.js";
 
 describe("EmployeeListPage", () => {
   test("uses a popup trigger instead of inline employee creation fields", () => {
@@ -48,5 +49,11 @@ describe("EmployeeListPage", () => {
 
     expect(source).toContain('label: "Ngày sinh"');
     expect(source).toContain("formatEmployeeDate(row.dateOfBirth)");
+  });
+
+  test("allows an employee date of birth to be empty", () => {
+    expect(formatEmployeeDate("")).toBe("—");
+    expect(formatEmployeeDate(null)).toBe("—");
+    expect(formatEmployeeDate("1995-04-12")).toBe("12/04/1995");
   });
 });
