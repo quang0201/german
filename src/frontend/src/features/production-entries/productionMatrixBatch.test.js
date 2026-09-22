@@ -99,6 +99,8 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("buildExistingOperationDraft");
     expect(source).toContain("mergeExistingOperationDrafts");
     expect(source).toContain("existingOperationIds");
+    expect(source).toContain("erp-matrix-operation-existing");
+    expect(source).toContain("existingOperationIdSet.has(operationId)");
     expect(source).not.toContain("đã nhập: HC");
     expect(source).toContain("attendance");
     expect(source).toContain('tcHours: "0"');

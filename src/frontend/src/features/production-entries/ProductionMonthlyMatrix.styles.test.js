@@ -16,6 +16,12 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(featureCss).not.toMatch(/\brgba?\(/i);
   });
 
+  test("marks existing batch operations with a success state", () => {
+    expect(dialogsCss).toContain(".erp-matrix-operation-existing");
+    expect(dialogsCss).toContain("var(--color-success-soft)");
+    expect(dialogsCss).toContain("✓");
+  });
+
   test("keeps sticky employee and operation headers above scrolling day headers", () => {
     expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-sticky-employee,[\s\n]*\.erp-month-matrix-table thead \.erp-month-sticky-operation[\s\S]*z-index:\s*12/);
   });

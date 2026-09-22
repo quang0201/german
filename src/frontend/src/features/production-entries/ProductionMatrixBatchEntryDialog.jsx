@@ -328,7 +328,8 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
             {operations.map((operation) => {
               const operationId = String(operation.id);
               const selected = Boolean(drafts[operationId]);
-              return <button key={operation.id} type="button" className={`erp-button erp-button-secondary ${selected ? "is-selected" : ""}`} aria-pressed={selected} onClick={() => toggle(operation)}>CĐ{operation.operationNumber} — {operation.name}</button>;
+              const existing = existingOperationIdSet.has(operationId);
+              return <button key={operation.id} type="button" className={`erp-button erp-button-secondary ${selected ? "is-selected" : ""} ${existing ? "erp-matrix-operation-existing" : ""}`} aria-pressed={selected} aria-label={`CĐ${operation.operationNumber} — ${operation.name}${existing ? " — đã nhập, có thể sửa" : ""}`} title={existing ? "Đã nhập trong ngày này; bấm để sửa." : undefined} onClick={() => toggle(operation)}>CĐ{operation.operationNumber} — {operation.name}</button>;
             })}
           </div>}
           <div className="erp-matrix-batch-mode-picker" role="group" aria-label="Kiểu nhập batch">
