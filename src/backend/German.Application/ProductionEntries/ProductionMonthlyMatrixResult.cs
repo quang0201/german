@@ -57,7 +57,10 @@ public sealed record ProductionMatrixHourlyEmployeeDto(
     string EmployeeName,
     bool IsActive,
     EmployeeCompensationType CompensationType,
-    DateOnly? JoinedDate);
+    DateOnly? JoinedDate)
+{
+    public IReadOnlyList<DateOnly> PaidLeaveDates { get; init; } = [];
+}
 
 public sealed record ProductionMatrixOrderBlockDto(
     Guid OrderId,

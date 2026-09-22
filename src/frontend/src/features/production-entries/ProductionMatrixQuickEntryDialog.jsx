@@ -4,6 +4,7 @@ import { isVersionConflict, mapProductionEntryError } from "./productionEntryErr
 import { buildQuickEntryAttendanceLookupPath, buildQuickEntryPayload, canWriteQuickEntry, createQuickEntry, isQuickEntryDetailCompatible, quickEntryExpectedVersion, quickEntryFeedbackMessage, shouldShowQuickEntryReload } from "./productionMatrixQuickEntry.js";
 import { calculateHourSplitPreview, resolveQuickEntryQuantities } from "./productionMatrixHourSplit.js";
 import { attendanceHoursDefaults } from "./productionAttendanceHours.js";
+import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 import "./ProductionMatrixDialogs.css";
 
 const DIRECT_MODE = "direct";
@@ -173,14 +174,14 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
             </button>
           </div>
           {inputMode === DIRECT_MODE ? <div className="erp-matrix-input-grid">
-            <label><span>HC</span><input className="erp-control" type="number" min="0" required value={directHc} onChange={(event) => { setDirectHc(event.target.value); setError(""); }} /></label>
-            <label><span>TC</span><input className="erp-control" type="number" min="0" required value={directTc} onChange={(event) => { setDirectTc(event.target.value); setError(""); }} /></label>
+            <label><span>HC</span><input className="erp-control" type="number" min="0" required value={directHc} onChange={(event) => { setDirectHc(sanitizeProductionQuantityInput(event.target.value)); setError(""); }} /></label>
+            <label><span>TC</span><input className="erp-control" type="number" min="0" required value={directTc} onChange={(event) => { setDirectTc(sanitizeProductionQuantityInput(event.target.value)); setError(""); }} /></label>
             <label className="erp-matrix-field-wide"><span>Ghi chú</span><input className="erp-control" value={note} onChange={(event) => setNote(event.target.value)} /></label>
           </div> : <>
             <div className="erp-matrix-input-grid">
               <label><span>Giờ HC</span><input className="erp-control" type="number" min="0" step="any" value={hcHours} onChange={(event) => { attendanceHoursEditedRef.current = true; setHcHours(event.target.value); setError(""); }} /></label>
               <label><span>Giờ TC</span><input className="erp-control" type="number" min="0" step="any" value={tcHours} onChange={(event) => { attendanceHoursEditedRef.current = true; setTcHours(event.target.value); setError(""); }} /></label>
-              <label className="erp-matrix-field-wide"><span>Tổng sản lượng</span><input className="erp-control" inputMode="decimal" placeholder="Ví dụ: 300+100" value={totalExpression} onChange={(event) => { setTotalExpression(event.target.value); setError(""); }} /></label>
+              <label className="erp-matrix-field-wide"><span>Tổng sản lượng</span><input className="erp-control" inputMode="decimal" placeholder="Ví dụ: 300+100" value={totalExpression} onChange={(event) => { setTotalExpression(sanitizeProductionQuantityInput(event.target.value)); setError(""); }} /></label>
               <label className="erp-matrix-field-wide"><span>Ghi chú</span><input className="erp-control" value={note} onChange={(event) => setNote(event.target.value)} /></label>
             </div>
             {splitPreview?.value && <div className="erp-matrix-readonly-grid erp-matrix-preview-grid">

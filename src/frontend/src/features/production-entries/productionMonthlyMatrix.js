@@ -108,7 +108,7 @@ export function mergeHourlyEmployeesIntoOrders(orders = [], hourlyEmployees = []
         productionDates: [],
         workedDates: [],
         attendanceDates: [],
-        paidLeaveDates: [],
+        paidLeaveDates: employee.paidLeaveDates ?? [],
       }));
     return { ...order, employees: [...employees, ...missingHourlyEmployees] };
   });

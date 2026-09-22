@@ -262,6 +262,46 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetAsync_ReturnsPaidLeaveDatesForHourlyEmployeesWithoutProduction()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee
+        {
+            EmployeeCode = "E-HOURLY",
+            FullName = "Trần Thị Loan",
+            CompensationType = EmployeeCompensationType.Hourly,
+            CreatedAt = new DateTimeOffset(2026, 8, 1, 8, 0, 0, TimeSpan.FromHours(7))
+        };
+        foreach (var date in new[]
+        {
+            new DateOnly(2026, 9, 15),
+            new DateOnly(2026, 9, 17),
+            new DateOnly(2026, 9, 18)
+        })
+        {
+            var day = new AttendanceDay { EmployeeId = employee.Id, WorkDate = date };
+            day.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 1, ValueKind = AttendanceShiftValueKind.PaidLeave });
+            db.AttendanceDays.Add(day);
+        }
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 9, null, null, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new DateOnly(2026, 9, 15),
+                new DateOnly(2026, 9, 17),
+                new DateOnly(2026, 9, 18)
+            },
+            result.Value!.HourlyEmployees.Single().PaidLeaveDates.ToArray());
+    }
+
+    [TestMethod]
     public async Task GetAsync_PreservesInactiveEmployeeForHistoryAndMarksItReadOnly()
     {
         await using var db = CreateDb();

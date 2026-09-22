@@ -11,6 +11,7 @@ import { ProductionEntryPreview } from "./ProductionEntryPreview.jsx";
 import { attendanceHoursDefaults } from "./productionAttendanceHours.js";
 import { isVersionConflict, mapProductionEntryError } from "./productionEntryErrors.js";
 import { productionOrderLookupPath } from "./productionOrderLookup.js";
+import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 
 const MODES = [
   { value: "ByShift", label: "Theo ca", description: "Ca 1 + Ca 2, TC tự tính nếu chỉ nhập giờ." },
@@ -243,9 +244,9 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
       </FormSection>
       <FormSection title="Sản lượng" description={hcHours !== "" && hcHours !== null ? `Giờ HC mặc định: ${hcHours} giờ; có thể chỉnh trước khi lưu.` : "Chưa có chấm công; hãy nhập giờ nếu cần tính TC."}>
         <div className="erp-field-wide"><div className="erp-field-label">Chế độ nhập</div><div className="erp-mode-grid">{MODES.map((item) => <button key={item.value} className={`erp-mode-option ${form.mode === item.value ? "is-selected" : ""}`} type="button" onClick={() => update("mode", item.value)}><strong>{item.label}</strong><span>{item.description}</span></button>)}</div></div>
-        {form.mode === "ByShift" && <><NumberField label="Sản lượng Ca 1" value={form.shift1Quantity} onChange={(value) => update("shift1Quantity", value)} /><NumberField label="Sản lượng Ca 2" value={form.shift2Quantity} onChange={(value) => update("shift2Quantity", value)} /><NumberField label="Giờ HC" value={hcHours} onChange={updateHcHours} optional step="any" /><NumberField label="Giờ TC" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /><NumberField label="Sản lượng TC thực tế" value={form.overtimeQuantity} onChange={(value) => update("overtimeQuantity", value)} optional /></>}
-        {form.mode === "Direct" && <><NumberField label="HC thực tế" value={form.directHcQuantity} onChange={(value) => update("directHcQuantity", value)} /><NumberField label="TC thực tế" value={form.directTcQuantity} onChange={(value) => update("directTcQuantity", value)} /></>}
-        {form.mode === "TotalWithOvertime" && <><NumberField label="Tổng sản lượng" value={form.totalQuantity} onChange={(value) => update("totalQuantity", value)} /><NumberField label="Giờ HC" value={hcHours} onChange={updateHcHours} optional step="any" /><NumberField label="Giờ TC" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /></>}
+        {form.mode === "ByShift" && <><NumberField label="Sản lượng Ca 1" value={form.shift1Quantity} onChange={(value) => update("shift1Quantity", value)} quantity /><NumberField label="Sản lượng Ca 2" value={form.shift2Quantity} onChange={(value) => update("shift2Quantity", value)} quantity /><NumberField label="Giờ HC" value={hcHours} onChange={updateHcHours} optional step="any" /><NumberField label="Giờ TC" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /><NumberField label="Sản lượng TC thực tế" value={form.overtimeQuantity} onChange={(value) => update("overtimeQuantity", value)} optional quantity /></>}
+        {form.mode === "Direct" && <><NumberField label="HC thực tế" value={form.directHcQuantity} onChange={(value) => update("directHcQuantity", value)} quantity /><NumberField label="TC thực tế" value={form.directTcQuantity} onChange={(value) => update("directTcQuantity", value)} quantity /></>}
+        {form.mode === "TotalWithOvertime" && <><NumberField label="Tổng sản lượng" value={form.totalQuantity} onChange={(value) => update("totalQuantity", value)} quantity /><NumberField label="Giờ HC" value={hcHours} onChange={updateHcHours} optional step="any" /><NumberField label="Giờ TC" value={form.overtimeHours} onChange={(value) => update("overtimeHours", value)} optional step="0.25" /></>}
         <div className="erp-field-wide"><ProductionEntryPreview preview={preview} serverResult={serverResult} /></div>
       </FormSection>
       <FormSection title="Thời gian & ghi chú">
@@ -259,6 +260,6 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
   return inPanel ? content : <div className="erp-form-page-wrap">{content}</div>;
 }
 
-function NumberField({ label, value, onChange, optional = false, step = "1" }) {
-  return <Field label={label} required={!optional} hint={optional ? "Không bắt buộc" : undefined}><input className="erp-control" type="number" min="0" step={step} required={!optional} value={value} onChange={(event) => onChange(event.target.value)} inputMode="decimal" /></Field>;
+function NumberField({ label, value, onChange, optional = false, step = "1", quantity = false }) {
+  return <Field label={label} required={!optional} hint={optional ? "Không bắt buộc" : undefined}><input className="erp-control" type="number" min="0" step={step} required={!optional} value={value} onChange={(event) => onChange(quantity ? sanitizeProductionQuantityInput(event.target.value) : event.target.value)} inputMode="decimal" /></Field>;
 }

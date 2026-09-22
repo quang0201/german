@@ -3,6 +3,7 @@ import {
   buildProductionMonthlyMatrixUrl,
   buildProductionWeeklyMatrixUrl,
   currentMonthKey,
+  mergeHourlyEmployeesIntoOrders,
   matrixCellAction,
   monthBounds,
   monthDateAxis,
@@ -67,6 +68,20 @@ describe("production monthly matrix helpers", () => {
 
     const sundayUrl = new URL(buildProductionMonthlyMatrixUrl({ monthKey: "2026-08", excludeSundays: false }), "http://local.test");
     expect(sundayUrl.searchParams.get("excludeSundays")).toBe("false");
+  });
+
+  test("keeps paid leave dates when adding hourly employees to an order", () => {
+    const withOrder = mergeHourlyEmployeesIntoOrders([{
+      orderId: "order-1",
+      employees: [],
+    }], [{
+      employeeId: "hourly-1",
+      employeeCode: "7",
+      employeeName: "Trần Thị Loan",
+      compensationType: "Hourly",
+      paidLeaveDates: ["2026-09-15", "2026-09-17", "2026-09-18"],
+    }]);
+    expect(withOrder[0].employees[0].paidLeaveDates).toEqual(["2026-09-15", "2026-09-17", "2026-09-18"]);
   });
 
   test("serializes a weekly matrix date range and keeps Sunday visible", () => {

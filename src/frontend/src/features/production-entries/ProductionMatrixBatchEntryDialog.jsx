@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
 import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 
 const INPUT_MODES = [
   { value: "attendance-only", label: "Chỉ chấm công" },
@@ -193,7 +194,10 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   }
 
   function change(id, key, value) {
-    setDrafts((current) => ({ ...current, [id]: { ...current[id], [key]: value } }));
+    const nextValue = ["hc", "tc", "total"].includes(key)
+      ? sanitizeProductionQuantityInput(value)
+      : value;
+    setDrafts((current) => ({ ...current, [id]: { ...current[id], [key]: nextValue } }));
   }
 
   function changeHour(key, value) {

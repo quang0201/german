@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { api } from "../../lib/api.js";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { buildDirectUpdatePayload, buildProductionEntryQuery } from "./productionEntryManagement.js";
+import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 
 function localToday() {
   const date = new Date();
@@ -157,7 +158,7 @@ function EditEntryPanel({ row, onClose, onSaved }) {
     <div className="fixed inset-0 z-30 grid items-end bg-slate-950/50 p-0 sm:items-center sm:p-4">
       <form onSubmit={save} className="mx-auto w-full max-w-lg rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold">Chỉnh sản lượng</h2><p className="mt-1 text-sm text-slate-500">{row.employeeName} · {row.productionOrderCode} · CĐ{row.operationNumber}</p></div><button type="button" onClick={onClose} className="rounded-lg px-3 py-1 text-sm text-slate-500 hover:bg-slate-100">Đóng</button></div>
-        <div className="mt-5 grid grid-cols-2 gap-4"><Filter label="HC"><input type="number" min="0" step="0.01" required value={hc} onChange={(e) => setHc(e.target.value)} className={inputClass} /></Filter><Filter label="TC"><input type="number" min="0" step="0.01" required value={tc} onChange={(e) => setTc(e.target.value)} className={inputClass} /></Filter></div>
+        <div className="mt-5 grid grid-cols-2 gap-4"><Filter label="HC"><input type="number" min="0" step="0.01" required value={hc} onChange={(e) => setHc(sanitizeProductionQuantityInput(e.target.value))} className={inputClass} /></Filter><Filter label="TC"><input type="number" min="0" step="0.01" required value={tc} onChange={(e) => setTc(sanitizeProductionQuantityInput(e.target.value))} className={inputClass} /></Filter></div>
         <Filter label="Ghi chú"><textarea rows="3" value={note} onChange={(e) => setNote(e.target.value)} className={`${inputClass} mt-2 py-3`} /></Filter>
         {error && <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
         <button type="submit" disabled={saving} className="mt-5 min-h-12 w-full rounded-xl bg-slate-950 font-bold text-white disabled:opacity-50">{saving ? "Đang lưu..." : "Lưu HC / TC"}</button>

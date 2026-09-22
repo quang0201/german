@@ -152,19 +152,13 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 employee.CreatedAt
             })
             .ToListAsync(cancellationToken);
-        var hourlyEmployees = hourlyEmployeeRecords
+        var hourlyEmployeeIds = hourlyEmployeeRecords
             .Where(employee => DateOnly.FromDateTime(employee.CreatedAt.Date) <= untilDate)
-            .Select(employee => new ProductionMatrixHourlyEmployeeDto(
-                employee.Id,
-                employee.EmployeeCode,
-                employee.FullName,
-                employee.IsActive,
-                employee.CompensationType,
-                DateOnly.FromDateTime(employee.CreatedAt.Date)))
+            .Select(employee => employee.Id)
             .ToList();
 
         var employeeIds = groupRows.Select(row => row.EmployeeId)
-            .Concat(hourlyEmployees.Select(employee => employee.EmployeeId))
+            .Concat(hourlyEmployeeIds)
             .Distinct()
             .ToArray();
         var attendanceDates = employeeIds.Length == 0
@@ -200,6 +194,23 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .ToListAsync(cancellationToken))
                 .Select(day => (day.EmployeeId, day.WorkDate))
                 .ToHashSet();
+        var hourlyEmployees = hourlyEmployeeRecords
+            .Where(employee => DateOnly.FromDateTime(employee.CreatedAt.Date) <= untilDate)
+            .Select(employee => new ProductionMatrixHourlyEmployeeDto(
+                employee.Id,
+                employee.EmployeeCode,
+                employee.FullName,
+                employee.IsActive,
+                employee.CompensationType,
+                DateOnly.FromDateTime(employee.CreatedAt.Date))
+            {
+                PaidLeaveDates = paidLeaveDates
+                    .Where(date => date.EmployeeId == employee.Id)
+                    .Select(date => date.WorkDate)
+                    .OrderBy(date => date)
+                    .ToArray()
+            })
+            .ToList();
 
         return AppResult<ProductionMonthlyMatrixResult>.Success(
             ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, allGroupRows, hourlyEmployees, workedDates, attendanceDates, paidLeaveDates));
