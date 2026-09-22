@@ -34,11 +34,6 @@ export function initialBatchOrderId(orders = [], preferredOrderId = "") {
   return orders.some((item) => String(item.id) === String(preferredOrderId)) ? String(preferredOrderId) : "";
 }
 
-export function isPaidLeaveShift(shift) {
-  return shift?.valueKind === "PaidLeave"
-    || String(shift?.workedHours ?? "").trim().toUpperCase() === "P";
-}
-
 export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose, onSaved }) {
   const [orders, setOrders] = useState([]);
   const [operations, setOperations] = useState([]);
@@ -52,7 +47,6 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const [operationsLoading, setOperationsLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [existingEmployeeIds, setExistingEmployeeIds] = useState([]);
-  const [existingEmployeesLoading, setExistingEmployeesLoading] = useState(false);
   const [existingOperationIds, setExistingOperationIds] = useState([]);
   const [existingEntries, setExistingEntries] = useState({});
   const orderIdRef = useRef(orderId);
@@ -66,7 +60,6 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const existingEmployeeIdSet = useMemo(() => new Set(existingEmployeeIds), [existingEmployeeIds]);
   const selectedIds = useMemo(() => Object.keys(drafts), [drafts]);
   const attendanceOnly = inputMode === "attendance-only";
-  const hasPaidLeave = hourDraft.shifts.some(isPaidLeaveShift);
   const selectedEmployee = employees.find((item) => String(item.id) === String(employeeId));
 
   useEffect(() => {
@@ -81,7 +74,6 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setInputMode(initialBatchInputMode(employees.find((item) => String(item.id) === requestedEmployeeId)));
     setHourDraft(emptyHourDraft());
     setExistingEmployeeIds([]);
-    setExistingEmployeesLoading(false);
     setDrafts({});
     setExistingOperationIds([]);
     setExistingEntries({});
@@ -101,14 +93,12 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   useEffect(() => {
     if (!day || !orderId || attendanceOnly) {
       setExistingEmployeeIds([]);
-      setExistingEmployeesLoading(false);
       return undefined;
     }
     let active = true;
     const requestedDate = day.isoDate;
     const requestedOrderId = orderId;
     setExistingEmployeeIds([]);
-    setExistingEmployeesLoading(true);
     api.get(buildBatchExistingEmployeesPath({ date: requestedDate, orderId: requestedOrderId }))
       .then((payload) => {
         if (!active || dayRef.current?.isoDate !== requestedDate || String(orderIdRef.current ?? "") !== String(requestedOrderId ?? "")) return;
@@ -118,9 +108,6 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
         if (active && dayRef.current?.isoDate === requestedDate && String(orderIdRef.current ?? "") === String(requestedOrderId ?? "")) {
           setError(requestError.message || "Không thể tải trạng thái nhân viên.");
         }
-      })
-      .finally(() => {
-        if (active && dayRef.current?.isoDate === requestedDate && String(orderIdRef.current ?? "") === String(requestedOrderId ?? "")) setExistingEmployeesLoading(false);
       });
     return () => { active = false; };
   }, [attendanceOnly, day, orderId]);
@@ -348,13 +335,10 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
         <h2 id="matrix-batch-title">Nhập nhanh sản lượng — {day.weekdayLabel} {day.displayDate}</h2>
         <div className="erp-dialog-body">
           <div className="erp-matrix-input-grid erp-matrix-batch-fields">
-            <label><span>Ngày</span><input className="erp-control" value={day.isoDate} readOnly /></label>
-            <label><span>Nhân viên *</span><select className="erp-control erp-matrix-batch-employee-select" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => { const existing = existingEmployeeIdSet.has(String(item.id)); return <option key={item.id} value={item.id} className={existing ? "erp-matrix-employee-existing" : undefined}>{existing ? "● " : ""}{item.employeeCode} — {item.fullName}</option>; })}</select>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}{orderId && !attendanceOnly && existingEmployeesLoading && <small className="erp-matrix-employee-status">Đang kiểm tra sản lượng trong ngày...</small>}{orderId && !attendanceOnly && !existingEmployeesLoading && existingEmployeeIds.length > 0 && <small className="erp-matrix-employee-status"><span className="erp-matrix-employee-status-dot" aria-hidden="true">●</span> Đã có sản lượng trong ngày này</small>}</label>
-            {!attendanceOnly && <label><span>Bước 1: Chọn Mã SX *</span><select className="erp-control" required value={orderId} onChange={(event) => setOrderId(event.target.value)}><option value="">Chọn Mã SX</option>{orders.map((item) => <option key={item.id} value={item.id}>{item.code} — {item.productName}</option>)}</select></label>}
+            <label><span>Nhân viên *</span><select className="erp-control erp-matrix-batch-employee-select" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => { const existing = existingEmployeeIdSet.has(String(item.id)); return <option key={item.id} value={item.id} className={existing ? "erp-matrix-employee-existing" : undefined}>{existing ? "● " : ""}{item.employeeCode} — {item.fullName}</option>; })}</select>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}</label>
           </div>
-          {!attendanceOnly && <div className="erp-matrix-operation-picker" role="group" aria-label="Bước 2: Chọn công đoạn">
-            <strong>Bước 2: Chọn công đoạn</strong>
-            {!orderId && <span>Chọn Mã SX ở bước 1 để tải công đoạn.</span>}
+          {!attendanceOnly && <div className="erp-matrix-operation-picker" role="group" aria-label="Chọn công đoạn">
+            <strong>Chọn công đoạn</strong>
             {orderId && operationsLoading && <span>Đang tải công đoạn...</span>}
             {orderId && !operationsLoading && !operations.length && <span>Mã SX này chưa có công đoạn hoạt động.</span>}
             {operations.map((operation) => {
@@ -373,7 +357,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
             {(inputMode === "attendance-shifts" || attendanceOnly) && <>{hourDraft.shifts.map((shift) => <label key={shift.slotNumber}><span>{shift.shiftName}</span><input className="erp-control" type="text" inputMode="text" value={shift.workedHours} placeholder="Số giờ hoặc P/Ô" onChange={(event) => changeShiftHour(shift.slotNumber, event.target.value)} /></label>)}<label><span>TC</span><input className="erp-control" type="number" min="0" step="any" value={hourDraft.tcHours} onChange={(event) => changeHour("tcHours", event.target.value)} /></label>{!attendanceLoading && !hourDraft.shifts.length && <span className="erp-matrix-batch-empty-hours">Chưa có ca chấm công; hãy cấu hình bộ ca trước.</span>}</>}
             {attendanceLoading && <span>Đang tải giờ chấm công...</span>}
           </div>}
-          {!attendanceOnly && selectedIds.length > 0 && <div className="erp-matrix-batch-table-wrap"><table className="erp-matrix-batch-table"><thead><tr><th>CĐ</th>{inputMode === "direct" ? <><th>HC</th><th>TC</th></> : <><th>Tổng SL</th>{inputMode === "attendance-shifts" && hourDraft.shifts.map((shift) => <th key={shift.slotNumber}>{shift.shiftName}</th>)}<th>TC</th><th>HC tổng</th><th>TC tổng</th></>}<th>Ghi chú</th><th /></tr></thead><tbody>{selectedIds.map((id) => { const operation = operations.find((item) => String(item.id) === id); const draft = drafts[id]; const preview = previewFor(draft); return <tr key={id}><td><strong>CĐ{operation?.operationNumber}</strong></td>{inputMode === "direct" ? <><td><input className="erp-control" type="number" min="0" required readOnly={hasPaidLeave} value={draft.hc} onChange={(event) => change(id, "hc", event.target.value)} /></td><td><input className="erp-control" type="number" min="0" required readOnly={hasPaidLeave} value={draft.tc} onChange={(event) => change(id, "tc", event.target.value)} /></td></> : <><td><input className="erp-control" inputMode="decimal" required readOnly={hasPaidLeave} value={draft.total} onChange={(event) => change(id, "total", event.target.value)} placeholder="Ví dụ: 300+100" /></td>{inputMode === "attendance-shifts" && hourDraft.shifts.map((shift) => <td key={shift.slotNumber}><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.shifts.find((item) => String(item.slotNumber) === String(shift.slotNumber))?.quantity ?? 0) : "—"}</span></td>)}<td><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.tc) : "—"}</span></td><td><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.hc) : "—"}</span></td><td><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.tc) : "—"}</span></td></>}<td><input className="erp-control" value={draft.note} onChange={(event) => change(id, "note", event.target.value)} /></td><td><button type="button" className="erp-button erp-button-link" onClick={() => toggle(operation)}>Bỏ</button></td></tr>; })}</tbody></table></div>}
+          {!attendanceOnly && selectedIds.length > 0 && <div className="erp-matrix-batch-table-wrap"><table className="erp-matrix-batch-table"><thead><tr><th>CĐ</th>{inputMode === "direct" ? <><th>HC</th><th>TC</th></> : <><th>Tổng SL</th>{inputMode === "attendance-shifts" && hourDraft.shifts.map((shift) => <th key={shift.slotNumber}>{shift.shiftName}</th>)}<th>TC</th><th>HC tổng</th><th>TC tổng</th></>}<th>Ghi chú</th><th /></tr></thead><tbody>{selectedIds.map((id) => { const operation = operations.find((item) => String(item.id) === id); const draft = drafts[id]; const preview = previewFor(draft); return <tr key={id}><td><strong>CĐ{operation?.operationNumber}</strong></td>{inputMode === "direct" ? <><td><input className="erp-control" type="number" min="0" required value={draft.hc} onChange={(event) => change(id, "hc", event.target.value)} /></td><td><input className="erp-control" type="number" min="0" required value={draft.tc} onChange={(event) => change(id, "tc", event.target.value)} /></td></> : <><td><input className="erp-control" inputMode="decimal" required value={draft.total} onChange={(event) => change(id, "total", event.target.value)} placeholder="Ví dụ: 300+100" /></td>{inputMode === "attendance-shifts" && hourDraft.shifts.map((shift) => <td key={shift.slotNumber}><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.shifts.find((item) => String(item.slotNumber) === String(shift.slotNumber))?.quantity ?? 0) : "—"}</span></td>)}<td><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.tc) : "—"}</span></td><td><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.hc) : "—"}</span></td><td><span className="erp-matrix-preview-value">{preview ? quantityFormat.format(preview.tc) : "—"}</span></td></>}<td><input className="erp-control" value={draft.note} onChange={(event) => change(id, "note", event.target.value)} /></td><td><button type="button" className="erp-button erp-button-link" onClick={() => toggle(operation)}>Bỏ</button></td></tr>; })}</tbody></table></div>}
           {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
         </div>
         <div className="erp-dialog-actions"><button type="button" className="erp-button erp-button-secondary" onClick={onClose}>Hủy</button><button type="button" className="erp-button erp-button-primary" disabled={saving || (!attendanceOnly && !selectedIds.length)} onClick={save}>{saving ? "Đang lưu..." : attendanceOnly ? "Lưu chấm công" : `Lưu ${selectedIds.length} công đoạn`}</button></div>

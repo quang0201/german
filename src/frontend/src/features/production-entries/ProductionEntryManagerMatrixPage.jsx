@@ -13,7 +13,6 @@ import { ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDi
 import { ProductionMatrixCellRecordsDialog } from "./ProductionMatrixCellRecordsDialog.jsx";
 import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
 import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
-import { ProductionSummary } from "./ProductionSummary.jsx";
 import { buildProductionExportUrl } from "./productionEntryQuery.js";
 import { productionExportFileName } from "./productionExport.js";
 import { buildProductionWeeklyMatrixUrl, currentMonthKey, matrixCellAction } from "./productionMonthlyMatrix.js";
@@ -148,8 +147,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     <div className="erp-feature-page erp-production-manager-page">
       <PageHeader title="Sản lượng" description="Theo dõi và nhập sản lượng theo ma trận tuần" actions={<><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></>} />
       <div className="erp-production-manager-overview">
-        <div className="erp-production-month-header"><ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} /><span>{weekRange.fromDate.split("-").reverse().join("/")} → {weekRange.untilDate.split("-").reverse().join("/")}</span></div>
-        <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
+        <div className="erp-production-month-header"><ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} /></div>
       </div>
       <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
         <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>

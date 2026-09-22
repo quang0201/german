@@ -28,6 +28,9 @@ describe("ProductionEntryRoutePage", () => {
       expect(html).toContain("Theo dõi và nhập sản lượng theo ma trận tuần");
       expect(html).toContain("Tuần trước");
       expect(html).toContain("Tuần sau");
+      expect(html).not.toContain("Tổng lượt công đoạn");
+      expect(html).not.toContain("Bản ghi");
+      expect(html).not.toContain("14/09/2026 → 20/09/2026");
       expect(html).not.toContain('aria-label="Chọn kỳ"');
     }
   });

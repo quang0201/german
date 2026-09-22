@@ -54,21 +54,20 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(initialBatchOrderId([{ id: "order-1" }], "missing-order")).toBe("");
   });
 
-  test("explains the required order then operation selection flow", () => {
+  test("shows the employee and operation selection flow", () => {
     const html = renderToStaticMarkup(<ProductionMatrixBatchEntryDialog day={{ isoDate: "2026-08-01", weekdayLabel: "T7", displayDate: "01/08" }} employees={[]} />);
 
-    expect(html).toContain("Bước 1: Chọn Mã SX");
-    expect(html).toContain("Bước 2: Chọn công đoạn");
-    expect(html).toContain("Chọn Mã SX ở bước 1 để tải công đoạn.");
+    expect(html).toContain("Nhân viên *");
+    expect(html).not.toContain("Bước 1: Chọn Mã SX");
+    expect(html).not.toContain("Ngày");
   });
 
-  test("keeps attendance editable while locking production quantity for paid leave", () => {
+  test("keeps production quantity editable when one shift is paid leave", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionMatrixBatchEntryDialog.jsx"), "utf8");
 
     expect(source).toContain('type="text"');
     expect(source).toContain("P/Ô");
     expect(source).not.toContain("readOnly={isPaidLeaveShift(shift)}");
-    expect(source).toContain("const hasPaidLeave = hourDraft.shifts.some(isPaidLeaveShift);");
-    expect(source).toContain("readOnly={hasPaidLeave}");
+    expect(source).not.toContain("readOnly={hasPaidLeave}");
   });
 });
