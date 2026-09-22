@@ -46,16 +46,20 @@ public sealed class ManagerAdministrationApiTests
             employeeCode = "E010",
             fullName = "Công nhân có ca",
             shiftTemplateId = shift.GetProperty("id").GetGuid(),
-            effectiveFrom = "2026-08-17"
+            effectiveFrom = "2026-08-17",
+            dateOfBirth = "1995-04-12"
         });
 
         Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual("1995-04-12", created.GetProperty("dateOfBirth").GetString());
         await factory.SeedAsync(async services =>
         {
             var db = services.GetRequiredService<GermanDbContext>();
             var employee = await db.Employees.SingleAsync(x => x.EmployeeCode == "E010");
             var assignment = await db.EmployeeShiftAssignments.SingleAsync(x => x.EmployeeId == employee.Id);
             Assert.AreEqual(new DateOnly(2026, 8, 17), assignment.EffectiveFrom);
+            Assert.AreEqual(new DateOnly(1995, 4, 12), employee.DateOfBirth);
         });
     }
 
@@ -81,16 +85,19 @@ public sealed class ManagerAdministrationApiTests
             employeeCode = "E015",
             fullName = "Nguyễn Thị Loan",
             isActive = true,
-            compensationType = "Hourly"
+            compensationType = "Hourly",
+            dateOfBirth = "1992-11-03"
         });
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.AreEqual("Hourly", json.GetProperty("compensationType").GetString());
+        Assert.AreEqual("1992-11-03", json.GetProperty("dateOfBirth").GetString());
         await factory.SeedAsync(async services =>
         {
             var db = services.GetRequiredService<GermanDbContext>();
             Assert.AreEqual(EmployeeCompensationType.Hourly, (await db.Employees.SingleAsync(x => x.Id == employeeId)).CompensationType);
+            Assert.AreEqual(new DateOnly(1992, 11, 3), (await db.Employees.SingleAsync(x => x.Id == employeeId)).DateOfBirth);
         });
     }
 

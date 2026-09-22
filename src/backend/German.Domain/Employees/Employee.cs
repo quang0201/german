@@ -6,6 +6,7 @@ public sealed class Employee : Entity
 {
     public string EmployeeCode { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
+    public DateOnly? DateOfBirth { get; set; }
     public bool IsActive { get; set; } = true;
     public EmployeeCompensationType CompensationType { get; set; } = EmployeeCompensationType.PieceRate;
     public DateOnly? DeactivatedAt { get; set; }

@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
+using German.Api.Auth;
 using German.Api.Endpoints;
+using German.Api.Caching;
+using German.Api.Mcp;
 using German.Api.Startup;
 using German.Application.Auth;
 using German.Application.Attendance;
@@ -15,13 +18,17 @@ using German.Domain.Auth;
 using German.Infrastructure;
 using German.Infrastructure.Bootstrap;
 using German.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using ModelContextProtocol.AspNetCore;
 
 var startMode = StartModeParser.Parse(args);
 var builder = WebApplication.CreateBuilder(StartModeParser.GetHostArguments(args));
 
 builder.Services.AddGermanInfrastructure(builder.Configuration);
+builder.Services.AddMemoryCache(options => options.SizeLimit = 256);
+builder.Services.AddSingleton<LookupCache>();
 builder.Services.AddGermanDataProtection();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
@@ -42,6 +49,7 @@ builder.Services.AddScoped<ProductionReportService>();
 builder.Services.AddScoped<ProductionExternalQuantityService>();
 builder.Services.AddScoped<ProductionExternalSourceService>();
 builder.Services.AddScoped<AuditLogQueryService>();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -99,12 +107,23 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                 context.RejectPrincipal();
             }
         };
-    });
+    })
+    .AddScheme<AuthenticationSchemeOptions, McpBearerAuthenticationHandler>("McpBearer", _ => { });
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("ManagerOrAdmin", policy =>
         policy.RequireRole(UserRole.Manager.ToString(), UserRole.Admin.ToString()))
-    .AddPolicy("AdminOnly", policy => policy.RequireRole(UserRole.Admin.ToString()));
+    .AddPolicy("AdminOnly", policy => policy.RequireRole(UserRole.Admin.ToString()))
+    .AddPolicy("McpManagerOrAdmin", policy =>
+    {
+        policy.AddAuthenticationSchemes("McpBearer");
+        policy.RequireAuthenticatedUser();
+        policy.RequireRole(UserRole.Manager.ToString(), UserRole.Admin.ToString());
+    });
+
+builder.Services.AddMcpServer()
+    .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
+    .WithTools<ProductionMcpTools>();
 
 var app = builder.Build();
 
@@ -153,6 +172,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapMcp("/mcp").RequireAuthorization("McpManagerOrAdmin");
 app.MapAuthEndpoints();
 app.MapAttendanceEndpoints();
 app.MapUserAccountAdminEndpoints();

@@ -42,4 +42,11 @@ describe("EmployeeListPage", () => {
     expect(source).toContain("currentShiftTemplateName");
     expect(source).toContain("refreshedRows");
   });
+
+  test("shows date of birth in the employee list", () => {
+    const source = readFileSync(resolve(import.meta.dir, "EmployeeListPage.jsx"), "utf8");
+
+    expect(source).toContain('label: "Ngày sinh"');
+    expect(source).toContain("formatEmployeeDate(row.dateOfBirth)");
+  });
 });

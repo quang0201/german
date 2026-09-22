@@ -75,6 +75,9 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
             <Field label="Họ tên" required>
               <input className="erp-control" required value={draft.fullName} onChange={(event) => update("fullName", event.target.value)} />
             </Field>
+            <Field label="Ngày sinh">
+              <input className="erp-control" type="date" value={draft.dateOfBirth} onChange={(event) => update("dateOfBirth", event.target.value)} />
+            </Field>
             <Field label="Cách tính tiền" required>
               <select className="erp-control" required value={draft.compensationType} onChange={(event) => update("compensationType", event.target.value)}>
                 <option value="PieceRate">Theo sản lượng</option>

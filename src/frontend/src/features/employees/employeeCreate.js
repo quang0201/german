@@ -8,6 +8,7 @@ export function employeeCreateForm(employee = {}, today = localToday()) {
   return {
     employeeCode: employee.employeeCode ?? "",
     fullName: employee.fullName ?? "",
+    dateOfBirth: employee.dateOfBirth ?? "",
     compensationType: employee.compensationType ?? "PieceRate",
     shiftTemplateId: employee.shiftTemplateId ?? "",
     effectiveFrom: employee.effectiveFrom ?? today,
@@ -18,6 +19,7 @@ export function buildEmployeeCreatePayload(form) {
   return {
     employeeCode: form.employeeCode.trim(),
     fullName: form.fullName.trim(),
+    dateOfBirth: form.dateOfBirth || null,
     compensationType: form.compensationType ?? "PieceRate",
     shiftTemplateId: form.shiftTemplateId || null,
     effectiveFrom: form.effectiveFrom || null,

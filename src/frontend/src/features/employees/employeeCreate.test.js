@@ -6,6 +6,7 @@ describe("employee create flow", () => {
     expect(employeeCreateForm({}, "2026-08-17")).toEqual({
       employeeCode: "",
       fullName: "",
+      dateOfBirth: "",
       shiftTemplateId: "",
       effectiveFrom: "2026-08-17",
       compensationType: "PieceRate",
@@ -16,11 +17,13 @@ describe("employee create flow", () => {
     expect(buildEmployeeCreatePayload({
       employeeCode: " E001 ",
       fullName: " Nguyễn Văn An ",
+      dateOfBirth: "1995-04-12",
       shiftTemplateId: "shift-1",
       effectiveFrom: "2026-08-17",
     })).toEqual({
       employeeCode: "E001",
       fullName: "Nguyễn Văn An",
+      dateOfBirth: "1995-04-12",
       shiftTemplateId: "shift-1",
       effectiveFrom: "2026-08-17",
       compensationType: "PieceRate",

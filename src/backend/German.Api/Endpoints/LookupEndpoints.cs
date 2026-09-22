@@ -1,4 +1,5 @@
 using German.Api.Auth;
+using German.Api.Caching;
 using German.Application.Attendance;
 using German.Application.Lookups;
 using German.Domain.Auth;
@@ -11,18 +12,28 @@ public static class LookupEndpoints
     {
         endpoints.MapGet("/api/lookups/production-orders/active", async (
             LookupService service,
+            LookupCache cache,
             CancellationToken ct) =>
         {
-            var orders = await service.ListActiveProductionOrdersAsync(ct);
+            var orders = await cache.GetOrCreateAsync(
+                "lookup:active-production-orders",
+                TimeSpan.FromMinutes(2),
+                () => service.ListActiveProductionOrdersAsync(CancellationToken.None));
             return Results.Ok(orders);
         }).RequireAuthorization();
 
         endpoints.MapGet("/api/production-orders/{orderId:guid}/operations", async (
             Guid orderId,
             LookupService service,
+            LookupCache cache,
             CancellationToken ct) =>
         {
-            var operations = await service.ListActiveOperationsAsync(orderId, ct);
+            var cacheKey = LookupCache.ActiveProductionOperationsKey(orderId);
+            cache.TrackOperationKey(orderId);
+            var operations = await cache.GetOrCreateAsync(
+                cacheKey,
+                TimeSpan.FromMinutes(5),
+                () => service.ListActiveOperationsAsync(orderId, CancellationToken.None));
             return Results.Ok(operations);
         }).RequireAuthorization();
 

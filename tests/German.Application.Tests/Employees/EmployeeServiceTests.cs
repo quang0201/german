@@ -32,6 +32,24 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task CreateAsyncPersistsDateOfBirth()
+    {
+        await using var db = CreateDb();
+        var shift = new ShiftTemplate { Name = "Ca hành chính", IsActive = true };
+        db.ShiftTemplates.Add(shift);
+        await db.SaveChangesAsync();
+        var dateOfBirth = new DateOnly(1995, 4, 12);
+
+        var result = await new EmployeeService(db).CreateAsync(
+            new CreateEmployeeCommand("E007", "Nguyễn Văn Sinh", shift.Id, new DateOnly(2026, 8, 17), DateOfBirth: dateOfBirth),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(dateOfBirth, (await db.Employees.SingleAsync()).DateOfBirth);
+        Assert.AreEqual(dateOfBirth, result.Value?.DateOfBirth);
+    }
+
+    [TestMethod]
     public async Task UpdateAsyncPersistsHourlyCompensationType()
     {
         await using var db = CreateDb();

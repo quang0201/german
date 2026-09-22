@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
+using System.Text.Json;
 using German.Application.Abstractions;
 using German.Application.Common;
+using German.Domain.Auditing;
 using German.Domain.Auth;
 using German.Domain.Production;
 using Microsoft.EntityFrameworkCore;
@@ -163,6 +165,15 @@ public sealed class ProductionExternalQuantityService(IGermanDbContext db)
             UpdatedAt = now
         };
         db.ProductionExternalQuantities.Add(item);
+        db.AuditLogs.Add(new AuditLog
+        {
+            EntityType = nameof(ProductionExternalQuantity),
+            EntityId = item.Id,
+            Action = AuditAction.Create,
+            PerformedByUserId = actor.UserId,
+            PerformedAt = now,
+            AfterJson = JsonSerializer.Serialize(item)
+        });
         await db.SaveChangesAsync(cancellationToken);
         return AppResult<ProductionExternalQuantityDto>.Success(ToDto(item));
     }

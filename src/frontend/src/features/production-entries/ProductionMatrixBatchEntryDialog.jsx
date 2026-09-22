@@ -80,7 +80,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setExistingOperationIds([]);
     setExistingEntries({});
     setError("");
-    api.get("/api/lookups/production-orders/active")
+    api.getCached("/api/lookups/production-orders/active")
       .then((items) => {
       if (!isCurrentBatchOrdersRequest(active, requestedDay, dayRef.current)) return;
       setOrders(items);
@@ -102,7 +102,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setExistingEntries({});
     setError("");
     setOperationsLoading(true);
-    api.get(`/api/production-orders/${orderId}/operations`)
+    api.getCached(`/api/production-orders/${orderId}/operations`)
       .then((items) => {
         if (isCurrentBatchOperationsRequest(active, requestedOrderId, orderIdRef.current)) setOperations(items);
       })

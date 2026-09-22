@@ -7,11 +7,13 @@ public sealed record CreateEmployeeRequest(
     string FullName,
     Guid? ShiftTemplateId = null,
     DateOnly? EffectiveFrom = null,
-    EmployeeCompensationType? CompensationType = null);
+    EmployeeCompensationType? CompensationType = null,
+    DateOnly? DateOfBirth = null);
 public sealed record UpdateEmployeeRequest(
     string EmployeeCode,
     string FullName,
     bool IsActive,
     EmployeeCompensationType? CompensationType = null,
-    DateOnly? DeactivatedAt = null);
+    DateOnly? DeactivatedAt = null,
+    DateOnly? DateOfBirth = null);
 public sealed record AssignShiftRequest(Guid ShiftTemplateId, DateOnly EffectiveFrom);

@@ -10,6 +10,54 @@ namespace German.Application.ProductionEntries;
 
 public sealed class ProductionEntryService(IGermanDbContext db)
 {
+    public async Task<AppResult<ProductionEntryPreviewDto>> PreviewAsync(
+        CurrentActor actor,
+        CreateProductionEntryCommand command,
+        CancellationToken cancellationToken)
+    {
+        var authorization = ValidateCreateAuthorization(actor, command.EmployeeId);
+        if (!authorization.IsSuccess)
+        {
+            return AppResult<ProductionEntryPreviewDto>.Failure(authorization.Error!.Code, authorization.Error.Message);
+        }
+
+        var validation = await ValidateReferencesAsync(
+            actor, command.EmployeeId, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
+        if (!validation.IsSuccess)
+        {
+            return AppResult<ProductionEntryPreviewDto>.Failure(validation.Error!.Code, validation.Error.Message);
+        }
+
+        var calculation = await CalculateAsync(
+            command.WorkDate,
+            command.EmployeeId,
+            command.EntryMode,
+            command.Shift1Quantity,
+            command.Shift2Quantity,
+            command.DirectHcQuantity,
+            command.DirectTcQuantity,
+            command.TotalInputQuantity,
+            command.OvertimeHours,
+            command.OvertimeQuantity,
+            command.WorkStart,
+            command.WorkEnd,
+            command.HcHours,
+            cancellationToken);
+        if (!calculation.IsSuccess)
+        {
+            return AppResult<ProductionEntryPreviewDto>.Failure(calculation.Error!.Code, calculation.Error.Message);
+        }
+
+        return AppResult<ProductionEntryPreviewDto>.Success(new ProductionEntryPreviewDto(
+            command.WorkDate,
+            command.EmployeeId,
+            command.ProductionOrderId,
+            command.ProductionOperationId,
+            calculation.Value!.Hc,
+            calculation.Value.Tc,
+            calculation.Value.Total));
+    }
+
     public async Task<AppResult<ProductionEntryDto>> CreateAsync(
         CurrentActor actor,
         CreateProductionEntryCommand command,
@@ -95,6 +143,15 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         };
 
         db.ProductionEntries.Add(entry);
+        db.AuditLogs.Add(new AuditLog
+        {
+            EntityType = nameof(ProductionEntry),
+            EntityId = entry.Id,
+            Action = AuditAction.Create,
+            PerformedByUserId = actor.UserId,
+            PerformedAt = now,
+            AfterJson = JsonSerializer.Serialize(entry)
+        });
         await db.SaveChangesAsync(cancellationToken);
         return AppResult<ProductionEntryDto>.Success(ToDto(entry));
     }

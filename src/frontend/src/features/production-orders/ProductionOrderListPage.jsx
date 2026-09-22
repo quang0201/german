@@ -157,6 +157,7 @@ export function ProductionOrderListPage({ params, pathname }) {
       } else {
         await api.post(`/api/production-orders/${selected.id}/operations`, payload);
       }
+      api.invalidateCache(`/api/production-orders/${selected.id}`);
       setOperationDialog(null);
       setOperationError("");
       await load({ preserveDetail: true });
@@ -172,6 +173,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setError("");
     try {
       const created = await api.post("/api/production-orders", buildProductionOrderPayload(orderDraft));
+      api.invalidateCache("/api/lookups/production-orders/active");
       setForm(emptyOrder());
       navigate(`/orders/${created.id}`);
     } catch (requestError) {
@@ -187,6 +189,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setError("");
     try {
       await api.put(`/api/production-orders/${selected.id}`, { ...orderDraft, plannedQuantity: Number(orderDraft.plannedQuantity), startDate: orderDraft.startDate || null, endDate: orderDraft.endDate || null });
+      api.invalidateCache("/api/production-orders");
       setEditingOrder(false);
       await load();
     } catch (requestError) {
@@ -202,6 +205,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setError("");
     try {
       await api.put(`/api/production-orders/${selected.id}/operations/${item.id}`, productionOperationPayload({ ...item, isActive }));
+      api.invalidateCache(`/api/production-orders/${selected.id}`);
       await load({ preserveDetail: true });
     } catch (requestError) {
       setError(requestError.message || "Không thể cập nhật trạng thái công đoạn.");
@@ -217,6 +221,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setError("");
     try {
       await api.post("/api/production-orders/0417/operations/567/cleanup");
+      api.clearCache();
       setCleanupTarget(null);
       await load({ preserveDetail: true });
     } catch (requestError) {

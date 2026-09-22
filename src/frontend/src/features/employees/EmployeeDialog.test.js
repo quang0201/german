@@ -6,7 +6,7 @@ import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employ
 import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate.js";
 
 describe("EmployeeDialog", () => {
-  const employee = { id: "employee-1", employeeCode: "E001", fullName: "Nguyễn Văn An", isActive: true };
+  const employee = { id: "employee-1", employeeCode: "E001", fullName: "Nguyễn Văn An", dateOfBirth: "1995-04-12", isActive: true };
 
   test("does not render when closed", () => {
     expect(renderToStaticMarkup(<EmployeeDialog open={false} />)).toBe("");
@@ -18,6 +18,8 @@ describe("EmployeeDialog", () => {
     expect(html).toContain("Sửa nhân viên");
     expect(html).toContain('value="E001"');
     expect(html).toContain('value="Nguyễn Văn An"');
+    expect(html).toContain('value="1995-04-12"');
+    expect(html).toContain("Ngày sinh");
     expect(html).toContain("Lưu thay đổi");
   });
 
@@ -104,6 +106,7 @@ describe("EmployeeDialog", () => {
     expect(buildEmployeeUpdatePayload({ ...employeeForm(employee), employeeCode: " E002 ", fullName: " Trần Thị B ", isActive: false })).toEqual({
       employeeCode: "E002",
       fullName: "Trần Thị B",
+      dateOfBirth: "1995-04-12",
       isActive: false,
       deactivatedAt: null,
       compensationType: "PieceRate",

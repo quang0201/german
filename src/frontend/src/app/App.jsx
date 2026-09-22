@@ -27,13 +27,13 @@ export function App() {
 
   async function logout() {
     try { await api.post("/api/auth/logout", {}); }
-    finally { setSession(null); }
+    finally { api.clearCache(); setSession(null); }
   }
 
   if (checkingSession) {
     return <main className="grid min-h-screen place-items-center bg-slate-950 text-sm font-medium text-slate-300">Đang kiểm tra phiên đăng nhập...</main>;
   }
-  if (!session) return <LoginPage onLoggedIn={(value) => { setSession(value); navigate(getDefaultRoute(value.role)); }} />;
+  if (!session) return <LoginPage onLoggedIn={(value) => { api.clearCache(); setSession(value); navigate(getDefaultRoute(value.role)); }} />;
 
   const matched = matchRoute(location.pathname);
   if (!matched) return <ToastProvider><AppShell session={session} pathname={location.pathname} onLogout={logout}><NotFoundPage /></AppShell></ToastProvider>;

@@ -1,5 +1,8 @@
 import { toApiTime } from "./time.js";
 
+const cachedGets = new Map();
+const inFlightGets = new Map();
+
 export class ApiError extends Error {
   constructor(message, code = "request_failed", status = 0) {
     super(message);
@@ -63,6 +66,47 @@ async function request(path, options = {}) {
   return payload;
 }
 
+function getCached(path, ttlMs = 120_000) {
+  const now = Date.now();
+  const cached = cachedGets.get(path);
+  if (cached && cached.expiresAt > now) {
+    return Promise.resolve(cached.value);
+  }
+  if (cached) cachedGets.delete(path);
+
+  const pending = inFlightGets.get(path);
+  if (pending) return pending.promise;
+
+  const requestEntry = { promise: null };
+  const requestPromise = request(path)
+    .then((value) => {
+      if (inFlightGets.get(path) === requestEntry) {
+        cachedGets.set(path, { value, expiresAt: Date.now() + ttlMs });
+      }
+      return value;
+    })
+    .finally(() => {
+      if (inFlightGets.get(path) === requestEntry) inFlightGets.delete(path);
+    });
+  requestEntry.promise = requestPromise;
+  inFlightGets.set(path, requestEntry);
+  return requestPromise;
+}
+
+function invalidateCache(prefix = "") {
+  for (const path of cachedGets.keys()) {
+    if (!prefix || path === prefix || path.startsWith(prefix)) cachedGets.delete(path);
+  }
+  for (const path of inFlightGets.keys()) {
+    if (!prefix || path === prefix || path.startsWith(prefix)) inFlightGets.delete(path);
+  }
+}
+
+function clearCache() {
+  cachedGets.clear();
+  inFlightGets.clear();
+}
+
 async function download(path, filename) {
   const response = await fetch(path, { credentials: "include", cache: "no-store" });
   if (!response.ok) {
@@ -81,6 +125,9 @@ export const api = {
   get(path) {
     return request(path);
   },
+  getCached,
+  invalidateCache,
+  clearCache,
   post(path, body) {
     return request(path, { method: "POST", body: JSON.stringify(normalizeBody(body)) });
   },

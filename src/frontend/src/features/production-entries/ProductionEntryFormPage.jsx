@@ -89,7 +89,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
 
   useEffect(() => {
     let active = true;
-    const requests = [api.get(productionOrderLookupPath(canChooseEmployee))];
+    const requests = [api.getCached(productionOrderLookupPath(canChooseEmployee))];
     if (canChooseEmployee) requests.push(api.get("/api/employees"));
     Promise.all(requests)
       .then(([activeOrders, employeeRows]) => {
@@ -117,7 +117,7 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
       return undefined;
     }
     let active = true;
-    api.get(`/api/production-orders/${form.orderId}/operations`)
+    api.getCached(`/api/production-orders/${form.orderId}/operations`)
       .then((items) => {
         if (!active) return;
         setOperations(items);

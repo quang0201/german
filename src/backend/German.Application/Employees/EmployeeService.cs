@@ -52,7 +52,8 @@ public sealed class EmployeeService(IGermanDbContext db)
                     current.ShiftTemplateId,
                     current.ShiftTemplateName,
                     current.EffectiveFrom,
-                    employee.DeactivatedAt);
+                    employee.DeactivatedAt,
+                    employee.DateOfBirth);
             })
             .ToList();
     }
@@ -90,6 +91,7 @@ public sealed class EmployeeService(IGermanDbContext db)
         {
             EmployeeCode = command.EmployeeCode.Trim(),
             FullName = command.FullName.Trim(),
+            DateOfBirth = command.DateOfBirth,
             CompensationType = command.CompensationType
         };
         db.Employees.Add(employee);
@@ -134,6 +136,7 @@ public sealed class EmployeeService(IGermanDbContext db)
 
         employee.EmployeeCode = command.EmployeeCode.Trim();
         employee.FullName = command.FullName.Trim();
+        employee.DateOfBirth = command.DateOfBirth;
         if (command.CompensationType.HasValue)
         {
             employee.CompensationType = command.CompensationType.Value;
@@ -237,7 +240,7 @@ public sealed class EmployeeService(IGermanDbContext db)
     }
 
     private static EmployeeDto ToDto(Employee employee) =>
-        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, employee.CompensationType, DeactivatedAt: employee.DeactivatedAt);
+        new(employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, employee.CompensationType, DeactivatedAt: employee.DeactivatedAt, DateOfBirth: employee.DateOfBirth);
 
     private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Today);
 
