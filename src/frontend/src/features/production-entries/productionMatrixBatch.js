@@ -19,6 +19,22 @@ export function buildBatchExistingEntriesPath({ date, employeeId, orderId }) {
   return `/api/production-entries?${params}`;
 }
 
+export function buildBatchExistingEmployeesPath({ date, orderId }) {
+  const params = new URLSearchParams({
+    date,
+    orderId,
+    page: "1",
+    pageSize: "100",
+  });
+  return `/api/production-entries?${params}`;
+}
+
+export function collectExistingEmployeeIds(entries = []) {
+  return [...new Set((entries ?? [])
+    .map((entry) => String(entry.employeeId ?? ""))
+    .filter(Boolean))];
+}
+
 export function mergeExistingOperationDrafts(operations = [], entries = []) {
   const entriesByOperation = new Map(
     (entries ?? []).map((entry) => [String(entry.productionOperationId), entry]),

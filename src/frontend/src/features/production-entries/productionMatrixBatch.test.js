@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEmployeesPath, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, collectExistingEmployeeIds, isCurrentAttendanceRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, parseAttendanceShiftValue, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 
 describe("batch production preload", () => {
   test("builds the day employee order lookup path", () => {
@@ -10,6 +10,22 @@ describe("batch production preload", () => {
       employeeId: "employee-1",
       orderId: "order-1",
     })).toBe("/api/production-entries?date=2026-09-16&employeeId=employee-1&orderId=order-1&page=1&pageSize=100");
+  });
+
+  test("builds the day order lookup path for employee status marks", () => {
+    expect(buildBatchExistingEmployeesPath({
+      date: "2026-09-19",
+      orderId: "order-1",
+    })).toBe("/api/production-entries?date=2026-09-19&orderId=order-1&page=1&pageSize=100");
+  });
+
+  test("collects employees with production entered for the day and order", () => {
+    expect(collectExistingEmployeeIds([
+      { employeeId: "employee-1" },
+      { employeeId: "employee-1" },
+      { employeeId: "employee-2" },
+      { employeeId: null },
+    ])).toEqual(["employee-1", "employee-2"]);
   });
 
   test("marks existing operations and loads their quantities", () => {
@@ -95,6 +111,8 @@ describe("production matrix batch attendance", () => {
     expect(source).toContain("resolveBatchEntryQuantities");
     expect(source).toContain("/api/production-entries/batch-direct");
     expect(source).toContain("buildBatchExistingEntriesPath");
+    expect(source).toContain("buildBatchExistingEmployeesPath");
+    expect(source).toContain("erp-matrix-employee-existing");
     expect(source).toContain("buildBatchExistingEntryUpdatePayload");
     expect(source).toContain("buildExistingOperationDraft");
     expect(source).toContain("mergeExistingOperationDrafts");

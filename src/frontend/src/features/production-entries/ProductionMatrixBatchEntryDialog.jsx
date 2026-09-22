@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEmployeesPath, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, collectExistingEmployeeIds, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 
 const INPUT_MODES = [
@@ -51,6 +51,8 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const [saving, setSaving] = useState(false);
   const [operationsLoading, setOperationsLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [existingEmployeeIds, setExistingEmployeeIds] = useState([]);
+  const [existingEmployeesLoading, setExistingEmployeesLoading] = useState(false);
   const [existingOperationIds, setExistingOperationIds] = useState([]);
   const [existingEntries, setExistingEntries] = useState({});
   const orderIdRef = useRef(orderId);
@@ -61,6 +63,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   dayRef.current = day;
   employeeIdRef.current = employeeId;
   const existingOperationIdSet = useMemo(() => new Set(existingOperationIds), [existingOperationIds]);
+  const existingEmployeeIdSet = useMemo(() => new Set(existingEmployeeIds), [existingEmployeeIds]);
   const selectedIds = useMemo(() => Object.keys(drafts), [drafts]);
   const attendanceOnly = inputMode === "attendance-only";
   const hasPaidLeave = hourDraft.shifts.some(isPaidLeaveShift);
@@ -77,6 +80,8 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
     setOperations([]);
     setInputMode(initialBatchInputMode(employees.find((item) => String(item.id) === requestedEmployeeId)));
     setHourDraft(emptyHourDraft());
+    setExistingEmployeeIds([]);
+    setExistingEmployeesLoading(false);
     setDrafts({});
     setExistingOperationIds([]);
     setExistingEntries({});
@@ -92,6 +97,33 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
       });
     return () => { active = false; };
   }, [day, employees]);
+
+  useEffect(() => {
+    if (!day || !orderId || attendanceOnly) {
+      setExistingEmployeeIds([]);
+      setExistingEmployeesLoading(false);
+      return undefined;
+    }
+    let active = true;
+    const requestedDate = day.isoDate;
+    const requestedOrderId = orderId;
+    setExistingEmployeeIds([]);
+    setExistingEmployeesLoading(true);
+    api.get(buildBatchExistingEmployeesPath({ date: requestedDate, orderId: requestedOrderId }))
+      .then((payload) => {
+        if (!active || dayRef.current?.isoDate !== requestedDate || String(orderIdRef.current ?? "") !== String(requestedOrderId ?? "")) return;
+        setExistingEmployeeIds(collectExistingEmployeeIds(payload?.items ?? payload ?? []));
+      })
+      .catch((requestError) => {
+        if (active && dayRef.current?.isoDate === requestedDate && String(orderIdRef.current ?? "") === String(requestedOrderId ?? "")) {
+          setError(requestError.message || "Không thể tải trạng thái nhân viên.");
+        }
+      })
+      .finally(() => {
+        if (active && dayRef.current?.isoDate === requestedDate && String(orderIdRef.current ?? "") === String(requestedOrderId ?? "")) setExistingEmployeesLoading(false);
+      });
+    return () => { active = false; };
+  }, [attendanceOnly, day, orderId]);
 
   useEffect(() => {
     if (!day || !orderId) { setOperations([]); setOperationsLoading(false); return undefined; }
@@ -317,7 +349,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
         <div className="erp-dialog-body">
           <div className="erp-matrix-input-grid erp-matrix-batch-fields">
             <label><span>Ngày</span><input className="erp-control" value={day.isoDate} readOnly /></label>
-            <label><span>Nhân viên *</span><select className="erp-control" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}</label>
+            <label><span>Nhân viên *</span><select className="erp-control erp-matrix-batch-employee-select" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => { const existing = existingEmployeeIdSet.has(String(item.id)); return <option key={item.id} value={item.id} className={existing ? "erp-matrix-employee-existing" : undefined}>{existing ? "● " : ""}{item.employeeCode} — {item.fullName}</option>; })}</select>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}{orderId && !attendanceOnly && existingEmployeesLoading && <small className="erp-matrix-employee-status">Đang kiểm tra sản lượng trong ngày...</small>}{orderId && !attendanceOnly && !existingEmployeesLoading && existingEmployeeIds.length > 0 && <small className="erp-matrix-employee-status"><span className="erp-matrix-employee-status-dot" aria-hidden="true">●</span> Đã có sản lượng trong ngày này</small>}</label>
             {!attendanceOnly && <label><span>Bước 1: Chọn Mã SX *</span><select className="erp-control" required value={orderId} onChange={(event) => setOrderId(event.target.value)}><option value="">Chọn Mã SX</option>{orders.map((item) => <option key={item.id} value={item.id}>{item.code} — {item.productName}</option>)}</select></label>}
           </div>
           {!attendanceOnly && <div className="erp-matrix-operation-picker" role="group" aria-label="Bước 2: Chọn công đoạn">
