@@ -83,6 +83,9 @@ describe("ERP responsive CSS contract", () => {
 
   test("gives the manager monthly matrix the remaining viewport and internal scroll", () => {
     expect(styles).toContain(".erp-production-manager-content {");
+    expect(styles).toContain(".erp-content.erp-production-manager-content {");
+    expect(styles).toContain("width: 100%;");
+    expect(styles).toContain("max-width: none;");
     expect(styles).toContain("height: calc(100dvh - var(--app-header-height));");
     expect(styles).toContain('.erp-production-attendance-workspace > [role="tabpanel"] { min-width: 0;');
     expect(styles).toContain('.erp-production-manager-content > .erp-production-attendance-workspace { flex: 1; min-height: 0;');

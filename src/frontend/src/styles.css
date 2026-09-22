@@ -450,6 +450,7 @@
 .erp-mobile-menu { display: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); }
 .erp-topbar-logout-compact { display: none; }
 .erp-content { width: min(1360px, 100%); margin: 0 auto; padding: 32px 32px 56px; }
+.erp-content.erp-production-manager-content { width: 100%; max-width: none; padding: 16px 20px 24px; }
 
 .sidebar-collapsed .erp-sidebar-layer { width: var(--sidebar-width-collapsed); }
 .sidebar-collapsed .erp-main { width: calc(100% - var(--sidebar-width-collapsed)); margin-left: var(--sidebar-width-collapsed); }
