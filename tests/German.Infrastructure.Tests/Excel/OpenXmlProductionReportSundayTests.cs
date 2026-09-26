@@ -29,18 +29,18 @@ public sealed class OpenXmlProductionReportSundayTests
         var header = rows.Single(row => row.RowIndex!.Value == 4U).Elements<Cell>().Select(cell => cell.InnerText).ToArray();
 
         CollectionAssert.AreEqual(
-            new[] { "Nhân viên", "CĐ", "ĐVT", "T7 15/08", "T2 17/08", "Tổng HC", "Tổng TC", "Tổng" },
+            new[] { "Nhân viên", "Mã SX", "CĐ", "ĐVT", "T7 15/08", "T2 17/08", "Tổng HC", "Tổng TC", "Tổng" },
             header);
         Assert.IsFalse(sheetData.InnerText.Contains("CN 16/08", StringComparison.Ordinal));
         Assert.IsFalse(sheetData.InnerText.Contains("TỔNG THEO CÔNG ĐOẠN", StringComparison.Ordinal));
 
         var productionRow = rows.Single(row => row.RowIndex!.Value == 6U);
-        Assert.AreEqual("10", GetCell(productionRow, "D6").CellValue!.Text);
-        Assert.AreEqual("2", GetCell(productionRow, "E6").CellValue!.Text);
-        Assert.AreEqual("12", GetCell(productionRow, "F6").CellValue!.Text);
-        Assert.AreEqual("30", GetCell(productionRow, "J6").CellValue!.Text);
-        Assert.AreEqual("5", GetCell(productionRow, "K6").CellValue!.Text);
-        Assert.AreEqual("35", GetCell(productionRow, "L6").CellValue!.Text);
+        Assert.AreEqual("10", GetCell(productionRow, "E6").CellValue!.Text);
+        Assert.AreEqual("2", GetCell(productionRow, "F6").CellValue!.Text);
+        Assert.AreEqual("12", GetCell(productionRow, "G6").CellValue!.Text);
+        Assert.AreEqual("30", GetCell(productionRow, "K6").CellValue!.Text);
+        Assert.AreEqual("5", GetCell(productionRow, "L6").CellValue!.Text);
+        Assert.AreEqual("35", GetCell(productionRow, "M6").CellValue!.Text);
     }
 
     [TestMethod]
@@ -67,8 +67,8 @@ public sealed class OpenXmlProductionReportSundayTests
         var worksheet = GetWorksheetPart(document, "Báo cáo sản lượng");
         var header = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().Single(row => row.RowIndex!.Value == 4U);
 
-        Assert.AreEqual("FFD9D9D9", GetFillColor(document, GetCell(header, "D4")));
-        Assert.AreEqual("FFE4B7A0", GetFillColor(document, GetCell(header, "G4")));
+        Assert.AreEqual("FFD9D9D9", GetFillColor(document, GetCell(header, "E4")));
+        Assert.AreEqual("FFE4B7A0", GetFillColor(document, GetCell(header, "H4")));
         Assert.AreEqual(PaneStateValues.Frozen, worksheet.Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>()?.State?.Value);
     }
 

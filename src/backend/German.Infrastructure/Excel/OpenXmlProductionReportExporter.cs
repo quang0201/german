@@ -364,7 +364,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         var days = Dates(report.FromDate, report.UntilDate)
             .Where(date => !report.ExcludeSundays || date.DayOfWeek != DayOfWeek.Sunday)
             .ToArray();
-        var totalStart = 4 + days.Length * metricsPerDay;
+        var totalStart = 5 + days.Length * metricsPerDay;
         var lastColumn = totalStart + metricsPerDay - 1;
         var data = new SheetData();
         var merges = new MergeCells();
@@ -375,15 +375,17 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         AddRow(data, 3);
         AddCells(data, 4,
             At("A4", Text("Nhân viên", HeaderStyle)),
-            At("B4", Text("CĐ", HeaderStyle)),
-            At("C4", Text("ĐVT", HeaderStyle)));
+            At("B4", Text("Mã SX", HeaderStyle)),
+            At("C4", Text("CĐ", HeaderStyle)),
+            At("D4", Text("ĐVT", HeaderStyle)));
         merges.Append(
             new MergeCell { Reference = "A4:A5" },
             new MergeCell { Reference = "B4:B5" },
-            new MergeCell { Reference = "C4:C5" });
+            new MergeCell { Reference = "C4:C5" },
+            new MergeCell { Reference = "D4:D5" });
         for (var i = 0; i < days.Length; i++)
         {
-            var start = 4 + i * metricsPerDay;
+            var start = 5 + i * metricsPerDay;
             AddCells(data, 4, At($"{Col(start)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), DateHeaderStyle(days[i]))));
             merges.Append(new MergeCell { Reference = $"{Col(start)}4:{Col(start + metricsPerDay - 1)}4" });
             AddCells(data, 5,
@@ -401,9 +403,10 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         }
 
         var groups = report.Rows
-            .GroupBy(item => new { item.EmployeeCode, item.EmployeeName, item.OperationNumber, item.Unit })
+            .GroupBy(item => new { item.EmployeeCode, item.EmployeeName, item.ProductionOrderCode, item.OperationNumber, item.Unit })
             .OrderBy(group => group.Key.EmployeeCode, StringComparer.Ordinal)
             .ThenBy(group => group.Key.EmployeeName, StringComparer.Ordinal)
+            .ThenBy(group => group.Key.ProductionOrderCode, StringComparer.Ordinal)
             .ThenBy(group => group.Key.OperationNumber)
             .ThenBy(group => group.Key.Unit, StringComparer.Ordinal)
             .ToArray();
@@ -443,19 +446,20 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var cells = new List<Cell>
             {
                 At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, textStyle)),
-                At($"B{row}", Text($"CĐ{first.OperationNumber}", textStyle)),
-                At($"C{row}", Text(first.Unit, textStyle))
+                At($"B{row}", Text(first.ProductionOrderCode, textStyle)),
+                At($"C{row}", Text($"CĐ{first.OperationNumber}", textStyle)),
+                At($"D{row}", Text(first.Unit, textStyle))
             };
             for (var i = 0; i < days.Length; i++)
             {
                 byDay.TryGetValue(days[i], out var quantity);
-                var hcColumn = Col(4 + i * metricsPerDay);
-                var tcColumn = Col(5 + i * metricsPerDay);
+                var hcColumn = Col(5 + i * metricsPerDay);
+                var tcColumn = Col(6 + i * metricsPerDay);
                 hcReferences.Add($"{hcColumn}{row}");
                 tcReferences.Add($"{tcColumn}{row}");
                 cells.Add(At($"{hcColumn}{row}", Num(quantity.Hc, isExternal ? ExternalNumberStyle : HcBodyStyle)));
                 cells.Add(At($"{tcColumn}{row}", Num(quantity.Tc, isExternal ? ExternalNumberStyle : TcBodyStyle)));
-                cells.Add(At($"{Col(6 + i * metricsPerDay)}{row}", Formula($"{hcColumn}{row}+{tcColumn}{row}", quantity.Hc + quantity.Tc, numberStyle)));
+                cells.Add(At($"{Col(7 + i * metricsPerDay)}{row}", Formula($"{hcColumn}{row}+{tcColumn}{row}", quantity.Hc + quantity.Tc, numberStyle)));
             }
             var totalHc = entries.Sum(item => item.HcQuantity);
             var totalTc = entries.Sum(item => item.TcQuantity);
@@ -486,8 +490,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetViews(new SheetView(new Pane
             {
                 HorizontalSplit = 5D,
-                VerticalSplit = 3D,
-                TopLeftCell = "D6",
+                VerticalSplit = 4D,
+                TopLeftCell = "E6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
             }) { WorkbookViewId = 0U }),
@@ -794,8 +798,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
 
     private static Columns ProductionColumns(int days, int totalStart)
     {
-        var columns = new Columns(Column(1, 28), Column(2, 10), Column(3, 12));
-        for (var i = 0; i < days * 3; i++) columns.Append(Column((uint)(4 + i), 10));
+        var columns = new Columns(Column(1, 28), Column(2, 14), Column(3, 10), Column(4, 12));
+        for (var i = 0; i < days * 3; i++) columns.Append(Column((uint)(5 + i), 10));
         for (var i = 0; i < 3; i++) columns.Append(Column((uint)(totalStart + i), 12));
         return columns;
     }
