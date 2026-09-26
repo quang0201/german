@@ -359,6 +359,37 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual(BorderStyleValues.Medium, GetBorder(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 7U), "A7")).BottomBorder?.Style?.Value);
     }
 
+    [TestMethod]
+    public void Export_DrawsThinGridBordersAcrossProductionAndAttendanceTables()
+    {
+        var source = CreateReport();
+        var report = source with
+        {
+            Rows = source.Rows.Append(
+                new ProductionReportRow(new DateOnly(2026, 8, 12), "E001", "Nguyễn Văn A", "0417", "Túi 0417", 21, "May lót", "cái", 5m, 1m, 6m, null, ProductionEntryMode.Direct, null)).ToArray(),
+            WorkHours = source.WorkHours.Select((item, index) => index == 0
+                ? item with
+                {
+                    Shifts =
+                    [
+                        new ProductionReportWorkShiftSummary(1, "Ca 1", 4m, AttendanceShiftValueKind.Hours),
+                        new ProductionReportWorkShiftSummary(2, "Ca 2", 4m, AttendanceShiftValueKind.Hours)
+                    ]
+                }
+                : item).ToArray()
+        };
+        using var document = OpenWorkbook(report);
+
+        var productionRows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
+        AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 4U), "A4"));
+        AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 5U), "E5"));
+        AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 7U), "C7"));
+
+        var attendanceRows = GetSheetData(document, "Bảng công").Elements<Row>().ToList();
+        AssertAllThinBorders(document, GetCell(attendanceRows.Single(row => row.RowIndex!.Value == 4U), "A4"));
+        AssertAllThinBorders(document, GetCell(attendanceRows.Single(row => row.RowIndex!.Value == 7U), "D7"));
+    }
+
     private static SpreadsheetDocument OpenWorkbook(ProductionReportData report)
     {
         var bytes = new OpenXmlProductionReportExporter().Export(report);
@@ -427,6 +458,15 @@ public sealed class OpenXmlProductionReportExporterTests
         var formats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!;
         var format = formats.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
         return document.WorkbookPart.WorkbookStylesPart.Stylesheet.Borders!.Elements<Border>().ElementAt((int)(format.BorderId?.Value ?? 0U));
+    }
+
+    private static void AssertAllThinBorders(SpreadsheetDocument document, Cell cell)
+    {
+        var border = GetBorder(document, cell);
+        Assert.AreEqual(BorderStyleValues.Thin, border.LeftBorder?.Style?.Value, $"{cell.CellReference} left border");
+        Assert.AreEqual(BorderStyleValues.Thin, border.RightBorder?.Style?.Value, $"{cell.CellReference} right border");
+        Assert.AreEqual(BorderStyleValues.Thin, border.TopBorder?.Style?.Value, $"{cell.CellReference} top border");
+        Assert.AreEqual(BorderStyleValues.Thin, border.BottomBorder?.Style?.Value, $"{cell.CellReference} bottom border");
     }
 
     private static ProductionReportData CreateReport() => new(
