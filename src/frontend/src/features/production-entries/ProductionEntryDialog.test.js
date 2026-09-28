@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const dialogSource = readFileSync(resolve(import.meta.dir, "ProductionEntryDialog.jsx"), "utf8");
+const createPageSource = readFileSync(resolve(import.meta.dir, "ProductionEntryCreatePage.jsx"), "utf8");
 const listSource = readFileSync(resolve(import.meta.dir, "ProductionEntryListPage.jsx"), "utf8");
 const detailSource = readFileSync(resolve(import.meta.dir, "ProductionEntryDetailPage.jsx"), "utf8");
 
@@ -11,6 +12,12 @@ describe("ProductionEntryDialog", () => {
     expect(dialogSource).toContain("ProductionEntryFormPage");
     expect(dialogSource).toContain("erp-dialog-backdrop");
     expect(dialogSource).toContain("inPanel");
+  });
+
+  test("does not repeat the dialog title behind the create popup", () => {
+    expect(createPageSource).toContain("<ProductionEntryDialog open");
+    expect(createPageSource).not.toContain("PageHeader");
+    expect(createPageSource).not.toContain("Nhập sản lượng trong popup");
   });
 
   test("opens create entry from the list instead of navigating to an inline form", () => {

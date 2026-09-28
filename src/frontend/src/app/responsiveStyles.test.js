@@ -107,6 +107,7 @@ describe("ERP responsive CSS contract", () => {
     expect(mobileStyles).toContain(".erp-production-filter-panel-header");
     expect(mobileStyles).toContain(".erp-production-manager-content > nav { display:none; }");
     expect(styles).toContain(".erp-production-filter-close { min-height:44px;");
+    expect(mobileStyles).toContain(".erp-icon-button { width:44px; height:44px; }");
   });
 
   test("integrates the production page period, summary, export, and grouped table contracts", () => {

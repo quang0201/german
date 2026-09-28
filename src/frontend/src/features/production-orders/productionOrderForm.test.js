@@ -79,5 +79,7 @@ describe("production order form", () => {
     expect(orderPageSource).toContain('mode="edit"');
     expect(orderPageSource).not.toContain('id="order-create"');
     expect(orderPageSource).not.toContain('id="production-order-detail"');
+    expect(orderPageSource).toContain("!isCreateRoute && <PageHeader");
+    expect(orderPageSource).not.toContain("Biểu mẫu tạo mã sản xuất đang mở trong popup.");
   });
 });

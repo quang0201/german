@@ -626,6 +626,7 @@
 }
 
 @media (max-width: 767px) {
+  .erp-icon-button { width:44px; height:44px; }
   .erp-production-manager-content > nav { display:none; }
   .erp-production-manager-content {
     height: calc(100dvh - var(--app-header-height));

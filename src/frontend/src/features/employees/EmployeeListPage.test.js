@@ -11,6 +11,7 @@ describe("EmployeeListPage", () => {
     const html = renderToStaticMarkup(<EmployeeListPage />);
 
     expect(html).toContain("+ Thêm nhân viên");
+    expect(html.match(/\+ Thêm nhân viên/g)).toHaveLength(1);
     expect(html).toContain("Tạo mới bằng popup");
     expect(html).not.toContain('id="employee-create"');
   });
