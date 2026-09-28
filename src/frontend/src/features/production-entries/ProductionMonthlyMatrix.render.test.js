@@ -230,6 +230,28 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(cellsOnDate.every((className) => className.includes("erp-month-no-attendance"))).toBe(true);
   });
 
+  test("does not show missing attendance for a worked day on an hourly employee without production", () => {
+    const hourlyEmployees = [{
+      employeeId: "e-hourly",
+      employeeCode: "5",
+      employeeName: "Trần Thị Loan",
+      compensationType: "Hourly",
+      workedDates: ["2026-08-05"],
+      attendanceDates: ["2026-08-05"],
+    }];
+    const emptyOrderData = dataWithOneOrder();
+    emptyOrderData.orders[0].employees = [];
+    const data = { ...emptyOrderData, orders: mergeHourlyEmployeesIntoOrders(emptyOrderData.orders, hourlyEmployees) };
+
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+    const cellsOnWorkedDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
+    const cellsOnUnworkedDate = [...html.matchAll(/<td data-date="2026-08-06" class="([^"]*)"/g)].map((match) => match[1]);
+
+    expect(cellsOnWorkedDate.length).toBeGreaterThan(0);
+    expect(cellsOnWorkedDate.every((className) => !className.includes("erp-month-no-attendance"))).toBe(true);
+    expect(cellsOnUnworkedDate.some((className) => className.includes("erp-month-no-attendance"))).toBe(true);
+  });
+
   test("highlights only employees who joined during the selected month", () => {
     const newEmployeeHtml = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder("2026-09-05")} monthKey="2026-09" excludeSundays />);
     const previousEmployeeHtml = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder("2026-08-15")} monthKey="2026-09" excludeSundays />);

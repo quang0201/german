@@ -204,6 +204,16 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 employee.CompensationType,
                 DateOnly.FromDateTime(employee.CreatedAt.Date))
             {
+                WorkedDates = workedDates
+                    .Where(date => date.EmployeeId == employee.Id)
+                    .Select(date => date.WorkDate)
+                    .OrderBy(date => date)
+                    .ToArray(),
+                AttendanceDates = attendanceDates
+                    .Where(date => date.EmployeeId == employee.Id)
+                    .Select(date => date.WorkDate)
+                    .OrderBy(date => date)
+                    .ToArray(),
                 PaidLeaveDates = paidLeaveDates
                     .Where(date => date.EmployeeId == employee.Id)
                     .Select(date => date.WorkDate)

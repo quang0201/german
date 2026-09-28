@@ -70,7 +70,7 @@ describe("production monthly matrix helpers", () => {
     expect(sundayUrl.searchParams.get("excludeSundays")).toBe("false");
   });
 
-  test("keeps paid leave dates when adding hourly employees to an order", () => {
+  test("keeps attendance and paid leave dates when adding hourly employees to an order", () => {
     const withOrder = mergeHourlyEmployeesIntoOrders([{
       orderId: "order-1",
       employees: [],
@@ -79,8 +79,12 @@ describe("production monthly matrix helpers", () => {
       employeeCode: "7",
       employeeName: "Trần Thị Loan",
       compensationType: "Hourly",
+      workedDates: ["2026-09-14"],
+      attendanceDates: ["2026-09-14", "2026-09-15"],
       paidLeaveDates: ["2026-09-15", "2026-09-17", "2026-09-18"],
     }]);
+    expect(withOrder[0].employees[0].workedDates).toEqual(["2026-09-14"]);
+    expect(withOrder[0].employees[0].attendanceDates).toEqual(["2026-09-14", "2026-09-15"]);
     expect(withOrder[0].employees[0].paidLeaveDates).toEqual(["2026-09-15", "2026-09-17", "2026-09-18"]);
   });
 

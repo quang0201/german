@@ -59,6 +59,8 @@ public sealed record ProductionMatrixHourlyEmployeeDto(
     EmployeeCompensationType CompensationType,
     DateOnly? JoinedDate)
 {
+    public IReadOnlyList<DateOnly> WorkedDates { get; init; } = [];
+    public IReadOnlyList<DateOnly> AttendanceDates { get; init; } = [];
     public IReadOnlyList<DateOnly> PaidLeaveDates { get; init; } = [];
 }
 

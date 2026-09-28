@@ -262,7 +262,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
-    public async Task GetAsync_ReturnsPaidLeaveDatesForHourlyEmployeesWithoutProduction()
+    public async Task GetAsync_ReturnsAttendanceAndPaidLeaveDatesForHourlyEmployeesWithoutProduction()
     {
         await using var db = CreateDb();
         var employee = new Employee
@@ -283,6 +283,10 @@ public sealed class ProductionMonthlyMatrixServiceTests
             day.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 1, ValueKind = AttendanceShiftValueKind.PaidLeave });
             db.AttendanceDays.Add(day);
         }
+        var workedDay = new AttendanceDay { EmployeeId = employee.Id, WorkDate = new DateOnly(2026, 9, 14) };
+        workedDay.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 1, ValueKind = AttendanceShiftValueKind.Hours, WorkedHours = 4m });
+        workedDay.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 2, ValueKind = AttendanceShiftValueKind.Hours, WorkedHours = 4m });
+        db.AttendanceDays.Add(workedDay);
         db.Employees.Add(employee);
         await db.SaveChangesAsync();
 
@@ -292,13 +296,25 @@ public sealed class ProductionMonthlyMatrixServiceTests
 
         Assert.IsTrue(result.IsSuccess, result.Error?.Message);
         CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 9, 14) },
+            result.Value!.HourlyEmployees.Single().WorkedDates.ToArray());
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                new DateOnly(2026, 9, 14),
+                new DateOnly(2026, 9, 15),
+                new DateOnly(2026, 9, 17),
+                new DateOnly(2026, 9, 18)
+            },
+            result.Value.HourlyEmployees.Single().AttendanceDates.ToArray());
+        CollectionAssert.AreEqual(
             new[]
             {
                 new DateOnly(2026, 9, 15),
                 new DateOnly(2026, 9, 17),
                 new DateOnly(2026, 9, 18)
             },
-            result.Value!.HourlyEmployees.Single().PaidLeaveDates.ToArray());
+            result.Value.HourlyEmployees.Single().PaidLeaveDates.ToArray());
     }
 
     [TestMethod]
