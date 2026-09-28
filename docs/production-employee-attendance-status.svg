@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title description">
+  <title id="title">Mockup trạng thái chấm công trong popup nhập sản lượng</title>
+  <desc id="description">Danh sách nhân viên có trạng thái đã chấm công, nghỉ phép đủ ngày hoặc chưa chấm công.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#172554" flood-opacity=".14"/>
+    </filter>
+    <style>
+      .font { font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      .muted { fill: #64748b; }
+      .label { fill: #475569; font-size: 15px; font-weight: 650; }
+      .employee { fill: #1e293b; font-size: 15px; font-weight: 550; }
+      .code { fill: #64748b; font-size: 13px; }
+    </style>
+  </defs>
+
+  <rect width="1440" height="900" fill="#f1f5f9"/>
+  <rect x="0" y="0" width="1440" height="66" fill="#ffffff"/>
+  <path d="M0 65.5H1440" stroke="#e2e8f0"/>
+  <text class="font" x="64" y="41" fill="#0f172a" font-size="18" font-weight="750">SẢN LƯỢNG</text>
+  <text class="font muted" x="1375" y="40" text-anchor="end" font-size="13">Minh họa trạng thái chấm công theo ngày</text>
+
+  <rect x="260" y="105" width="920" height="700" rx="18" fill="#ffffff" filter="url(#shadow)"/>
+  <text class="font" x="304" y="160" fill="#0f172a" font-size="25" font-weight="750">Nhập nhanh sản lượng — T2 14/09</text>
+  <text class="font label" x="304" y="210">Nhân viên <tspan fill="#dc2626">*</tspan></text>
+
+  <rect x="304" y="229" width="832" height="54" rx="9" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text class="font employee" x="324" y="263">Chọn nhân viên</text>
+  <path d="m1103 250 9 10 9-10" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="304" y="290" width="832" height="334" rx="10" fill="#ffffff" stroke="#cbd5e1" filter="url(#shadow)"/>
+  <rect x="305" y="291" width="830" height="48" rx="9" fill="#f8fafc"/>
+  <text class="font muted" x="326" y="321" font-size="12" font-weight="750" letter-spacing=".7">NHÂN VIÊN</text>
+  <text class="font muted" x="1088" y="321" text-anchor="end" font-size="12" font-weight="750" letter-spacing=".7">TRẠNG THÁI</text>
+  <path d="M305 339H1135" stroke="#e2e8f0"/>
+
+  <rect x="313" y="348" width="814" height="54" rx="8" fill="#f0fdf4"/>
+  <circle cx="340" cy="375" r="13" fill="#15803d"/>
+  <path d="m334 375 4 4 8-9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text class="font employee" x="366" y="381">5 — Trần Thị Loan</text>
+  <rect x="976" y="359" width="132" height="31" rx="15.5" fill="#dcfce7"/>
+  <text class="font" x="1042" y="380" text-anchor="middle" fill="#166534" font-size="13" font-weight="750">✓ Đã chấm công</text>
+
+  <path d="M313 408H1127" stroke="#e2e8f0"/>
+  <rect x="313" y="414" width="814" height="54" rx="8" fill="#eff6ff"/>
+  <circle cx="340" cy="441" r="13" fill="#2563eb"/>
+  <text class="font" x="340" y="446" text-anchor="middle" fill="#fff" font-size="13" font-weight="800">P</text>
+  <text class="font employee" x="366" y="447">10 — Hoàng Thị Nga</text>
+  <rect x="960" y="425" width="148" height="31" rx="15.5" fill="#dbeafe"/>
+  <text class="font" x="1034" y="446" text-anchor="middle" fill="#1d4ed8" font-size="13" font-weight="750">P Nghỉ phép đủ ngày</text>
+
+  <path d="M313 474H1127" stroke="#e2e8f0"/>
+  <rect x="313" y="480" width="814" height="54" rx="8" fill="#fef2f2"/>
+  <circle cx="340" cy="507" r="13" fill="#dc2626"/>
+  <text class="font" x="340" y="512" text-anchor="middle" fill="#fff" font-size="15" font-weight="800">!</text>
+  <text class="font employee" x="366" y="513">0417-BTH — Bùi Thị Hòe</text>
+  <rect x="971" y="491" width="137" height="31" rx="15.5" fill="#fee2e2"/>
+  <text class="font" x="1039" y="512" text-anchor="middle" fill="#b91c1c" font-size="13" font-weight="750">! Chưa chấm công</text>
+
+  <path d="M313 540H1127" stroke="#e2e8f0"/>
+  <rect x="313" y="546" width="814" height="54" rx="8" fill="#f8fafc"/>
+  <circle cx="340" cy="573" r="13" fill="#15803d"/>
+  <path d="m334 573 4 4 8-9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text class="font employee" x="366" y="579">0417-BTD — Bạch Thị Đào</text>
+  <rect x="976" y="557" width="132" height="31" rx="15.5" fill="#dcfce7"/>
+  <text class="font" x="1042" y="578" text-anchor="middle" fill="#166534" font-size="13" font-weight="750">✓ Đã chấm công</text>
+
+  <text class="font label" x="304" y="663">Cách tính: <tspan fill="#0f172a">Theo giờ</tspan></text>
+  <rect x="304" y="690" width="832" height="70" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="font muted" x="326" y="718" font-size="12" font-weight="750" letter-spacing=".5">CHÚ GIẢI</text>
+  <circle cx="440" cy="741" r="10" fill="#15803d"/>
+  <path d="m435 741 3 3 6-7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text class="font" x="458" y="746" fill="#166534" font-size="13" font-weight="650">Đã chấm công</text>
+  <circle cx="650" cy="741" r="10" fill="#2563eb"/>
+  <text class="font" x="650" y="745" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">P</text>
+  <text class="font" x="668" y="746" fill="#1d4ed8" font-size="13" font-weight="650">Nghỉ P tất cả ca</text>
+  <circle cx="879" cy="741" r="10" fill="#dc2626"/>
+  <text class="font" x="879" y="745" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">!</text>
+  <text class="font" x="897" y="746" fill="#b91c1c" font-size="13" font-weight="650">Chưa chấm công</text>
+
+  <text class="font muted" x="304" y="785" font-size="12">Nếu có ca làm xen ca P, hiển thị trạng thái “Đã chấm công”, không phải nghỉ P cả ngày.</text>
+</svg>

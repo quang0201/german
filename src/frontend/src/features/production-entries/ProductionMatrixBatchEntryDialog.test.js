@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { firstActiveEmployeeId, initialBatchEmployeeId, initialBatchInputMode, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
-import { isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
+import { buildBatchAttendanceMonthUrl, classifyBatchAttendanceDay, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
 
 describe("ProductionMatrixBatchEntryDialog helpers", () => {
   test("defaults to the first active employee instead of an inactive first row", () => {
@@ -32,6 +32,24 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(initialBatchInputMode({ compensationType: "Hourly" })).toBe("attendance-only");
     expect(initialBatchInputMode({ compensationType: "PieceRate" })).toBe("attendance-shifts");
     expect(initialBatchInputMode({})).toBe("attendance-shifts");
+  });
+
+  test("loads attendance for the selected calendar day and distinguishes worked, all-P and missing days", () => {
+    const url = new URL(buildBatchAttendanceMonthUrl({ date: "2026-09-14", employeeCursor: "cursor-1" }), "http://local.test");
+    expect(url.pathname).toBe("/api/attendance/monthly");
+    expect(url.searchParams.get("year")).toBe("2026");
+    expect(url.searchParams.get("month")).toBe("9");
+    expect(url.searchParams.get("dayFrom")).toBe("14");
+    expect(url.searchParams.get("dayCount")).toBe("1");
+    expect(url.searchParams.get("employeeCursor")).toBe("cursor-1");
+
+    expect(classifyBatchAttendanceDay({ hasAttendance: true, overtimeHours: 0, shifts: [
+      { valueKind: "PaidLeave" }, { valueKind: "PaidLeave" },
+    ] })).toBe("paid-leave");
+    expect(classifyBatchAttendanceDay({ hasAttendance: true, overtimeHours: 0, shifts: [
+      { valueKind: "Hours" }, { valueKind: "PaidLeave" },
+    ] })).toBe("attended");
+    expect(classifyBatchAttendanceDay({ hasAttendance: false, shifts: [] })).toBe("missing");
   });
 
   test("ignores operations from an obsolete order request", () => {

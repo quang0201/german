@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api.js";
-import { buildAttendanceMonthPayload, buildBatchDirectPayload, buildBatchExistingEmployeesPath, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, collectExistingEmployeeIds, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
+import { buildAttendanceMonthPayload, buildBatchAttendanceMonthUrl, buildBatchDirectPayload, buildBatchExistingEmployeesPath, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, classifyBatchAttendanceDay, collectExistingEmployeeIds, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 
 const INPUT_MODES = [
@@ -46,6 +46,8 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const [saving, setSaving] = useState(false);
   const [operationsLoading, setOperationsLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [employeeAttendanceStatuses, setEmployeeAttendanceStatuses] = useState({});
+  const [employeeAttendanceLoading, setEmployeeAttendanceLoading] = useState(false);
   const [existingEmployeeIds, setExistingEmployeeIds] = useState([]);
   const [existingOperationIds, setExistingOperationIds] = useState([]);
   const [existingEntries, setExistingEntries] = useState({});
@@ -89,6 +91,36 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
       });
     return () => { active = false; };
   }, [day, employees]);
+
+  useEffect(() => {
+    if (!day?.isoDate) return undefined;
+    let active = true;
+    const requestedDate = day.isoDate;
+    setEmployeeAttendanceStatuses({});
+    setEmployeeAttendanceLoading(true);
+    (async () => {
+      const statuses = {};
+      let cursor = "";
+      let hasMore = true;
+      while (hasMore) {
+        const payload = await api.get(buildBatchAttendanceMonthUrl({ date: requestedDate, employeeCursor: cursor }));
+        for (const employee of payload.employees ?? []) {
+          const attendanceDay = employee.days?.find((item) => item.workDate === requestedDate);
+          statuses[String(employee.employeeId)] = classifyBatchAttendanceDay(attendanceDay);
+        }
+        hasMore = Boolean(payload.hasMoreEmployees && payload.nextEmployeeCursor);
+        cursor = payload.nextEmployeeCursor ?? "";
+      }
+      if (active && dayRef.current?.isoDate === requestedDate) setEmployeeAttendanceStatuses(statuses);
+    })()
+      .catch(() => {
+        if (active && dayRef.current?.isoDate === requestedDate) setEmployeeAttendanceStatuses({});
+      })
+      .finally(() => {
+        if (active && dayRef.current?.isoDate === requestedDate) setEmployeeAttendanceLoading(false);
+      });
+    return () => { active = false; };
+  }, [day]);
 
   useEffect(() => {
     if (!day || !orderId || attendanceOnly) {
@@ -335,7 +367,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
         <h2 id="matrix-batch-title">Nhập nhanh sản lượng — {day.weekdayLabel} {day.displayDate}</h2>
         <div className="erp-dialog-body">
           <div className="erp-matrix-input-grid erp-matrix-batch-fields">
-            <label><span>Nhân viên *</span><select className="erp-control erp-matrix-batch-employee-select" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => { const existing = existingEmployeeIdSet.has(String(item.id)); return <option key={item.id} value={item.id} className={existing ? "erp-matrix-employee-existing" : undefined}>{existing ? "● " : ""}{item.employeeCode} — {item.fullName}</option>; })}</select>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}</label>
+            <label><span>Nhân viên *</span><select className="erp-control erp-matrix-batch-employee-select" required value={employeeId} onChange={(event) => selectEmployee(event.target.value)}><option value="">Chọn nhân viên</option>{employees.filter((item) => item.isActive !== false).map((item) => { const existing = existingEmployeeIdSet.has(String(item.id)); const attendanceStatus = employeeAttendanceStatuses[String(item.id)]; const statusClass = attendanceStatus ? `erp-matrix-employee-${attendanceStatus}` : ""; const statusMark = attendanceStatus === "attended" ? "✓ " : attendanceStatus === "paid-leave" ? "P " : attendanceStatus === "missing" ? "! " : ""; return <option key={item.id} value={item.id} className={[existing ? "erp-matrix-employee-existing" : "", statusClass].filter(Boolean).join(" ")}>{existing ? "● " : ""}{statusMark}{item.employeeCode} — {item.fullName}</option>; })}</select><small className="erp-matrix-employee-status-legend">{employeeAttendanceLoading ? "Đang tải trạng thái chấm công…" : <><span className="is-attended">✓ Đã chấm công</span><span className="is-paid-leave">P Nghỉ phép đủ ngày</span><span className="is-missing">! Chưa chấm công</span></>}</small>{selectedEmployee && <small className="erp-field-hint">Cách tính: {selectedEmployee.compensationType === "Hourly" ? "Theo giờ" : "Theo sản lượng"}</small>}</label>
           </div>
           {!attendanceOnly && <div className="erp-matrix-operation-picker" role="group" aria-label="Chọn công đoạn">
             <strong>Chọn công đoạn</strong>

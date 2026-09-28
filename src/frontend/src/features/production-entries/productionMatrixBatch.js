@@ -8,6 +8,32 @@ export function isCurrentBatchOrdersRequest(active, requestedDay, currentDay) {
     && String(requestedDay?.preferredOrderId ?? "") === String(currentDay?.preferredOrderId ?? "");
 }
 
+export function buildBatchAttendanceMonthUrl({ date, employeeCursor = "" }) {
+  const [year, month, day] = String(date).split("-");
+  const params = new URLSearchParams({
+    year,
+    month: String(Number(month)),
+    employeeLimit: "100",
+    dayFrom: String(Number(day)),
+    dayCount: "1",
+  });
+  if (employeeCursor) params.set("employeeCursor", employeeCursor);
+  return `/api/attendance/monthly?${params}`;
+}
+
+export function classifyBatchAttendanceDay(day) {
+  if (!day?.hasAttendance) return "missing";
+  const shifts = day.shifts ?? [];
+  if (shifts.length > 0
+    && Number(day.overtimeHours ?? 0) === 0
+    && shifts.every((shift) => shift.valueKind === "PaidLeave")) {
+    return "paid-leave";
+  }
+  return shifts.some((shift) => shift.valueKind !== "Empty") || Number(day.overtimeHours ?? 0) > 0
+    ? "attended"
+    : "missing";
+}
+
 export function buildBatchExistingEntriesPath({ date, employeeId, orderId }) {
   const params = new URLSearchParams({
     date,
