@@ -28,6 +28,8 @@ describe("ProductionEntryRoutePage", () => {
       expect(html).toContain("erp-production-controls");
       expect(html).toContain("Xuất Excel");
       expect(html).toContain("+ Nhập sản lượng");
+      expect(html).toContain('class="erp-production-mobile-filter-toggle" aria-expanded="false"');
+      expect(html).toContain("erp-production-filter-panel");
       expect(html).toContain("Tuần trước");
       expect(html).toContain("Tuần sau");
       expect(html).not.toContain("Tổng lượt công đoạn");
@@ -60,5 +62,14 @@ describe("ProductionEntryRoutePage", () => {
     expect(source).toContain("showOrderFilter={false}");
     expect(source).toContain("<Field label=\"Mã sản xuất\">");
     expect(source).not.toContain("<PageHeader");
+  });
+
+  test("provides a compact mobile filter entry point while retaining desktop filters", () => {
+    const html = renderFor("Admin");
+    expect(html).toContain("Bộ lọc");
+    expect(html).toContain("Mã sản xuất");
+    expect(html).toContain("Nhân viên");
+    expect(html).toContain("Công đoạn");
+    expect(html).toContain("Tìm kiếm");
   });
 });

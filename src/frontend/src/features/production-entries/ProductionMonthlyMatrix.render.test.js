@@ -169,9 +169,29 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(cellsOnDate("2026-08-06").every((className) => !className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate("2026-08-07").every((className) => className.includes("erp-month-missing"))).toBe(true);
     expect(cellsOnDate("2026-08-08").every((className) => className.includes("erp-month-no-attendance"))).toBe(true);
+    expect(cellsOnDate("2026-08-06").every((className) => className.includes("erp-month-paid-leave"))).toBe(true);
+    expect(html).toContain("erp-month-group-start");
     expect(matrixSource).toContain("workedDates");
     expect(matrixSource).toContain("erp-month-no-attendance");
     expect(matrixSource).toContain("paidLeaveDates");
+    expect(html).toContain("Nghỉ phép</span>");
+    expect(html).toContain("Chưa nhập công đoạn");
+    expect(html).toContain("Cuộn ngang để xem các ngày khác");
+    expect(html).toContain('aria-label="Ma trận sản lượng; cuộn ngang để xem các ngày, cuộn dọc để xem nhân viên"');
+  });
+
+  test("alternates employee row groups to make long matrices easier to scan", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees.push({
+      ...structuredClone(data.orders[0].employees[0]),
+      employeeId: "e2",
+      employeeName: "Nguyễn Thị Hòa",
+      operations: [operation("op4", 6)],
+    });
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+
+    expect(html).toContain("erp-month-group-start");
+    expect(html).toContain("erp-month-group-alt");
   });
 
   test("does not warn when another operation in the selected order was entered", () => {

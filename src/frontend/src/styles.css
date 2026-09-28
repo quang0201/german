@@ -602,8 +602,15 @@
   .erp-production-manager-page .erp-filter-fields { grid-template-columns: 1fr; }
   .erp-production-manager-page .erp-filter-fields .erp-field:last-child { grid-column: auto; }
   .erp-production-manager-page .erp-filter-actions > * { flex: 1; }
-  .erp-production-controls .erp-filter-fields { grid-template-columns: 1fr; }
-  .erp-production-controls .erp-filter-actions > * { flex: 1; }
+  .erp-production-mobile-filter-toggle { display:flex; align-items:center; gap:8px; width:100%; min-height:42px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text); padding:7px 10px; text-align:left; }
+  .erp-production-mobile-filter-toggle > strong { overflow:hidden; flex:1; color:var(--color-primary-strong); text-overflow:ellipsis; white-space:nowrap; }
+  .erp-production-mobile-filter-toggle > span:last-child { color:var(--color-text-muted); font-size:11px; white-space:nowrap; }
+  .erp-production-filter-active { border-radius:999px; background:var(--color-primary-soft); color:var(--color-primary-strong); padding:3px 7px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .erp-production-filter-panel { display:none; }
+  .erp-production-filter-panel.is-open { position:fixed; z-index:60; top:calc(var(--app-header-height) + 8px); left:10px; right:10px; max-height:calc(100dvh - var(--app-header-height) - 24px); overflow:auto; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface); box-shadow:0 12px 28px rgb(15 23 42 / 22%); padding:0 12px; }
+  .erp-production-filter-panel .erp-filter-bar { margin:0; padding:8px 0; }
+  .erp-production-filter-panel .erp-filter-fields { grid-template-columns:1fr; }
+  .erp-production-filter-panel .erp-filter-actions > * { flex:1; }
 }
 
 @media (max-width: 640px) {
@@ -617,10 +624,24 @@
 
 @media (max-width: 767px) {
   .erp-production-manager-content {
-    height: auto;
-    min-height: calc(100dvh - var(--app-header-height));
-    overflow: visible;
+    height: calc(100dvh - var(--app-header-height));
+    min-height: 0;
+    overflow: hidden;
   }
-  .erp-production-manager-page { height: auto; }
-  .erp-production-manager-page .erp-month-matrix-scroll { max-height: 70vh; }
+  .erp-content.erp-production-manager-content { padding: 8px 10px 10px; }
+  .erp-production-manager-page { height: 100%; gap: 6px; }
+  .erp-production-controls { gap: 5px; }
+  .erp-production-controls-header { align-items: stretch; flex-direction: column; gap: 5px; }
+  .erp-production-controls-header .erp-production-month-nav { justify-content: space-between; }
+  .erp-production-controls-header .erp-production-month-nav-button { min-height:38px; }
+  .erp-production-controls-header .erp-page-actions { justify-content: stretch; gap:6px; }
+  .erp-production-controls-header .erp-page-actions > * { min-height:38px; flex:1; padding-top:0; padding-bottom:0; }
+  .erp-production-mobile-filter-toggle { display:flex; }
+  .erp-production-manager-page .erp-month-matrix-section { flex:1; }
+  .erp-production-manager-page .erp-month-matrix-scroll { max-height:none; }
+}
+
+@media (min-width: 768px) {
+  .erp-production-mobile-filter-toggle { display:none; }
+  .erp-production-filter-panel { display:block; }
 }

@@ -44,4 +44,12 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-sunday[\s\S]*color:/);
     expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-today[\s\S]*background:/);
   });
+
+  test("separates employee groups and gives blank status cells a non-color marker", () => {
+    expect(matrixCss).toContain("erp-month-group-start");
+    expect(matrixCss).toContain("erp-month-group-alt");
+    expect(matrixCss).toContain('erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"?"');
+    expect(matrixCss).toContain('erp-month-status-marker.erp-month-missing button:empty::after { content:"!"');
+    expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"');
+  });
 });
