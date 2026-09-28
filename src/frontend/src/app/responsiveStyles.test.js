@@ -103,7 +103,10 @@ describe("ERP responsive CSS contract", () => {
     expect(mobileStyles).toMatch(/\.erp-production-manager-page\s*\{[^}]*height:\s*100%;/s);
     expect(mobileStyles).toMatch(/\.erp-production-manager-page \.erp-month-matrix-scroll\s*\{[^}]*max-height:\s*none;/s);
     expect(styles).toContain(".erp-production-filter-panel { display:none; }");
-    expect(styles).toContain(".erp-production-filter-panel.is-open {");
+    expect(styles).toMatch(/\.erp-production-filter-panel\.is-open\s*\{[^}]*display:\s*block;[^}]*position:\s*fixed;/s);
+    expect(mobileStyles).toContain(".erp-production-filter-panel-header");
+    expect(mobileStyles).toContain(".erp-production-manager-content > nav { display:none; }");
+    expect(styles).toContain(".erp-production-filter-close { min-height:44px;");
   });
 
   test("integrates the production page period, summary, export, and grouped table contracts", () => {

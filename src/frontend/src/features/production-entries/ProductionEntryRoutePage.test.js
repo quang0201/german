@@ -29,7 +29,11 @@ describe("ProductionEntryRoutePage", () => {
       expect(html).toContain("Xuất Excel");
       expect(html).toContain("+ Nhập sản lượng");
       expect(html).toContain('class="erp-production-mobile-filter-toggle" aria-expanded="false"');
+      expect(html).toContain('aria-controls="erp-production-filter-panel"');
       expect(html).toContain("erp-production-filter-panel");
+      expect(html).toContain('aria-label="Đóng bộ lọc"');
+      expect(html).toContain("Mở lọc");
+      expect(html).toContain("erp-production-filter-open-label");
       expect(html).toContain("Tuần trước");
       expect(html).toContain("Tuần sau");
       expect(html).not.toContain("Tổng lượt công đoạn");

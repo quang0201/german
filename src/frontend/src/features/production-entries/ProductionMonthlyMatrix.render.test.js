@@ -121,8 +121,8 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(matrixSource).toContain("scrollLeftRef.current");
     expect(matrixSource).toContain("scrollLeft = scrollLeftRef.current");
     expect(matrixSource).toContain("onScroll");
-    expect(matrixSource).toContain("horizontalScrollRef");
-    expect(matrixSource).toContain("erp-month-matrix-horizontal-scroll");
+    expect(matrixSource).not.toContain("horizontalScrollRef");
+    expect(matrixSource).not.toContain("erp-month-matrix-horizontal-scroll");
   });
 
   test("marks today and contains logic to jump to its column", () => {

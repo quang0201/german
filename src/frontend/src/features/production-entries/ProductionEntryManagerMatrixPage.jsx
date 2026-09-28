@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
 import { navigate } from "../../app/navigation.js";
 import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
 import { Field } from "../../components/erp/Field.jsx";
@@ -18,6 +18,7 @@ import { buildProductionWeeklyMatrixUrl, currentMonthKey, matrixCellAction } fro
 import { localIsoDate } from "./productionPeriod.js";
 import { derivePeriodRange, shiftPeriod } from "./productionPeriod.js";
 import { ProductionWeekNavigator } from "./ProductionWeekNavigator.jsx";
+import { mobileFilterPanelReducer } from "./productionFilterPanel.js";
 import "./ProductionMonthlyMatrix.css";
 
 const emptyMatrix = { summary: {}, availableOrders: [], orders: [] };
@@ -28,7 +29,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [filters, setFilters] = useState(emptyFilters);
   const [draft, setDraft] = useState(emptyFilters);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileFiltersOpen, dispatchMobileFilterPanel] = useReducer(mobileFilterPanelReducer, false);
   const [employees, setEmployees] = useState([]);
   const [operations, setOperations] = useState([]);
   const [data, setData] = useState(emptyMatrix);
@@ -99,8 +100,8 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     setDraft((current) => ({ ...current, operationId: "" }));
   }
 
-  function applyFilters() { setFilters({ ...draft }); setMobileFiltersOpen(false); }
-  function resetFilters() { setDraft(emptyFilters); setFilters(emptyFilters); setMobileFiltersOpen(false); }
+  function applyFilters() { setFilters({ ...draft }); dispatchMobileFilterPanel("apply"); }
+  function resetFilters() { setDraft(emptyFilters); setFilters(emptyFilters); dispatchMobileFilterPanel("reset"); }
   function reload() { setQuickContext(null); setBatchDay(null); setRecordsContext(null); setReloadKey((value) => value + 1); }
 
   function handleQuickSaved() {
@@ -150,13 +151,17 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
           <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} />
           <div className="erp-page-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></div>
         </div>
-        <button type="button" className="erp-production-mobile-filter-toggle" aria-expanded={mobileFiltersOpen} onClick={() => setMobileFiltersOpen((open) => !open)}>
+        <button type="button" className="erp-production-mobile-filter-toggle" aria-expanded={mobileFiltersOpen} aria-controls="erp-production-filter-panel" onClick={() => dispatchMobileFilterPanel("toggle")}>
           <span>Bộ lọc</span>
           <strong>{data.availableOrders?.find((order) => String(order.id) === String(selectedOrderId))?.code ?? "Chọn mã SX"}</strong>
           {(filters.employeeId || filters.operationId || filters.search) && <span className="erp-production-filter-active">Đang lọc</span>}
-          <span aria-hidden="true">{mobileFiltersOpen ? "Thu gọn −" : "Mở lọc +"}</span>
+          <span className="erp-production-filter-open-label">{mobileFiltersOpen ? "Đóng" : "Mở lọc"}<span aria-hidden="true">{mobileFiltersOpen ? "⌃" : "⌄"}</span></span>
         </button>
-        <div className={`erp-production-filter-panel${mobileFiltersOpen ? " is-open" : ""}`}>
+        <div id="erp-production-filter-panel" className={`erp-production-filter-panel${mobileFiltersOpen ? " is-open" : ""}`}>
+          <div className="erp-production-filter-panel-header">
+            <strong>Bộ lọc</strong>
+            <button type="button" className="erp-button erp-button-secondary erp-production-filter-close" aria-label="Đóng bộ lọc" onClick={() => dispatchMobileFilterPanel("close")}>Đóng</button>
+          </div>
           <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
             <Field label="Mã sản xuất"><select className="erp-control" value={selectedOrderId} onChange={(event) => selectOrder(event.target.value)}><option value="">Chọn Mã SX</option>{(data.availableOrders ?? []).map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select></Field>
             <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>

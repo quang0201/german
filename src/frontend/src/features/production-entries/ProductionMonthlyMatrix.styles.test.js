@@ -39,7 +39,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toMatch(/thead th\[rowspan="2"\][\s\S]*top:\s*0[\s\S]*height:\s*77px\s*!important[\s\S]*vertical-align:\s*middle/);
   });
 
-  test("uses a red weekend header and keeps today's header visually stronger", () => {
+  test("keeps weekends neutral and highlights today with a restrained tint", () => {
     expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-sunday[\s\S]*background:/);
     expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-sunday[\s\S]*color:/);
     expect(matrixCss).toMatch(/\.erp-month-day-head\.erp-month-today[\s\S]*background:/);
@@ -51,5 +51,13 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"?"');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-missing button:empty::after { content:"!"');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"');
+    expect(matrixCss).toContain('erp-month-status-marker.erp-month-no-attendance button:not(:empty)::before { content:"? "');
+    expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:not(:empty)::before { content:"P "');
+    expect(matrixCss).toContain("color-mix(in srgb, var(--color-border) 58%, var(--color-surface))");
+  });
+
+  test("uses one status accent per HC/TC pair instead of double vertical bars", () => {
+    expect(matrixCss).toContain("erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 3px 0");
+    expect(matrixCss).not.toContain(".erp-month-value-cell.erp-month-no-attendance { background:color-mix(in srgb, var(--color-error) 5%, var(--color-surface)) !important; box-shadow");
   });
 });
