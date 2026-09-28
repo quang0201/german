@@ -12,7 +12,9 @@ describe("EmployeeListPage", () => {
 
     expect(html).toContain("+ Thêm nhân viên");
     expect(html.match(/\+ Thêm nhân viên/g)).toHaveLength(1);
-    expect(html).toContain("Tạo mới bằng popup");
+    expect(html).toContain("gán bộ ca HC trước khi chấm công");
+    expect(html.match(/>Nhân viên</g)).toHaveLength(1);
+    expect(html).toContain("Vuốt ngang để xem ngày sinh, bộ ca và thao tác");
     expect(html).not.toContain('id="employee-create"');
   });
 

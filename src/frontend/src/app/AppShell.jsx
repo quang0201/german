@@ -33,7 +33,7 @@ export function AppShell({ session, pathname, breadcrumbs, onLogout, contentClas
         </div>
       </div>
       <div className="erp-main">
-        <Topbar session={session} breadcrumbs={breadcrumbs} onLogout={onLogout} onMenu={() => setMobileOpen(true)} />
+        <Topbar session={session} pathname={pathname} breadcrumbs={breadcrumbs} onLogout={onLogout} onMenu={() => setMobileOpen(true)} />
         <main className={`erp-content ${contentClassName}`.trim()}>
           <Breadcrumbs items={breadcrumbs} />
           {children}

@@ -14,6 +14,7 @@ describe("ReportPage", () => {
 
   test("renders the report controls inside the ERP feedback provider", () => {
     const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
+    expect(html).toContain('<h1 class="erp-visually-hidden">Báo cáo sản lượng</h1>');
     expect(html).not.toContain("erp-page-title");
     expect(html).not.toContain("Xuất báo cáo sản lượng theo khoảng thời gian.");
     expect(html).toContain('data-period-preset="today"');

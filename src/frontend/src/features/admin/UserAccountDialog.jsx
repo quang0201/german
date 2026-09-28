@@ -46,10 +46,10 @@ export function UserAccountDialog({ open = false, mode = "create", account = nul
         <form onSubmit={submit}>
           <div className="erp-user-account-dialog-fields">
             <Field label="Tên đăng nhập" required>
-              <input className="erp-control" required value={draft.username} onChange={(event) => update("username", event.target.value)} />
+              <input className="erp-control" name="new-username" autoComplete={editing ? "username" : "off"} required value={draft.username} onChange={(event) => update("username", event.target.value)} />
             </Field>
             <Field label="Mật khẩu" required={!editing} hint={editing ? "Để trống nếu không đổi mật khẩu." : "Ít nhất 8 ký tự."}>
-              <input className="erp-control" required={!editing} minLength="8" type="password" value={draft.password} onChange={(event) => update("password", event.target.value)} />
+              <input className="erp-control" name="new-password" autoComplete="new-password" required={!editing} minLength="8" type="password" value={draft.password} onChange={(event) => update("password", event.target.value)} />
             </Field>
             <Field label="Vai trò">
               <select className="erp-control" value={draft.role} onChange={(event) => update("role", event.target.value)}>

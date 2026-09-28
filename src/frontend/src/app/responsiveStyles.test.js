@@ -66,6 +66,19 @@ describe("ERP responsive CSS contract", () => {
     expect(styles).toContain(".erp-topbar-search { display: none; }");
   });
 
+  test("keeps mobile topbar actions compact without truncating the page context", () => {
+    const mobileStyles = styles.slice(styles.indexOf("@media (max-width: 767px)"));
+
+    expect(mobileStyles).toMatch(/\.erp-topbar-context\s*\{[^}]*min-width:\s*0;/s);
+    expect(mobileStyles).toContain(".erp-topbar-mcp-full { display: none; }");
+    expect(mobileStyles).toContain(".erp-topbar-mcp-compact { display: inline; }");
+    expect(mobileStyles).toContain(".erp-topbar-logout-compact { display: none; }");
+  });
+
+  test("keeps text-only link actions large enough to tap", () => {
+    expect(styles).toMatch(/\.erp-button-link\s*\{[^}]*min-width:\s*44px;/s);
+  });
+
   test("keeps the production summary responsive without changing ERP tokens", () => {
     const mobileStyles = styles.slice(
       styles.indexOf("@media (max-width: 767px) {"),

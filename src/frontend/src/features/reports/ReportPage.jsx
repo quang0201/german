@@ -172,6 +172,7 @@ export function ReportPage() {
 
   return (
     <div className="erp-feature-page">
+      <h1 className="erp-visually-hidden">Báo cáo sản lượng</h1>
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
       <PeriodSelector

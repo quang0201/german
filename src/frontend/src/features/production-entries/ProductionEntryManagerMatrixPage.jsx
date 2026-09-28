@@ -146,6 +146,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
 
   return (
     <div className="erp-feature-page erp-production-manager-page">
+      <h1 className="erp-visually-hidden">Sản lượng</h1>
       <div className="erp-production-controls">
         <div className="erp-production-controls-header">
           <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} />

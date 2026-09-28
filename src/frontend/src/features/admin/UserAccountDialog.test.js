@@ -22,6 +22,8 @@ describe("UserAccountDialog", () => {
 
     expect(html).toContain("Tạo tài khoản");
     expect(html).toContain('type="password"');
+    expect(html).toContain('autoComplete="off"');
+    expect(html).toContain('autoComplete="new-password"');
     expect(html).toContain("Nguyễn Văn An");
     expect(html).toContain("Tạo mới");
   });

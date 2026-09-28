@@ -105,7 +105,7 @@
 .erp-button-small.is-active { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-hover); }
 .erp-button-danger { color: white; background: var(--color-error); }
 .erp-button-danger:hover:not(:disabled) { background: #991b1b; }
-.erp-button-link { border: 0; background: transparent; color: var(--color-primary); padding: 0; font-weight: 700; }
+.erp-button-link { min-width:44px; border: 0; background: transparent; color: var(--color-primary); padding: 0; font-weight: 700; }
 
 .erp-page-header {
   display: flex;
@@ -309,6 +309,7 @@
 .erp-report-eyebrow { color: var(--color-text-muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .erp-report-operation-table-wrap { overflow-x: auto; }
 .erp-report-table-scroll-hint { display: none; margin: 6px 0 0; color: var(--color-text-subtle); font-size: 11px; }
+.erp-table-scroll-hint { display: none; margin: -6px 0 8px; color: var(--color-text-subtle); font-size: 12px; }
 .erp-report-operation-table { min-width: 850px; }
 .erp-report-operation-table-header, .erp-report-operation-row { display: grid; grid-template-columns: minmax(250px, 310px) minmax(280px, 1fr) 110px 110px 120px; gap: 12px; align-items: center; }
 .erp-report-operation-table-header { position: sticky; top: 0; z-index: 2; padding: 8px 12px; background: var(--color-surface-soft); border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 11px; font-weight: 700; }
@@ -457,6 +458,7 @@
 .erp-user-copy span { color: var(--color-text-muted); font-size: 12px; }
 .erp-mobile-menu { display: none; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); }
 .erp-topbar-logout-compact { display: none; }
+.erp-topbar-mcp-compact { display: none; }
 .erp-content { width: min(1360px, 100%); margin: 0 auto; padding: 32px 32px 56px; }
 .erp-content.erp-production-manager-content { width: 100%; max-width: none; padding: 16px 20px 24px; }
 
@@ -505,9 +507,9 @@
   .erp-sidebar-layer.is-open { display: block; }
   .erp-sidebar-layer > div { width: 280px; height: 100%; }
   .erp-main, .sidebar-collapsed .erp-main { width: 100%; margin-left: 0; }
-  .erp-topbar { padding: 0 16px; gap: 10px; }
+  .erp-topbar { padding: 0 10px; gap: 6px; }
   .erp-mobile-menu { display: block; min-width: 44px; min-height: 44px; }
-  .erp-topbar-context { display: block; overflow: hidden; flex: 1; text-overflow: ellipsis; }
+  .erp-topbar-context { display: block; min-width: 0; overflow: hidden; flex: 1; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   .erp-user-copy { display: none; }
   .erp-content { padding: 20px 16px 32px; }
   .erp-control, .erp-button, .erp-nav-item { min-height: 44px; }
@@ -516,6 +518,7 @@
   .erp-filter-fields .erp-field:last-child { grid-column: auto; }
   .erp-filter-actions > * { flex: 1; }
   .erp-table { min-width: 640px; }
+  .erp-table-scroll-hint { display: block; }
   .erp-production-table-worker .erp-table { min-width: 520px; }
   .erp-column-mobile-hidden { display: none; }
   .erp-column-sticky-mobile { position: sticky; left: 0; z-index: 2; background: var(--color-surface); box-shadow: 1px 0 0 var(--color-border); }
@@ -529,7 +532,11 @@
   .erp-topbar-search { display: none; }
   .erp-topbar-logout { min-width: 44px; padding: 0 8px; }
   .erp-topbar-logout-full { display: none; }
-  .erp-topbar-logout-compact { display: inline; }
+  .erp-topbar-logout-compact { display: none; }
+  .erp-topbar-logout { width: 44px; }
+  .erp-topbar-mcp { min-width: 44px; padding: 0 8px; }
+  .erp-topbar-mcp-full { display: none; }
+  .erp-topbar-mcp-compact { display: inline; }
   body.erp-mobile-nav-open { overflow: hidden; }
   .mobile-nav-open .erp-sidebar-brand { justify-content: flex-start; padding: 0 16px; }
   .mobile-nav-open .erp-sidebar-brand-copy, .mobile-nav-open .erp-nav-label { display: block; }

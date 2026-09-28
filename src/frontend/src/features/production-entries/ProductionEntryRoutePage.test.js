@@ -25,6 +25,7 @@ describe("ProductionEntryRoutePage", () => {
   test("routes Manager and Admin to the grouped weekly matrix flow without a second workspace tab bar", () => {
     for (const role of ["Manager", "Admin"]) {
       const html = renderFor(role);
+      expect(html).toContain('<h1 class="erp-visually-hidden">Sản lượng</h1>');
       expect(html).toContain("erp-production-controls");
       expect(html).toContain("Xuất Excel");
       expect(html).toContain("+ Nhập sản lượng");
