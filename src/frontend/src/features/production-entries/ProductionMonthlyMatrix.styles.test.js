@@ -68,7 +68,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
 
   test("makes date and cell entry affordances visible without hover", () => {
     expect(matrixCss).toContain(".erp-month-day-head .erp-month-day-action");
-    expect(matrixCss).toContain(".erp-month-value-cell button:empty::after { content:\"+\"; opacity:.34;");
+    expect(matrixCss).toContain(".erp-month-value-cell button:empty::after { content:\"+\"; opacity:.62;");
     expect(matrixCss).not.toContain("button:empty::after { content:\"+\"; opacity:0");
     expect(matrixCss).toContain(".erp-month-matrix-help");
   });
@@ -80,6 +80,15 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain(".erp-month-hover-cell");
     expect(matrixCss).toContain(".erp-month-hover-day");
     expect(matrixCss).toContain(".erp-month-cell-tooltip { position:fixed;");
+    expect(matrixCss).toContain("td.erp-month-hover-column { box-shadow:inset 2px 0 var(--color-primary), inset -2px 0 var(--color-primary); }");
+    expect(matrixCss).toContain("td.erp-month-hover-cell { box-shadow:inset 0 0 0 2px var(--color-primary-strong); }");
+    expect(matrixCss).not.toContain("td.erp-month-hover-column { outline:");
+  });
+
+  test("uses legible semantic tints for warnings, missing attendance, and paid leave", () => {
+    expect(matrixCss).toContain(".erp-month-value-cell.erp-month-missing { background:var(--color-warning-soft) !important; }");
+    expect(matrixCss).toContain(".erp-month-value-cell.erp-month-no-attendance { background:var(--color-error-soft) !important; }");
+    expect(matrixCss).toContain(".erp-month-value-cell.erp-month-paid-leave { background:var(--color-paid-leave-soft) !important; }");
   });
 
   test("separates day pairs and employee blocks with stronger structural borders", () => {

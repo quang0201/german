@@ -36,10 +36,10 @@
 .erp-month-employee { font-weight:700; vertical-align:top; padding-top:10px !important; }
 .erp-month-matrix-table tbody tr.erp-month-group-start td { border-top:2px solid var(--color-border-strong); }
 .erp-month-matrix-table tbody tr.erp-month-group-end td { border-bottom:2px solid var(--color-border-strong); }
-.erp-month-matrix-table tbody tr.erp-month-group-alt td { background:color-mix(in srgb, var(--color-primary-soft) 65%, var(--color-surface)); }
+.erp-month-matrix-table tbody tr.erp-month-group-alt td { background:color-mix(in srgb, var(--color-primary-soft) 48%, var(--color-surface)); }
 .erp-month-matrix-table tbody tr.erp-month-group-alt .erp-month-sticky-employee,
-.erp-month-matrix-table tbody tr.erp-month-group-alt .erp-month-sticky-operation { background:color-mix(in srgb, var(--color-primary-soft) 65%, var(--color-surface)) !important; }
-.erp-month-matrix-table tbody tr.erp-month-hover-row:not(.erp-month-inactive) > td:not(.erp-month-no-attendance):not(.erp-month-missing):not(.erp-month-paid-leave):not(.erp-month-future):not(.erp-month-new-employee) { background-color:color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface)) !important; }
+.erp-month-matrix-table tbody tr.erp-month-group-alt .erp-month-sticky-operation { background:color-mix(in srgb, var(--color-primary-soft) 48%, var(--color-surface)) !important; }
+.erp-month-matrix-table tbody tr.erp-month-hover-row:not(.erp-month-inactive) > td:not(.erp-month-no-attendance):not(.erp-month-missing):not(.erp-month-paid-leave):not(.erp-month-future):not(.erp-month-new-employee) { background-color:color-mix(in srgb, var(--color-primary-soft) 58%, var(--color-surface)) !important; }
 .erp-month-employee em { display:block; margin-top:5px; color:var(--color-error); font-size:11px; font-style:normal; font-weight:800; }
 .erp-month-matrix-table tbody tr.erp-month-inactive td { background:var(--color-error-soft) !important; color:var(--color-error); }
 .erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-employee,
@@ -48,14 +48,14 @@
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; }
 .erp-month-value-tc:not(.erp-month-missing):not(.erp-month-no-attendance):not(.erp-month-paid-leave):not(.erp-month-future) { background:var(--color-surface-soft); }
-.erp-month-group-alt .erp-month-value-tc:not(.erp-month-missing):not(.erp-month-no-attendance):not(.erp-month-paid-leave):not(.erp-month-future) { background:color-mix(in srgb, var(--color-primary-soft) 65%, var(--color-surface-soft)); }
+.erp-month-group-alt .erp-month-value-tc:not(.erp-month-missing):not(.erp-month-no-attendance):not(.erp-month-paid-leave):not(.erp-month-future) { background:color-mix(in srgb, var(--color-primary-soft) 48%, var(--color-surface-soft)); }
 .erp-month-day-group-end { border-right:2px solid var(--color-border-strong) !important; }
 .erp-month-value-cell.erp-month-future { background:color-mix(in srgb, var(--color-border) 12%, var(--color-surface)) !important; }
-.erp-month-value-cell.erp-month-missing { background:color-mix(in srgb, var(--color-warning) 5%, var(--color-surface)) !important; }
+.erp-month-value-cell.erp-month-missing { background:var(--color-warning-soft) !important; }
 .erp-month-value-cell.erp-month-missing button { color:var(--color-warning); }
-.erp-month-value-cell.erp-month-no-attendance { background:color-mix(in srgb, var(--color-error) 5%, var(--color-surface)) !important; }
+.erp-month-value-cell.erp-month-no-attendance { background:var(--color-error-soft) !important; }
 .erp-month-value-cell.erp-month-no-attendance button { color:var(--color-error); }
-.erp-month-value-cell.erp-month-paid-leave { background:color-mix(in srgb, var(--color-paid-leave) 6%, var(--color-surface)) !important; }
+.erp-month-value-cell.erp-month-paid-leave { background:var(--color-paid-leave-soft) !important; }
 .erp-month-value-cell.erp-month-paid-leave button { color:var(--color-paid-leave); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-missing { box-shadow:inset 3px 0 var(--color-warning); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 3px 0 var(--color-error); }
@@ -75,10 +75,11 @@
 .erp-month-cell-tooltip strong { color:var(--color-text); font-size:13px; }
 .erp-month-cell-tooltip span { overflow-wrap:anywhere; }
 .erp-month-value-cell button { width:100%; height:100%; border:0; background:transparent; padding:0 7px; color:var(--color-text); text-align:right; font:inherit; font-variant-numeric:tabular-nums; }
-.erp-month-value-cell button:hover { background:var(--color-primary-soft); box-shadow:inset 0 0 0 1px var(--color-focus-ring); }
-.erp-month-matrix-table td.erp-month-hover-column { outline:1px solid var(--color-primary); outline-offset:-1px; }
-.erp-month-matrix-table td.erp-month-hover-cell { outline:2px solid var(--color-primary); outline-offset:-2px; }
-.erp-month-value-cell button:empty::after { content:"+"; opacity:.34; color:var(--color-primary); font-weight:900; }
+.erp-month-value-cell button:hover { background:color-mix(in srgb, var(--color-primary-soft) 62%, var(--color-surface)); }
+.erp-month-matrix-table td.erp-month-hover-column { box-shadow:inset 2px 0 var(--color-primary), inset -2px 0 var(--color-primary); }
+.erp-month-matrix-table td.erp-month-hover-cell { box-shadow:inset 0 0 0 2px var(--color-primary-strong); }
+.erp-month-matrix-table td.erp-month-hover-cell button { color:var(--color-primary-strong); font-weight:800; }
+.erp-month-value-cell button:empty::after { content:"+"; opacity:.62; color:var(--color-primary-strong); font-weight:900; }
 .erp-month-value-cell button:disabled::after { content:none; }
 .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"?"; opacity:1; color:var(--color-error); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-missing button:empty::after { content:"!"; opacity:1; color:var(--color-warning); }
