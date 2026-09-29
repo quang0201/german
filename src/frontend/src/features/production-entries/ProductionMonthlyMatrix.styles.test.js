@@ -97,6 +97,14 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain(".erp-month-value-cell.erp-month-paid-leave { background:var(--color-paid-leave-soft) !important; }");
   });
 
+  test("uses restrained square corners for matrix controls and entry dialogs", () => {
+    expect(matrixCss).toContain(".erp-month-day-head .erp-month-day-action { display:inline-flex;");
+    expect(matrixCss).toContain("border-radius:2px;");
+    expect(matrixCss).toContain("border-left-width:3px; border-radius:3px; background:var(--color-surface);");
+    expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog,.erp-dialog.erp-matrix-batch-dialog{border-radius:4px}");
+    expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog .erp-mode-option,.erp-dialog.erp-matrix-dialog .erp-control,.erp-dialog.erp-matrix-dialog .erp-button{border-radius:3px}");
+  });
+
   test("separates day pairs and employee blocks with stronger structural borders", () => {
     expect(matrixCss).toContain(".erp-month-day-head { border-right:2px solid var(--color-border-strong) !important; }");
     expect(matrixCss).toContain(".erp-month-value-cell { padding:0 !important; text-align:right; border-right:2px solid var(--color-border-strong) !important; }");
