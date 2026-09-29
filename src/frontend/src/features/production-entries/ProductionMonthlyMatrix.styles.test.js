@@ -22,11 +22,13 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(dialogsCss).toContain("✓");
   });
 
-  test("keeps sticky employee and operation headers above scrolling day headers", () => {
+  test("keeps employee and operation headers fixed above single-row dates", () => {
     expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-sticky-employee,[\s\n]*\.erp-month-matrix-table thead \.erp-month-sticky-operation[\s\S]*z-index:\s*12/);
+    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:first-child th { top:0; height:68px;");
+    expect(matrixCss).not.toContain("thead tr:nth-child(2)");
   });
 
-  test("keeps sticky total headers above scrolling day subheaders", () => {
+  test("keeps sticky total headers aligned with the single date header row", () => {
     expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-total[\s\S]*z-index:\s*12/);
   });
 
@@ -38,9 +40,8 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain("overflow-wrap:anywhere;");
   });
 
-  test("gives two-row sticky headers the full combined height", () => {
-    expect(matrixCss).toMatch(/thead tr:first-child th:not\(\[rowspan="2"\]\)[\s\S]*height:\s*46px/);
-    expect(matrixCss).toMatch(/thead th\[rowspan="2"\][\s\S]*top:\s*0[\s\S]*height:\s*77px\s*!important[\s\S]*vertical-align:\s*middle/);
+  test("gives the single sticky header row enough height for the date and total", () => {
+    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:first-child th { top:0; height:68px; vertical-align:middle; }");
   });
 
   test("keeps weekends neutral and highlights today with a restrained tint", () => {
@@ -57,12 +58,13 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-no-attendance button:not(:empty)::before { content:"? "');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:not(:empty)::before { content:"P "');
-    expect(matrixCss).toContain("border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border);");
+    expect(matrixCss).toContain("border-right:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface)); border-bottom:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface));");
   });
 
-  test("uses one status accent per HC/TC pair instead of double vertical bars", () => {
+  test("uses a stronger cell grid and one status accent per daily total", () => {
+    expect(matrixCss).toContain("border-right:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface));");
     expect(matrixCss).toContain("erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 3px 0");
-    expect(matrixCss).not.toContain(".erp-month-value-cell.erp-month-no-attendance { background:color-mix(in srgb, var(--color-error) 5%, var(--color-surface)) !important; box-shadow");
+    expect(matrixCss).toContain(".erp-month-value-cell { min-width:82px; width:82px;");
   });
 
   test("keeps future blank cells neutral and explains that state in the legend", () => {
@@ -78,7 +80,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
   });
 
   test("uses clear gridlines and tracks the hovered cell's employee row and date column", () => {
-    expect(matrixCss).toContain("border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border);");
+    expect(matrixCss).toContain("border-right:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface)); border-bottom:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface));");
     expect(matrixCss).toContain(".erp-month-hover-row:not(.erp-month-inactive) > td");
     expect(matrixCss).toContain(".erp-month-hover-column");
     expect(matrixCss).toContain(".erp-month-hover-cell");
@@ -97,9 +99,9 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
 
   test("separates day pairs and employee blocks with stronger structural borders", () => {
     expect(matrixCss).toContain(".erp-month-day-head { border-right:2px solid var(--color-border-strong) !important; }");
-    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n) { border-right:2px solid var(--color-border-strong); }");
+    expect(matrixCss).toContain(".erp-month-value-cell { padding:0 !important; text-align:right; border-right:2px solid var(--color-border-strong) !important; }");
     expect(matrixCss).toContain(".erp-month-matrix-table tbody tr.erp-month-group-end td { border-bottom:2px solid var(--color-border-strong); }");
-    expect(matrixCss).toContain(".erp-month-value-tc:not(.erp-month-missing)");
+    expect(matrixCss).toContain(".erp-month-value-cell.erp-month-missing { background:var(--color-warning-soft) !important; }");
   });
 
   test("uses the page as the only vertical scroller on narrow screens", () => {

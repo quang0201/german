@@ -81,8 +81,35 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain('aria-label="Nhập nhanh ngày T7 01/08: chọn Mã SX và công đoạn"');
     expect(html).toContain("erp-month-day-action");
     expect(html).toContain("Chọn ngày để nhập nhanh nhiều người");
-    expect(html).toContain("Bấm để nhập sản lượng");
+    expect(html).toContain("Bấm ô tổng để nhập hoặc sửa chi tiết HC/TC");
     expect(html).toContain("erp-month-order-filter-select");
+  });
+
+  test("shows the daily HC+TC total while keeping both values in the click details", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].workedDates = ["2026-08-05"];
+    data.orders[0].employees[0].productionDates = ["2026-08-05"];
+    data.orders[0].employees[0].operations[0].cells = [{
+      workDate: "2026-08-05",
+      hcQuantity: 220,
+      tcQuantity: 35,
+      totalQuantity: 255,
+      entryCount: 1,
+      records: [],
+    }];
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={data}
+      fromDate="2026-08-05"
+      untilDate="2026-08-05"
+      excludeSundays={false}
+    />);
+
+    expect(html).toContain('aria-label="Bạch Thị Đào CĐ4 05/08 Tổng"');
+    expect(html).toContain("HC: 220 · TC: 35");
+    expect(html).toContain('aria-description="Nhân viên: Bạch Thị Đào');
+    expect(html).toContain(">255</button>");
+    expect(html.match(/<td data-date="2026-08-05"/g)).toHaveLength(3);
+    expect(html).not.toContain("erp-month-day-sub");
   });
 
   test("shows useful employee, order, operation, date, quantity and status details on matrix-cell hover", () => {
@@ -187,7 +214,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(cellsOnDate("2026-08-20").every((className) => className.includes("erp-month-no-attendance"))).toBe(true);
     expect(cellsOnDate("2026-08-21").every((className) => className.includes("erp-month-future") && !className.includes("erp-month-no-attendance") && !className.includes("erp-month-missing"))).toBe(true);
     expect(html).toContain("Chưa tới ngày");
-    expect(html).toContain("21/08 HC - chưa tới ngày");
+    expect(html).toContain("21/08 Tổng - chưa tới ngày");
   });
 
   test("does not label future dates as not-yet-arrived when production is already entered", () => {
@@ -212,16 +239,17 @@ describe("ProductionMonthlyMatrix render", () => {
       today={new Date("2026-08-20T08:00:00")}
     />);
 
-    const cellIndex = html.indexOf('aria-label="Bạch Thị Đào CĐ4 21/08 HC"');
+    const cellIndex = html.indexOf('aria-label="Bạch Thị Đào CĐ4 21/08 Tổng"');
     const rowStart = html.lastIndexOf("<tr", cellIndex);
     const rowEnd = html.indexOf("</tr>", cellIndex) + "</tr>".length;
     const enteredOperationRow = cellIndex >= 0 ? html.slice(rowStart, rowEnd) : "";
-    expect(enteredOperationRow).toContain('aria-label="Bạch Thị Đào CĐ4 21/08 HC"');
+    expect(enteredOperationRow).toContain('aria-label="Bạch Thị Đào CĐ4 21/08 Tổng"');
+    expect(enteredOperationRow).toContain("HC: 100 · TC: 20");
     expect(enteredOperationRow).not.toContain("chưa tới ngày");
     expect(enteredOperationRow).not.toContain("erp-month-future");
   });
 
-  test("renders one visible status marker in HC while keeping both cells marked for styling", () => {
+  test("renders one total cell and one status marker per operation and day", () => {
     const data = dataWithOneOrder();
     const employee = data.orders[0].employees[0];
     employee.workedDates = [];
@@ -234,7 +262,7 @@ describe("ProductionMonthlyMatrix render", () => {
     />);
     const classes = [...html.matchAll(/<td data-date="2026-08-20" class="([^"]*)"/g)].map((match) => match[1]);
 
-    expect(classes).toHaveLength(6);
+    expect(classes).toHaveLength(3);
     expect(classes.filter((className) => className.includes("erp-month-status-marker"))).toHaveLength(3);
   });
 
@@ -258,7 +286,7 @@ describe("ProductionMonthlyMatrix render", () => {
 
     expect(html).toContain("erp-month-inactive");
     expect(html).toContain("Đã tắt");
-    expect(html).toMatch(/button[^>]*disabled=""[^>]*aria-label="Bạch Thị Đào CĐ4 01\/08 HC"/);
+    expect(html).toMatch(/button[^>]*disabled=""[^>]*aria-label="Bạch Thị Đào CĐ4 01\/08 Tổng/);
   });
 
   test("does not warn when at least one operation is entered on a production day", () => {
@@ -295,7 +323,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("erp-month-group-end");
     expect(html).toContain('class="erp-month-employee-name" title="Bạch Thị Đào"');
     expect(html).toContain('class="erp-month-employee-name" title="Nguyễn Thị Hòa"');
-    expect(html).toContain("erp-month-value-tc erp-month-day-group-end");
+    expect(html).toContain("erp-month-value-cell");
   });
 
   test("does not warn when another operation in the selected order was entered", () => {

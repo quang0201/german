@@ -7,16 +7,11 @@
 .erp-month-matrix-scroll-hint { display:none; }
 .erp-month-matrix-scroll { max-height:680px; overflow:auto; border:1px solid var(--color-border); background:var(--color-surface); scrollbar-gutter:stable; }
 .erp-month-matrix-table { --erp-month-employee-column-width:15ch; width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; font-size:13px; }
-.erp-month-matrix-table th, .erp-month-matrix-table td { height:var(--table-row-height); border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border); padding:0 8px; background:var(--color-surface); white-space:nowrap; }
+.erp-month-matrix-table th, .erp-month-matrix-table td { height:var(--table-row-height); border-right:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface)); border-bottom:1px solid color-mix(in srgb, var(--color-border-strong) 48%, var(--color-surface)); padding:0 8px; background:var(--color-surface); white-space:nowrap; }
 .erp-month-matrix-table thead th { position:sticky; z-index:7; background:var(--color-surface-soft); color:var(--color-text-muted); text-align:center; font-weight:800; }
-.erp-month-matrix-table thead tr:first-child th:not([rowspan="2"]) { top:0; height:46px; }
-.erp-month-matrix-table thead tr:nth-child(2) th { top:46px; height:31px; font-size:12px; }
-.erp-month-matrix-table thead th[rowspan="2"] { top:0; height:77px !important; vertical-align:middle; }
+.erp-month-matrix-table thead tr:first-child th { top:0; height:68px; vertical-align:middle; }
 .erp-month-day-head { border-right:2px solid var(--color-border-strong) !important; }
-.erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n) { background:color-mix(in srgb, var(--color-primary-soft) 42%, var(--color-surface-soft)); }
-.erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n + 1) { border-left:1px solid var(--color-border-strong); }
-.erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n) { border-right:2px solid var(--color-border-strong); }
-.erp-month-day-head { min-width:112px; padding:0 !important; }
+.erp-month-day-head { min-width:88px; padding:0 !important; border-right:2px solid var(--color-border-strong) !important; }
 .erp-month-day-head button { display:grid; grid-template-rows:auto auto auto; align-content:center; justify-items:center; gap:0; width:100%; height:100%; border:0; background:transparent; color:inherit; cursor:pointer; }
 .erp-month-day-head button:hover { background:var(--color-primary-soft); color:var(--color-primary-hover); }
 .erp-month-day-head button:focus-visible { position:relative; z-index:1; outline:3px solid var(--color-focus-ring); outline-offset:-3px; }
@@ -26,7 +21,7 @@
 .erp-month-day-head span { font-size:11px; }
 .erp-month-day-head .erp-month-day-action { display:inline-flex; align-items:center; gap:2px; min-height:13px; border-radius:999px; background:var(--color-primary-soft); color:var(--color-primary-strong); padding:0 5px; font-size:9px; font-weight:800; line-height:12px; }
 .erp-month-day-head .erp-month-day-action span { display:inline; font-size:9px; }
-.erp-month-day-sub, .erp-month-value-cell { min-width:56px; width:56px; }
+.erp-month-value-cell { min-width:82px; width:82px; }
 .erp-month-sticky-employee, .erp-month-sticky-operation, .erp-month-total { position:sticky; z-index:5; background:var(--color-surface) !important; }
 .erp-month-sticky-employee { left:0; box-sizing:border-box; min-width:var(--erp-month-employee-column-width); width:var(--erp-month-employee-column-width); max-width:var(--erp-month-employee-column-width); }
 .erp-month-sticky-operation { left:var(--erp-month-employee-column-width); min-width:78px; width:78px; box-shadow:none; border-right:2px solid var(--color-border) !important; }
@@ -44,9 +39,7 @@
 .erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-operation { background:var(--color-error-soft) !important; }
 .erp-month-matrix-table tbody tr.erp-month-new-employee .erp-month-employee { background:var(--color-warning-soft) !important; color:var(--color-warning); }
 .erp-month-operation { text-align:center; font-weight:700; }
-.erp-month-value-cell { padding:0 !important; text-align:right; }
-.erp-month-value-tc:not(.erp-month-missing):not(.erp-month-no-attendance):not(.erp-month-paid-leave):not(.erp-month-future) { background:var(--color-surface-soft); }
-.erp-month-day-group-end { border-right:2px solid var(--color-border-strong) !important; }
+.erp-month-value-cell { padding:0 !important; text-align:right; border-right:2px solid var(--color-border-strong) !important; }
 .erp-month-value-cell.erp-month-future { background:color-mix(in srgb, var(--color-border) 12%, var(--color-surface)) !important; }
 .erp-month-value-cell.erp-month-missing { background:var(--color-warning-soft) !important; }
 .erp-month-value-cell.erp-month-missing button { color:var(--color-warning); }
@@ -114,8 +107,8 @@
   .erp-month-matrix-legend i { flex:0 0 16px; width:16px; height:16px; }
   .erp-month-matrix-scroll { max-height:none; }
   .erp-month-sticky-operation { left:var(--erp-month-employee-column-width); min-width:52px; width:52px; }
-  .erp-month-day-head { min-width:104px; }
+  .erp-month-day-head { min-width:80px; }
   .erp-month-day-head .erp-month-day-action { min-height:17px; font-size:10px; line-height:15px; }
   .erp-month-day-head .erp-month-day-action span { display:inline; font-size:10px; }
-  .erp-month-day-sub, .erp-month-value-cell { min-width:52px; width:52px; }
+  .erp-month-value-cell { min-width:68px; width:68px; }
 }
