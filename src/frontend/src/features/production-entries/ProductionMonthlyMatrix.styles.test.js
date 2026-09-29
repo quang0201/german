@@ -32,6 +32,10 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
 
   test("aligns row-spanned employee names with the first operation row", () => {
     expect(matrixCss).toMatch(/\.erp-month-employee[\s\S]*vertical-align:\s*top[\s\S]*padding-top:\s*10px\s*!important/);
+    expect(matrixCss).toContain("--erp-month-employee-column-width:15ch;");
+    expect(matrixCss).toContain(".erp-month-employee-name { display:-webkit-box;");
+    expect(matrixCss).toContain("-webkit-line-clamp:2;");
+    expect(matrixCss).toContain("overflow-wrap:anywhere;");
   });
 
   test("gives two-row sticky headers the full combined height", () => {
@@ -47,7 +51,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
 
   test("separates employee groups and gives blank status cells a non-color marker", () => {
     expect(matrixCss).toContain("erp-month-group-start");
-    expect(matrixCss).toContain("erp-month-group-alt");
+    expect(matrixCss).not.toContain("erp-month-group-alt");
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"?"');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-missing button:empty::after { content:"!"');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"');

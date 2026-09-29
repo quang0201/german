@@ -280,7 +280,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain('aria-label="Ma trận sản lượng; cuộn ngang để xem các ngày, cuộn dọc để xem nhân viên"');
   });
 
-  test("alternates employee row groups to make long matrices easier to scan", () => {
+  test("keeps employee groups on one neutral background and preserves full names for truncated labels", () => {
     const data = dataWithOneOrder();
     data.orders[0].employees.push({
       ...structuredClone(data.orders[0].employees[0]),
@@ -291,8 +291,10 @@ describe("ProductionMonthlyMatrix render", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
 
     expect(html).toContain("erp-month-group-start");
-    expect(html).toContain("erp-month-group-alt");
+    expect(html).not.toContain("erp-month-group-alt");
     expect(html).toContain("erp-month-group-end");
+    expect(html).toContain('class="erp-month-employee-name" title="Bạch Thị Đào"');
+    expect(html).toContain('class="erp-month-employee-name" title="Nguyễn Thị Hòa"');
     expect(html).toContain("erp-month-value-tc erp-month-day-group-end");
   });
 
@@ -322,7 +324,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("Trần Thị Loan");
     expect(html).not.toContain("không yêu cầu nhập sản lượng");
     expect(html).toContain("Trần Thị Loan");
-    expect(html).toMatch(/Trần Thị Loan[^<]*<\/td><td class="erp-month-sticky-operation erp-month-operation"><\/td>/);
+    expect(html).toContain('class="erp-month-employee-name" title="Trần Thị Loan">Trần Thị Loan</span></td><td class="erp-month-sticky-operation erp-month-operation"></td>');
   });
 
   test("does not warn for an hourly employee who has an existing production row", () => {
