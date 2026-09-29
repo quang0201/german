@@ -11,10 +11,10 @@ const productionManagerMatrixPage = readFileSync(resolve(import.meta.dir, "../fe
 
 describe("ERP responsive CSS contract", () => {
   test("uses a calm shared shell and restrained table headings across pages", () => {
-    expect(styles).toContain("--color-bg: #f2f5f2;");
-    expect(styles).toContain("background: #edf2ef; color: var(--color-text-muted); transition: width 160ms ease;");
-    expect(styles).toContain(".erp-nav-item.is-active { border-color: #c7ddd5; background: #dcebe5;");
-    expect(styles).toContain("font-size: 12px; font-weight: 750; letter-spacing: .015em; white-space: nowrap;");
+    expect(styles).toContain("--color-bg: #f1f5f7;");
+    expect(styles).toContain("background: #eaf1f2; color: var(--color-text-muted); transition: width 160ms ease;");
+    expect(styles).toContain(".erp-nav-item.is-active { border-color: #afd9d2; background: #d8efea;");
+    expect(styles).toContain("font-size: 12px; font-weight: 800; letter-spacing: .025em; white-space: nowrap;");
   });
 
   test("defines compact sidebar and drawer breakpoints", () => {
@@ -70,7 +70,7 @@ describe("ERP responsive CSS contract", () => {
   test("uses mobile priority columns and multi-row pagination", () => {
     expect(styles).toContain(".erp-column-mobile-hidden { display: none; }");
     expect(styles).toContain(".erp-pagination { grid-template-columns: 1fr auto; gap: 10px 14px; }");
-    expect(styles).toContain(".erp-topbar-search { display: none; }");
+    expect(styles).not.toContain(".erp-topbar-search");
   });
 
   test("keeps mobile topbar actions compact without truncating the page context", () => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { DataTable } from "../../components/erp/DataTable.jsx";
+import { Icon } from "../../components/erp/Icon.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
 import { buildShiftUpdatePayload } from "./shiftTemplateDialog.js";
@@ -104,7 +105,7 @@ export function ShiftListPage() {
 
   return (
     <div className="erp-feature-page">
-      <PageHeader title="Ca làm việc" description="Quản lý bộ ca và khung giờ HC." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setCreateOpen(true); setCreateError(""); }}>+ Tạo bộ ca</button>} />
+      <PageHeader title="Ca làm việc" description="Quản lý bộ ca và khung giờ HC." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setCreateOpen(true); setCreateError(""); }}><Icon name="plus" size={17} />Tạo bộ ca</button>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
       {deleteError && <Alert variant="error" title="Không thể xóa bộ ca.">{deleteError}</Alert>}
       <div className="erp-section-description">Dùng popup để tạo, sửa hoặc xóa bộ ca. Xóa sẽ tắt bộ ca và giữ nguyên lịch sử chấm công.</div>

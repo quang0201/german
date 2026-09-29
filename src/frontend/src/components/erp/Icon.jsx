@@ -13,6 +13,10 @@ const paths = {
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
   logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" /></>,
   refresh: <><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5" /></>,
+  plus: <path d="M12 5v14M5 12h14" />,
+  edit: <><path d="m14 6 4 4" /><path d="M4 20l4-.8L19 8a2.8 2.8 0 0 0-4-4L4 15z" /></>,
+  download: <><path d="M12 3v12m0 0 4-4m-4 4-4-4" /><path d="M5 17v4h14v-4" /></>,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></>,
   chevronLeft: <path d="m15 18-6-6 6-6" />,
   chevronRight: <path d="m9 18 6-6-6-6" />,
 };

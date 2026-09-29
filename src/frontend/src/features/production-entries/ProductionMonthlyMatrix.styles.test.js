@@ -65,4 +65,11 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain(".erp-month-value-cell.erp-month-future");
     expect(matrixCss).toContain(".is-future-date");
   });
+
+  test("makes date and cell entry affordances visible without hover", () => {
+    expect(matrixCss).toContain(".erp-month-day-head .erp-month-day-action");
+    expect(matrixCss).toContain(".erp-month-value-cell button:empty::after { content:\"+\"; opacity:.34;");
+    expect(matrixCss).not.toContain("button:empty::after { content:\"+\"; opacity:0");
+    expect(matrixCss).toContain(".erp-month-matrix-help");
+  });
 });

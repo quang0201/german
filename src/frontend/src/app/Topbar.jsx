@@ -46,10 +46,6 @@ export function Topbar({ session, pathname = "", breadcrumbs = [], onLogout, onM
     <header className="erp-topbar">
       <button type="button" className="erp-mobile-menu" onClick={onMenu} aria-label="Mở menu"><Icon name="menu" size={22} /></button>
       <div className="erp-topbar-context">{context}</div>
-      <div className="erp-topbar-search">
-        <Icon name="search" size={18} />
-        <input aria-label="Tìm kiếm" placeholder="Tìm kiếm trong hệ thống" />
-      </div>
       <div className="erp-user-menu">
         <div className="erp-user-avatar">{displayName(session).slice(0, 1).toUpperCase()}</div>
         <div className="erp-user-copy"><strong>{displayName(session)}</strong><span>{roleLabel(session.role)}</span></div>

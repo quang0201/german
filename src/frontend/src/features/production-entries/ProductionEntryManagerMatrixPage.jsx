@@ -3,6 +3,7 @@ import { navigate } from "../../app/navigation.js";
 import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { FilterBar } from "../../components/erp/FilterBar.jsx";
+import { Icon } from "../../components/erp/Icon.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { employeeVisibleForMonth } from "../employees/employeeVisibility.js";
@@ -150,7 +151,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
       <div className="erp-production-controls">
         <div className="erp-production-controls-header">
           <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} />
-          <div className="erp-page-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}>Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}>+ Nhập sản lượng</button></div>
+          <div className="erp-page-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}><Icon name="download" size={17} />Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}><Icon name="plus" size={17} />Nhập sản lượng</button></div>
         </div>
         <button type="button" className="erp-production-mobile-filter-toggle" aria-expanded={mobileFiltersOpen} aria-controls="erp-production-filter-panel" onClick={() => dispatchMobileFilterPanel("toggle")}>
           <span>Bộ lọc</span>

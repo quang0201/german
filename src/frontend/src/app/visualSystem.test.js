@@ -15,13 +15,13 @@ describe("Industrial Clarity visual system", () => {
   test("honors the locked ERP density and radius contract", () => {
     const styles = read("src/styles.css");
 
-    expect(styles).toContain("--radius-sm: 4px;");
-    expect(styles).toContain("--radius-md: 6px;");
+    expect(styles).toContain("--radius-sm: 7px;");
+    expect(styles).toContain("--radius-md: 10px;");
     expect(styles).toContain("--control-height: 38px;");
     expect(styles).toContain("--table-row-height: 42px;");
-    expect(styles).toContain("--color-text-muted: #4e605b;");
-    expect(styles).toContain("--color-primary: #2e746c;");
-    expect(styles).toContain("--color-focus-ring: #2e746c;");
+    expect(styles).toContain("--color-text-muted: #465b60;");
+    expect(styles).toContain("--color-primary: #0f766e;");
+    expect(styles).toContain("--color-focus-ring: #0f766e;");
     expect(styles).toContain("--color-paid-leave: #2563eb;");
     expect(styles).toMatch(/\.erp-page-title\s*\{[^}]*font-size:\s*24px/s);
     expect(styles).toMatch(/\.erp-nav-item\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
@@ -31,10 +31,10 @@ describe("Industrial Clarity visual system", () => {
     const styles = read("src/styles.css");
 
     expect(styles).toMatch(/\.erp-page-header\s*\{[^}]*background:\s*var\(--color-surface\)/s);
-    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border-radius:\s*8px/s);
+    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border-radius:\s*10px/s);
     expect(styles).toMatch(/\.erp-form-section\s*\{[^}]*background:\s*var\(--color-surface\)/s);
     expect(styles).toMatch(/\.erp-report-toolbar\s*\{[^}]*background:\s*var\(--color-surface\)/s);
-    expect(styles).toMatch(/\.erp-table th\s*\{[^}]*background:\s*#eef4f1/s);
+    expect(styles).toMatch(/\.erp-table th\s*\{[^}]*background:\s*#eaf2f3/s);
     expect(styles).toMatch(/\.erp-production-manager-page \.erp-page-header\s*\{[^}]*background:\s*transparent/s);
   });
 

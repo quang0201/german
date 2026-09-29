@@ -13,12 +13,15 @@
 .erp-month-matrix-table thead tr:nth-child(2) th { top:46px; height:31px; font-size:12px; }
 .erp-month-matrix-table thead th[rowspan="2"] { top:0; height:77px !important; vertical-align:middle; }
 .erp-month-day-head { min-width:112px; padding:0 !important; }
-.erp-month-day-head button { width:100%; height:100%; border:0; background:transparent; color:inherit; }
+.erp-month-day-head button { display:grid; grid-template-rows:auto auto auto; align-content:center; justify-items:center; gap:0; width:100%; height:100%; border:0; background:transparent; color:inherit; cursor:pointer; }
 .erp-month-day-head button:hover { background:var(--color-primary-soft); color:var(--color-primary-hover); }
+.erp-month-day-head button:focus-visible { position:relative; z-index:1; outline:3px solid var(--color-focus-ring); outline-offset:-3px; }
 .erp-month-day-head.erp-month-sunday { background:var(--color-surface-soft); color:var(--color-text-muted); box-shadow:inset 0 -2px 0 var(--color-border-strong); }
 .erp-month-day-head.erp-month-today { background:color-mix(in srgb, var(--color-primary) 13%, var(--color-surface-soft)); color:var(--color-primary-strong); box-shadow:inset 0 -2px 0 var(--color-primary); }
 .erp-month-day-head span, .erp-month-day-head strong { display:block; }
 .erp-month-day-head span { font-size:11px; }
+.erp-month-day-head .erp-month-day-action { display:inline-flex; align-items:center; gap:2px; min-height:13px; border-radius:999px; background:var(--color-primary-soft); color:var(--color-primary-strong); padding:0 5px; font-size:9px; font-weight:800; line-height:12px; }
+.erp-month-day-head .erp-month-day-action span { display:inline; font-size:9px; }
 .erp-month-day-sub, .erp-month-value-cell { min-width:56px; width:56px; }
 .erp-month-sticky-employee, .erp-month-sticky-operation, .erp-month-total { position:sticky; z-index:5; background:var(--color-surface) !important; }
 .erp-month-sticky-employee { left:0; min-width:220px; width:220px; }
@@ -54,9 +57,13 @@
 .erp-month-matrix-legend .is-missing-operation { border-color:var(--color-warning); background:var(--color-warning-soft); }
 .erp-month-matrix-legend .is-paid-leave { border-color:var(--color-paid-leave); background:var(--color-paid-leave-soft); color:var(--color-paid-leave); }
 .erp-month-matrix-legend .is-future-date { border-color:var(--color-border-strong); background:var(--color-surface); color:var(--color-text-subtle); }
+.erp-month-matrix-help { display:flex; align-items:center; gap:7px; min-height:34px; border-inline:1px solid var(--color-border); background:var(--color-surface-soft); color:var(--color-text-muted); padding:5px 12px; font-size:11px; }
+.erp-month-matrix-help .erp-icon { flex:0 0 auto; color:var(--color-primary); }
+.erp-month-empty-state { border:1px solid var(--color-border); border-top:0; background:var(--color-surface); padding:14px 16px; color:var(--color-text-muted); font-size:13px; }
 .erp-month-value-cell button { width:100%; height:100%; border:0; background:transparent; padding:0 7px; color:var(--color-text); text-align:right; font:inherit; font-variant-numeric:tabular-nums; }
 .erp-month-value-cell button:hover { background:var(--color-primary-soft); box-shadow:inset 0 0 0 1px var(--color-focus-ring); }
-.erp-month-value-cell button:empty::after { content:"+"; opacity:0; color:var(--color-primary); font-weight:800; }
+.erp-month-value-cell button:empty::after { content:"+"; opacity:.34; color:var(--color-primary); font-weight:900; }
+.erp-month-value-cell button:disabled::after { content:none; }
 .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"?"; opacity:1; color:var(--color-error); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-missing button:empty::after { content:"!"; opacity:1; color:var(--color-warning); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"; opacity:1; color:var(--color-paid-leave); }
@@ -89,9 +96,12 @@
   .erp-month-matrix-scroll-hint { display:flex; align-items:center; justify-content:space-between; padding:5px 10px; color:var(--color-text-muted); background:var(--color-surface-soft); border-inline:1px solid var(--color-border); font-size:11px; }
   .erp-month-matrix-scroll-hint span { color:var(--color-primary); font-size:16px; font-weight:800; }
   .erp-month-matrix-legend { gap:6px 12px; padding:7px 9px; font-size:10px; }
+  .erp-month-matrix-help { align-items:flex-start; padding:6px 9px; font-size:10px; line-height:1.35; }
   .erp-month-matrix-legend i { flex:0 0 16px; width:16px; height:16px; }
   .erp-month-sticky-employee { min-width:142px; width:142px; }
   .erp-month-sticky-operation { left:142px; min-width:52px; width:52px; }
   .erp-month-day-head { min-width:104px; }
+  .erp-month-day-head .erp-month-day-action { min-height:17px; font-size:10px; line-height:15px; }
+  .erp-month-day-head .erp-month-day-action span { display:inline; font-size:10px; }
   .erp-month-day-sub, .erp-month-value-cell { min-width:52px; width:52px; }
 }

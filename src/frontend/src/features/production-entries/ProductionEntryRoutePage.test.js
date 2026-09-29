@@ -28,7 +28,8 @@ describe("ProductionEntryRoutePage", () => {
       expect(html).toContain('<h1 class="erp-visually-hidden">Sản lượng</h1>');
       expect(html).toContain("erp-production-controls");
       expect(html).toContain("Xuất Excel");
-      expect(html).toContain("+ Nhập sản lượng");
+      expect(html).toContain("<svg class=\"erp-icon\"");
+      expect(html).toContain(">Nhập sản lượng</button>");
       expect(html).toContain('class="erp-production-mobile-filter-toggle" aria-expanded="false"');
       expect(html).toContain('aria-controls="erp-production-filter-panel"');
       expect(html).toContain("erp-production-filter-panel");

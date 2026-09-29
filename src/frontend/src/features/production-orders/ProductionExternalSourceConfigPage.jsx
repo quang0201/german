@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { FormSection } from "../../components/erp/FormSection.jsx";
+import { Icon } from "../../components/erp/Icon.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
 import { ProductionExternalSourceDialog } from "./ProductionExternalSourceDialog.jsx";
@@ -56,7 +57,7 @@ export function ProductionExternalSourceConfigPage() {
 
   return (
     <div className="erp-feature-page">
-      <PageHeader title="Danh sách gia công ngoài" description="Cấu hình nguồn để chọn nhanh khi nhập sản lượng nhận ngoài." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setError(""); setDialog({ source: null }); }}>+ Thêm nguồn gia công</button>} />
+      <PageHeader title="Danh sách gia công ngoài" description="Cấu hình nguồn để chọn nhanh khi nhập sản lượng nhận ngoài." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setError(""); setDialog({ source: null }); }}><Icon name="plus" size={17} />Thêm nguồn gia công</button>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
       <FormSection title="Nguồn gia công ngoài" description="Nguồn đã tắt không xuất hiện trong dropdown nhập mới; dữ liệu lịch sử vẫn được giữ nguyên.">
         <div className="erp-field-wide erp-section-description">Trạng thái: Đang dùng / Tắt.</div>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { DataTable } from "../../components/erp/DataTable.jsx";
 import { FormSection } from "../../components/erp/FormSection.jsx";
+import { Icon } from "../../components/erp/Icon.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { navigate } from "../../app/navigation.js";
 import { api } from "../../lib/api.js";
@@ -292,7 +293,7 @@ export function ProductionOrderListPage({ params, pathname }) {
 
   return (
     <div className="erp-feature-page">
-      {!isCreateRoute && <PageHeader title={detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={isListRoute ? <button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/orders/new")}>+ Tạo Mã SX</button> : <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}>Quay lại danh sách</button>} />}
+      {!isCreateRoute && <PageHeader title={detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={isListRoute ? <button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/orders/new")}><Icon name="plus" size={17} />Tạo Mã SX</button> : <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}><Icon name="chevronLeft" size={17} />Quay lại danh sách</button>} />}
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
 
       {isListRoute && <DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
