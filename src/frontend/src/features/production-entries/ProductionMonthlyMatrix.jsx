@@ -6,6 +6,21 @@ const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
 const cellsByDate = (operation) => new Map((operation.cells ?? []).map((cell) => [cell.workDate, cell]));
 
+function setMatrixHoverCell(table, cell) {
+  table.querySelectorAll(".erp-month-hover-column, .erp-month-hover-row, .erp-month-hover-cell, .erp-month-hover-day").forEach((item) => {
+    item.classList.remove("erp-month-hover-column", "erp-month-hover-row", "erp-month-hover-cell", "erp-month-hover-day");
+  });
+  if (!cell) return;
+  const date = cell.dataset.date;
+  const dayHeader = [...table.querySelectorAll("thead button[data-date]")].find((button) => button.dataset.date === date)?.closest("th");
+  dayHeader?.classList.add("erp-month-hover-day");
+  table.querySelectorAll("td[data-date]").forEach((item) => {
+    if (item.dataset.date === date) item.classList.add("erp-month-hover-column");
+  });
+  cell.closest("tr")?.classList.add("erp-month-hover-row");
+  cell.classList.add("erp-month-hover-cell");
+}
+
 export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDate = "", selectedOrderId = "", excludeSundays = true, showSundayToggle = true, showOrderFilter = true, loading = false, error = "", onSelectOrder, onToggleSundays, onCellClick, onDayHeaderClick, today = new Date() }) {
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const range = useMemo(() => fromDate && untilDate ? { fromDate, untilDate } : monthBounds(monthKey), [fromDate, untilDate, monthKey]);
@@ -13,6 +28,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
   const rangeLabel = fromDate && untilDate ? `${range.fromDate.split("-").reverse().join("/")} – ${range.untilDate.split("-").reverse().join("/")}` : monthLabel(monthKey);
   const scrollRef = useRef(null);
   const scrollLeftRef = useRef(0);
+  const hoverTooltipRef = useRef(null);
   const availableOrders = data?.availableOrders ?? [];
   const hourlyEmployees = data?.hourlyEmployees ?? [];
   const orders = useMemo(() => mergeHourlyEmployeesIntoOrders(data?.orders ?? [], hourlyEmployees), [data?.orders, hourlyEmployees]);
@@ -38,6 +54,58 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
     }
   }, [loading, error, monthKey, fromDate, untilDate, selectedOrderId, excludeSundays, todayIso, range.fromDate, range.untilDate]);
 
+  function showCellTooltip(table, cell) {
+    const tooltip = hoverTooltipRef.current;
+    if (!cell) {
+      setMatrixHoverCell(table, null);
+      if (tooltip) {
+        tooltip.hidden = true;
+        tooltip.setAttribute("aria-hidden", "true");
+      }
+      return;
+    }
+    setMatrixHoverCell(table, cell);
+    const button = cell.querySelector("button");
+    if (!button || !tooltip) return;
+    const rect = button.getBoundingClientRect();
+    const tooltipWidth = Math.min(300, window.innerWidth - 16);
+    const tooltipHeight = Math.min(176, window.innerHeight - 16);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - tooltipWidth - 8));
+    const top = rect.bottom + tooltipHeight + 12 <= window.innerHeight
+      ? rect.bottom + 8
+      : Math.max(8, rect.top - tooltipHeight - 8);
+    tooltip.replaceChildren(...button.title.split("\n").map((line, index) => {
+      const element = document.createElement(index === 0 ? "strong" : "span");
+      element.textContent = line;
+      return element;
+    }));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.width = `${tooltipWidth}px`;
+    tooltip.hidden = false;
+    tooltip.setAttribute("aria-hidden", "false");
+  }
+
+  function handleMatrixMouseOver(event) {
+    const cell = event.target.closest?.("td[data-date]");
+    const previousCell = event.relatedTarget?.closest?.("td[data-date]");
+    if (cell === previousCell) return;
+    showCellTooltip(event.currentTarget, cell && event.currentTarget.contains(cell) ? cell : null);
+  }
+
+  function handleMatrixFocus(event) {
+    const cell = event.target.closest?.("td[data-date]");
+    if (cell) showCellTooltip(event.currentTarget, cell);
+  }
+
+  function clearMatrixTooltip(event) {
+    setMatrixHoverCell(event.currentTarget, null);
+    if (hoverTooltipRef.current) {
+      hoverTooltipRef.current.hidden = true;
+      hoverTooltipRef.current.setAttribute("aria-hidden", "true");
+    }
+  }
+
   return (
     <section className={`erp-month-matrix-section${orders.length === 0 ? " erp-month-matrix-empty" : ""}`} aria-label={`Sản lượng ${rangeLabel}`}>
       {(showOrderFilter || showSundayToggle) && <div className="erp-month-matrix-toolbar">
@@ -58,7 +126,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
       {loading && <div className="erp-table-state">Đang tải sản lượng...</div>}
       {!loading && !error && <>
         <div className="erp-month-matrix-scroll-hint" aria-hidden="true">Cuộn ngang để xem các ngày khác <span>→</span></div>
-        <div ref={scrollRef} onScroll={(event) => { scrollLeftRef.current = event.currentTarget.scrollLeft; }} className="erp-month-matrix-scroll" role="region" aria-label="Ma trận sản lượng; cuộn ngang để xem các ngày, cuộn dọc để xem nhân viên" tabIndex="0"><table className="erp-month-matrix-table"><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => { const isToday = day.isoDate === todayIso; const dayClass = `erp-month-day-head${day.isSunday ? " erp-month-sunday" : ""}${isToday ? " erp-month-today" : ""}`; return <th key={day.isoDate} className={dayClass} colSpan="2" aria-current={isToday ? "date" : undefined}><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Nhập nhanh sản lượng trong ngày"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong><span className="erp-month-day-action"><Icon name="plus" size={12} /><span>Nhập</span></span></button></th>; })}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
+        <div ref={scrollRef} onScroll={(event) => { scrollLeftRef.current = event.currentTarget.scrollLeft; const table = event.currentTarget.querySelector("table"); if (table) setMatrixHoverCell(table, null); if (hoverTooltipRef.current) { hoverTooltipRef.current.hidden = true; hoverTooltipRef.current.setAttribute("aria-hidden", "true"); } }} className="erp-month-matrix-scroll" role="region" aria-label="Ma trận sản lượng; cuộn ngang để xem các ngày, cuộn dọc để xem nhân viên" tabIndex="0"><table className="erp-month-matrix-table" onMouseOver={handleMatrixMouseOver} onMouseLeave={clearMatrixTooltip} onFocusCapture={handleMatrixFocus} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) clearMatrixTooltip(event); }}><thead><tr><th className="erp-month-sticky-employee" rowSpan="2">Nhân viên</th><th className="erp-month-sticky-operation" rowSpan="2">CĐ</th>{axis.map((day) => { const isToday = day.isoDate === todayIso; const dayClass = `erp-month-day-head${day.isSunday ? " erp-month-sunday" : ""}${isToday ? " erp-month-today" : ""}`; return <th key={day.isoDate} className={dayClass} colSpan="2" aria-current={isToday ? "date" : undefined}><button type="button" onClick={() => onDayHeaderClick?.(day)} data-date={day.isoDate} aria-label={`Nhập nhanh ngày ${day.weekdayLabel} ${day.displayDate}: chọn Mã SX và công đoạn`} title="Nhập nhanh sản lượng trong ngày"><span>{day.weekdayLabel}</span><strong>{day.displayDate}</strong><span className="erp-month-day-action"><Icon name="plus" size={12} /><span>Nhập</span></span></button></th>; })}<th className="erp-month-total erp-month-total-hc" rowSpan="2">Tổng HC</th><th className="erp-month-total erp-month-total-tc" rowSpan="2">Tổng TC</th><th className="erp-month-total erp-month-total-all" rowSpan="2">Tổng</th></tr><tr>{axis.flatMap((day) => [<th key={`${day.isoDate}-hc`} className="erp-month-day-sub">HC</th>, <th key={`${day.isoDate}-tc`} className="erp-month-day-sub">TC</th>])}</tr></thead><tbody>
         {orders.flatMap((order) => {
           const rows = [];
           for (const [employeeIndex, employee] of (order.employees ?? []).entries()) {
@@ -97,7 +165,10 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                   const statusMarkerClass = statusLabel ? `${valueCellClass} erp-month-status-marker` : valueCellClass;
                   const context = { cell, order, employee, operation, workDate: day.isoDate };
                   const actionDescription = cell ? "Bấm để sửa sản lượng" : "Bấm để nhập sản lượng";
-                  return [<td key={`${day.isoDate}-hc`} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC${cellLabel}`} title={statusLabel ? `${statusLabel.slice(3)} · ${actionDescription}` : actionDescription}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC${cellLabel}`} title={statusLabel ? `${statusLabel.slice(3)} · ${actionDescription}` : actionDescription}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
+                  const fullDate = day.isoDate.split("-").reverse().join("/");
+                  const cellStatus = statusLabel ? statusLabel.slice(3) : futureBlank ? "Chưa tới ngày" : cell ? "Đã có sản lượng" : "Chưa có sản lượng";
+                  const cellInfo = `Nhân viên: ${employee.employeeName}\nMã SX: ${order.orderCode ?? order.code ?? ""}\nCĐ${operation.operationNumber}${operation.operationName ? ` — ${operation.operationName}` : ""}\nNgày: ${day.weekdayLabel} ${fullDate}\nHC: ${quantity(cell?.hcQuantity)} · TC: ${quantity(cell?.tcQuantity)}\n${cellStatus}\n${actionDescription}`;
+                  return [<td key={`${day.isoDate}-hc`} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC${cellLabel}`} aria-description={cellInfo} title={cellInfo}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC${cellLabel}`} aria-description={cellInfo} title={cellInfo}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
                 })}
                 <td className="erp-month-total erp-month-total-hc">{quantity(operation.hcQuantity)}</td><td className="erp-month-total erp-month-total-tc">{quantity(operation.tcQuantity)}</td><td className="erp-month-total erp-month-total-all"><strong>{quantity(operation.totalQuantity)}</strong></td>
               </tr>);
@@ -106,6 +177,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
           return rows;
         })}
       </tbody></table></div>
+        <div ref={hoverTooltipRef} className="erp-month-cell-tooltip" role="tooltip" aria-hidden="true" hidden />
       </>}
     </section>
   );

@@ -53,7 +53,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-no-attendance button:not(:empty)::before { content:"? "');
     expect(matrixCss).toContain('erp-month-status-marker.erp-month-paid-leave button:not(:empty)::before { content:"P "');
-    expect(matrixCss).toContain("color-mix(in srgb, var(--color-border) 58%, var(--color-surface))");
+    expect(matrixCss).toContain("border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border);");
   });
 
   test("uses one status accent per HC/TC pair instead of double vertical bars", () => {
@@ -71,5 +71,14 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain(".erp-month-value-cell button:empty::after { content:\"+\"; opacity:.34;");
     expect(matrixCss).not.toContain("button:empty::after { content:\"+\"; opacity:0");
     expect(matrixCss).toContain(".erp-month-matrix-help");
+  });
+
+  test("uses clear gridlines and tracks the hovered cell's employee row and date column", () => {
+    expect(matrixCss).toContain("border-right:1px solid var(--color-border); border-bottom:1px solid var(--color-border);");
+    expect(matrixCss).toContain(".erp-month-hover-row:not(.erp-month-inactive) > td");
+    expect(matrixCss).toContain(".erp-month-hover-column");
+    expect(matrixCss).toContain(".erp-month-hover-cell");
+    expect(matrixCss).toContain(".erp-month-hover-day");
+    expect(matrixCss).toContain(".erp-month-cell-tooltip { position:fixed;");
   });
 });

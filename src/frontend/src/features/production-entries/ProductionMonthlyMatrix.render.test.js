@@ -72,7 +72,7 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("CĐ");
     expect(html).toContain("T5");
     expect(html).toContain("27/08");
-    expect(html).not.toContain("Mã SX: 0417");
+    expect(html).toContain("Mã SX: 0417");
     expect(html).toContain('rowSpan="3"');
     expect(html).toContain("Tổng HC");
     expect(html).toContain("Tổng TC");
@@ -83,6 +83,28 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("Chọn ngày để nhập nhanh nhiều người");
     expect(html).toContain("Bấm để nhập sản lượng");
     expect(html).toContain("erp-month-order-filter-select");
+  });
+
+  test("shows useful employee, order, operation, date, quantity and status details on matrix-cell hover", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].operations[0].cells = [{
+      workDate: "2026-08-05",
+      hcQuantity: 12,
+      tcQuantity: 3,
+      totalQuantity: 15,
+      entryCount: 1,
+      records: [],
+    }];
+    data.orders[0].employees[0].workedDates = ["2026-08-05"];
+    data.orders[0].employees[0].productionDates = ["2026-08-05"];
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} fromDate="2026-08-05" untilDate="2026-08-05" excludeSundays={false} />);
+
+    expect(html).toContain('title="Nhân viên: Bạch Thị Đào');
+    expect(html).toContain("Mã SX: 0417");
+    expect(html).toContain("Ngày: T4 05/08/2026");
+    expect(html).toContain("HC: 12 · TC: 3");
+    expect(html).toContain("Đã có sản lượng");
+    expect(html).toContain("aria-description=");
   });
 
   test("can hide the order selector and hourly employee note when embedded in the manager controls", () => {
@@ -184,7 +206,10 @@ describe("ProductionMonthlyMatrix render", () => {
       today={new Date("2026-08-20T08:00:00")}
     />);
 
-    const enteredOperationRow = html.match(/<tr class="erp-month-group-start">.*?<\/tr>/)?.[0] ?? "";
+    const cellIndex = html.indexOf('aria-label="Bạch Thị Đào CĐ4 21/08 HC"');
+    const rowStart = html.lastIndexOf("<tr", cellIndex);
+    const rowEnd = html.indexOf("</tr>", cellIndex) + "</tr>".length;
+    const enteredOperationRow = cellIndex >= 0 ? html.slice(rowStart, rowEnd) : "";
     expect(enteredOperationRow).toContain('aria-label="Bạch Thị Đào CĐ4 21/08 HC"');
     expect(enteredOperationRow).not.toContain("chưa tới ngày");
     expect(enteredOperationRow).not.toContain("erp-month-future");
