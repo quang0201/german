@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design System Guardian"
+  short_description: "Preserve tokens, components, and visual consistency"
+  default_prompt: "Use $design-system-guardian to align this UI with the project design system and prevent visual drift."

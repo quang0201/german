@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product UI Designer"
+  short_description: "Design task-first product flows, states, and hierarchy"
+  default_prompt: "Use $product-ui-designer to design this product interface around the user's task and real application states."

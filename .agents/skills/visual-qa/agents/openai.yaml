@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visual QA"
+  short_description: "Render screenshots, find visual defects, and verify fixes"
+  default_prompt: "Use $visual-qa to inspect the rendered UI, batch-fix visual defects, and confirm the result."

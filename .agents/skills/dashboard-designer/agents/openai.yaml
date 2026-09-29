@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dashboard Designer"
+  short_description: "Design dense ERP, admin, table, and reporting UI"
+  default_prompt: "Use $dashboard-designer to design this dashboard or ERP surface for fast scanning and repeated work."

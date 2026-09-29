@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Art Direction"
+  short_description: "Create distinctive visual direction without generic AI UI"
+  default_prompt: "Use $frontend-art-direction to establish a distinctive, context-specific visual direction for this interface."

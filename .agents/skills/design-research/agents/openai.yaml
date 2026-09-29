@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Research"
+  short_description: "Research references and establish a visual contract"
+  default_prompt: "Use $design-research to research references and define a visual contract before implementation."

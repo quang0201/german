@@ -1,0 +1,4 @@
+interface:
+  display_name: "Responsive & Accessibility Audit"
+  short_description: "Audit reflow, focus, semantics, forms, and touch UX"
+  default_prompt: "Use $responsive-accessibility-audit to audit this UI for responsive and accessibility defects before shipping."

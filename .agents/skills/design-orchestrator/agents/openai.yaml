@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Orchestrator"
+  short_description: "Route UI work through research, build, and visual QA"
+  default_prompt: "Use $design-orchestrator to coordinate this UI task from design research through rendered QA."

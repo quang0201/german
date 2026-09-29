@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design to Code"
+  short_description: "Implement approved design as production-quality UI code"
+  default_prompt: "Use $design-to-code to implement this approved design with reusable components and rendered verification."
