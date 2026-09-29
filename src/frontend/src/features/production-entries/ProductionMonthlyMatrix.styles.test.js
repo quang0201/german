@@ -81,4 +81,15 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain(".erp-month-hover-day");
     expect(matrixCss).toContain(".erp-month-cell-tooltip { position:fixed;");
   });
+
+  test("separates day pairs and employee blocks with stronger structural borders", () => {
+    expect(matrixCss).toContain(".erp-month-day-head { border-right:2px solid var(--color-border-strong) !important; }");
+    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n) { border-right:2px solid var(--color-border-strong); }");
+    expect(matrixCss).toContain(".erp-month-matrix-table tbody tr.erp-month-group-end td { border-bottom:2px solid var(--color-border-strong); }");
+    expect(matrixCss).toContain(".erp-month-value-tc:not(.erp-month-missing)");
+  });
+
+  test("uses the page as the only vertical scroller on narrow screens", () => {
+    expect(matrixCss).toMatch(/@media \(max-width: 767px\)[\s\S]*\.erp-month-matrix-scroll\s*\{\s*max-height:none;/);
+  });
 });

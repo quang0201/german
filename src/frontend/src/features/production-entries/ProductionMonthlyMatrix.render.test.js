@@ -107,6 +107,12 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toContain("aria-description=");
   });
 
+  test("caches hover columns and delays tooltip updates to avoid work while quickly scanning cells", () => {
+    expect(matrixSource).toContain("const matrixHoverStates = new WeakMap()");
+    expect(matrixSource).toContain("state.columns.get(state.date)?.forEach((item) => item.classList.remove");
+    expect(matrixSource).toContain("setTimeout(() => showCellTooltip(table, nextCell), 140)");
+  });
+
   test("can hide the order selector and hourly employee note when embedded in the manager controls", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithOneOrder()} monthKey="2026-08" selectedOrderId="o1" showOrderFilter={false} />);
 
@@ -286,6 +292,8 @@ describe("ProductionMonthlyMatrix render", () => {
 
     expect(html).toContain("erp-month-group-start");
     expect(html).toContain("erp-month-group-alt");
+    expect(html).toContain("erp-month-group-end");
+    expect(html).toContain("erp-month-value-tc erp-month-day-group-end");
   });
 
   test("does not warn when another operation in the selected order was entered", () => {

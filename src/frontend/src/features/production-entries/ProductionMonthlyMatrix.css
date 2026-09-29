@@ -12,6 +12,10 @@
 .erp-month-matrix-table thead tr:first-child th:not([rowspan="2"]) { top:0; height:46px; }
 .erp-month-matrix-table thead tr:nth-child(2) th { top:46px; height:31px; font-size:12px; }
 .erp-month-matrix-table thead th[rowspan="2"] { top:0; height:77px !important; vertical-align:middle; }
+.erp-month-day-head { border-right:2px solid var(--color-border-strong) !important; }
+.erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n) { background:color-mix(in srgb, var(--color-primary-soft) 42%, var(--color-surface-soft)); }
+.erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n + 1) { border-left:1px solid var(--color-border-strong); }
+.erp-month-matrix-table thead tr:nth-child(2) th:nth-child(2n) { border-right:2px solid var(--color-border-strong); }
 .erp-month-day-head { min-width:112px; padding:0 !important; }
 .erp-month-day-head button { display:grid; grid-template-rows:auto auto auto; align-content:center; justify-items:center; gap:0; width:100%; height:100%; border:0; background:transparent; color:inherit; cursor:pointer; }
 .erp-month-day-head button:hover { background:var(--color-primary-soft); color:var(--color-primary-hover); }
@@ -31,9 +35,10 @@
 .erp-month-matrix-table thead th.erp-month-hover-day { background:var(--color-primary-soft) !important; color:var(--color-primary-strong); box-shadow:inset 0 -3px 0 var(--color-primary); }
 .erp-month-employee { font-weight:700; vertical-align:top; padding-top:10px !important; }
 .erp-month-matrix-table tbody tr.erp-month-group-start td { border-top:2px solid var(--color-border-strong); }
-.erp-month-matrix-table tbody tr.erp-month-group-alt td { background:var(--color-surface-soft); }
+.erp-month-matrix-table tbody tr.erp-month-group-end td { border-bottom:2px solid var(--color-border-strong); }
+.erp-month-matrix-table tbody tr.erp-month-group-alt td { background:color-mix(in srgb, var(--color-primary-soft) 65%, var(--color-surface)); }
 .erp-month-matrix-table tbody tr.erp-month-group-alt .erp-month-sticky-employee,
-.erp-month-matrix-table tbody tr.erp-month-group-alt .erp-month-sticky-operation { background:var(--color-surface-soft) !important; }
+.erp-month-matrix-table tbody tr.erp-month-group-alt .erp-month-sticky-operation { background:color-mix(in srgb, var(--color-primary-soft) 65%, var(--color-surface)) !important; }
 .erp-month-matrix-table tbody tr.erp-month-hover-row:not(.erp-month-inactive) > td:not(.erp-month-no-attendance):not(.erp-month-missing):not(.erp-month-paid-leave):not(.erp-month-future):not(.erp-month-new-employee) { background-color:color-mix(in srgb, var(--color-primary-soft) 70%, var(--color-surface)) !important; }
 .erp-month-employee em { display:block; margin-top:5px; color:var(--color-error); font-size:11px; font-style:normal; font-weight:800; }
 .erp-month-matrix-table tbody tr.erp-month-inactive td { background:var(--color-error-soft) !important; color:var(--color-error); }
@@ -42,6 +47,9 @@
 .erp-month-matrix-table tbody tr.erp-month-new-employee .erp-month-employee { background:var(--color-warning-soft) !important; color:var(--color-warning); }
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; }
+.erp-month-value-tc:not(.erp-month-missing):not(.erp-month-no-attendance):not(.erp-month-paid-leave):not(.erp-month-future) { background:var(--color-surface-soft); }
+.erp-month-group-alt .erp-month-value-tc:not(.erp-month-missing):not(.erp-month-no-attendance):not(.erp-month-paid-leave):not(.erp-month-future) { background:color-mix(in srgb, var(--color-primary-soft) 65%, var(--color-surface-soft)); }
+.erp-month-day-group-end { border-right:2px solid var(--color-border-strong) !important; }
 .erp-month-value-cell.erp-month-future { background:color-mix(in srgb, var(--color-border) 12%, var(--color-surface)) !important; }
 .erp-month-value-cell.erp-month-missing { background:color-mix(in srgb, var(--color-warning) 5%, var(--color-surface)) !important; }
 .erp-month-value-cell.erp-month-missing button { color:var(--color-warning); }
@@ -107,6 +115,7 @@
   .erp-month-matrix-legend { gap:6px 12px; padding:7px 9px; font-size:10px; }
   .erp-month-matrix-help { align-items:flex-start; padding:6px 9px; font-size:10px; line-height:1.35; }
   .erp-month-matrix-legend i { flex:0 0 16px; width:16px; height:16px; }
+  .erp-month-matrix-scroll { max-height:none; }
   .erp-month-sticky-employee { min-width:142px; width:142px; }
   .erp-month-sticky-operation { left:142px; min-width:52px; width:52px; }
   .erp-month-day-head { min-width:104px; }
