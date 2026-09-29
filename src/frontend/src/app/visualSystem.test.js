@@ -27,6 +27,16 @@ describe("Industrial Clarity visual system", () => {
     expect(styles).toMatch(/\.erp-nav-item\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
   });
 
+  test("keeps buttons crisp with a restrained corner radius", () => {
+    const styles = read("src/styles.css");
+
+    expect(styles).toContain("--radius-button: 3px;");
+    expect(styles).toMatch(/\.erp-button\s*\{[^}]*border-radius:\s*var\(--radius-button\)/s);
+    expect(styles).toMatch(/\.erp-button-link\s*\{[^}]*border-radius:\s*var\(--radius-button\)/s);
+    expect(styles).toMatch(/\.erp-nav-item\s*\{[^}]*border-radius:\s*var\(--radius-button\)/s);
+    expect(styles).toMatch(/\.erp-sidebar-toggle\s*\{[^}]*border-radius:\s*var\(--radius-button\)/s);
+  });
+
   test("uses consistent surfaces for page headers, filters, tables, and forms", () => {
     const styles = read("src/styles.css");
 

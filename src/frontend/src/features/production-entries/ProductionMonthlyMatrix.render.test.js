@@ -79,9 +79,10 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).not.toContain(">ĐVT<");
     expect(html).not.toContain(">CN<");
     expect(html).toContain('aria-label="Nhập nhanh ngày T7 01/08: chọn Mã SX và công đoạn"');
-    expect(html).toContain("erp-month-day-action");
-    expect(html).toContain("Chọn ngày để nhập nhanh nhiều người");
-    expect(html).toContain("Bấm ô tổng để nhập hoặc sửa chi tiết HC/TC");
+    expect(html).toContain('title="Nhập nhanh sản lượng trong ngày"');
+    expect(html).toContain("erp-month-matrix-guide");
+    expect(html).toContain("Chọn ngày để nhập nhanh");
+    expect(html).toContain("Bấm ô tổng để nhập hoặc sửa HC/TC");
     expect(html).toContain("erp-month-order-filter-select");
   });
 

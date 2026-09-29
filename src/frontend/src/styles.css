@@ -27,6 +27,7 @@
   --color-info-soft: #eff6ff;
   --radius-sm: 7px;
   --radius-md: 10px;
+  --radius-button: 3px;
   --font-size-body: 14px;
   --control-height: 38px;
   --table-row-height: 42px;
@@ -91,7 +92,7 @@
   gap: 8px;
   min-height: var(--control-height);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-button);
   padding: 0 16px;
   font-size: 14px;
   font-weight: 700;
@@ -107,7 +108,7 @@
 .erp-button-small.is-active { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-hover); }
 .erp-button-danger { color: white; background: var(--color-error); }
 .erp-button-danger:hover:not(:disabled) { background: #991b1b; }
-.erp-button-link { min-width:44px; min-height:36px; border: 1px solid transparent; border-radius:6px; background: #eaf4f2; color: var(--color-primary-strong); padding: 0 9px; font-weight: 750; }
+.erp-button-link { min-width:44px; min-height:36px; border: 1px solid transparent; border-radius:var(--radius-button); background: #eaf4f2; color: var(--color-primary-strong); padding: 0 9px; font-weight: 750; }
 .erp-button-link:hover:not(:disabled) { border-color:#b8d8d1; background:#dff0ec; color:#0b554f; }
 .erp-button-link-danger { background:#fff0ef; color:#a52a24; }
 .erp-button-link-danger:hover:not(:disabled) { border-color:#e7aaa6; background:#ffe1df; color:#8e1c17; }
@@ -459,13 +460,13 @@
 .erp-sidebar-nav { display: grid; align-content: start; gap: 14px; overflow-y: auto; padding: 16px 10px; }
 .erp-nav-group { display: grid; gap: 3px; }
 .erp-nav-group-label { padding: 6px 12px 3px; color: #4d6569; font-size: 11px; font-weight: 850; letter-spacing: .07em; text-transform:uppercase; }
-.erp-nav-item { display: flex; align-items: center; gap: 12px; min-height: var(--control-height); border: 1px solid transparent; border-radius: 8px; background: transparent; color: #40565a; padding: 0 12px; text-align: left; font-size: 14px; font-weight: 650; transition: background 120ms ease, color 120ms ease, border-color 120ms ease; }
+.erp-nav-item { display: flex; align-items: center; gap: 12px; min-height: var(--control-height); border: 1px solid transparent; border-radius: var(--radius-button); background: transparent; color: #40565a; padding: 0 12px; text-align: left; font-size: 14px; font-weight: 650; transition: background 120ms ease, color 120ms ease, border-color 120ms ease; }
 .erp-nav-item:hover { border-color: #cfdfdf; background: #f4f8f8; color: var(--color-text); }
 .erp-nav-item.is-active { border-color: #afd9d2; background: #d8efea; color: #104f4a; box-shadow: inset 3px 0 0 var(--color-primary), 0 1px 3px rgb(15 118 110 / 9%); }
 .erp-nav-icon { display: grid; width: 24px; height: 24px; flex: 0 0 auto; place-items: center; color: #587579; }
 .erp-nav-item.is-active .erp-nav-icon { color: var(--color-primary); }
 .erp-nav-icon svg { width: 20px; height: 20px; }
-.erp-sidebar-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin: auto 10px 16px; min-height: var(--control-height); border: 1px solid #cbdadd; border-radius: 8px; background: rgb(255 255 255 / 75%); color: var(--color-text-muted); font-size: 13px; font-weight: 650; }
+.erp-sidebar-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin: auto 10px 16px; min-height: var(--control-height); border: 1px solid #cbdadd; border-radius: var(--radius-button); background: rgb(255 255 255 / 75%); color: var(--color-text-muted); font-size: 13px; font-weight: 650; }
 .erp-sidebar-toggle:hover { background: #fff; color: var(--color-text); }
 .erp-main { width: calc(100% - var(--sidebar-width)); margin-left: var(--sidebar-width); }
 .erp-topbar { display: flex; position: sticky; z-index: 10; top: 0; align-items: center; justify-content: space-between; gap: 18px; min-height: var(--app-header-height); border-bottom: 1px solid var(--color-border); background: rgb(255 255 255 / 94%); padding: 0 28px; box-shadow: 0 1px 3px rgb(15 23 42 / 5%); backdrop-filter: blur(12px); }
