@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { Icon } from "../../components/erp/Icon.jsx";
+import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
 import { PeriodSelector } from "../production-entries/PeriodSelector.jsx";
@@ -172,7 +173,7 @@ export function ReportPage() {
 
   return (
     <div className="erp-feature-page">
-      <h1 className="erp-visually-hidden">Báo cáo sản lượng</h1>
+      <PageHeader title="Báo cáo sản lượng" description="Chọn kỳ và mã sản xuất để xem tổng hợp theo công đoạn." />
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
       <PeriodSelector

@@ -3,6 +3,7 @@ import {
   buildProductionMonthlyMatrixUrl,
   buildProductionWeeklyMatrixUrl,
   currentMonthKey,
+  isFutureProductionDate,
   mergeHourlyEmployeesIntoOrders,
   matrixCellAction,
   monthBounds,
@@ -13,6 +14,12 @@ import {
 } from "./productionMonthlyMatrix.js";
 
 describe("production monthly matrix helpers", () => {
+  test("identifies only production dates after today as future", () => {
+    expect(isFutureProductionDate("2026-09-30", "2026-09-29")).toBe(true);
+    expect(isFutureProductionDate("2026-09-29", "2026-09-29")).toBe(false);
+    expect(isFutureProductionDate("2026-09-28", "2026-09-29")).toBe(false);
+  });
+
   test("derives and shifts months across year boundaries", () => {
     expect(currentMonthKey("2026-08-14")).toBe("2026-08");
     expect(shiftMonth("2026-12", 1)).toBe("2027-01");

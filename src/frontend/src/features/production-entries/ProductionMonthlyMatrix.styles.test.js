@@ -60,4 +60,9 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain("erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 3px 0");
     expect(matrixCss).not.toContain(".erp-month-value-cell.erp-month-no-attendance { background:color-mix(in srgb, var(--color-error) 5%, var(--color-surface)) !important; box-shadow");
   });
+
+  test("keeps future blank cells neutral and explains that state in the legend", () => {
+    expect(matrixCss).toContain(".erp-month-value-cell.erp-month-future");
+    expect(matrixCss).toContain(".is-future-date");
+  });
 });

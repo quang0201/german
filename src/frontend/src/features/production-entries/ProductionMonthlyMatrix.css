@@ -37,29 +37,31 @@
 .erp-month-matrix-table tbody tr.erp-month-new-employee .erp-month-employee { background:var(--color-warning-soft) !important; color:var(--color-warning); }
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; }
+.erp-month-value-cell.erp-month-future { background:color-mix(in srgb, var(--color-border) 12%, var(--color-surface)) !important; }
 .erp-month-value-cell.erp-month-missing { background:color-mix(in srgb, var(--color-warning) 5%, var(--color-surface)) !important; }
 .erp-month-value-cell.erp-month-missing button { color:var(--color-warning); }
 .erp-month-value-cell.erp-month-no-attendance { background:color-mix(in srgb, var(--color-error) 5%, var(--color-surface)) !important; }
 .erp-month-value-cell.erp-month-no-attendance button { color:var(--color-error); }
-.erp-month-value-cell.erp-month-paid-leave { background:color-mix(in srgb, var(--color-primary) 6%, var(--color-surface)) !important; }
-.erp-month-value-cell.erp-month-paid-leave button { color:var(--color-primary-hover); }
+.erp-month-value-cell.erp-month-paid-leave { background:color-mix(in srgb, var(--color-paid-leave) 6%, var(--color-surface)) !important; }
+.erp-month-value-cell.erp-month-paid-leave button { color:var(--color-paid-leave); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-missing { box-shadow:inset 3px 0 var(--color-warning); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 3px 0 var(--color-error); }
-.erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave { box-shadow:inset 3px 0 var(--color-primary); }
+.erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave { box-shadow:inset 3px 0 var(--color-paid-leave); }
 .erp-month-matrix-legend { display:flex; flex-wrap:wrap; align-items:center; gap:7px 16px; padding:8px 12px; border:1px solid var(--color-border); border-bottom:0; background:var(--color-surface-soft); color:var(--color-text-muted); font-size:11px; }
 .erp-month-matrix-legend span { display:inline-flex; align-items:center; gap:6px; }
 .erp-month-matrix-legend i { display:inline-grid; place-items:center; width:17px; height:17px; border:1px solid; border-radius:4px; font-size:10px; font-style:normal; font-weight:900; line-height:1; }
 .erp-month-matrix-legend .is-no-attendance { border-color:var(--color-error); background:var(--color-error-soft); }
 .erp-month-matrix-legend .is-missing-operation { border-color:var(--color-warning); background:var(--color-warning-soft); }
-.erp-month-matrix-legend .is-paid-leave { border-color:var(--color-primary); background:var(--color-primary-soft); }
+.erp-month-matrix-legend .is-paid-leave { border-color:var(--color-paid-leave); background:var(--color-paid-leave-soft); color:var(--color-paid-leave); }
+.erp-month-matrix-legend .is-future-date { border-color:var(--color-border-strong); background:var(--color-surface); color:var(--color-text-subtle); }
 .erp-month-value-cell button { width:100%; height:100%; border:0; background:transparent; padding:0 7px; color:var(--color-text); text-align:right; font:inherit; font-variant-numeric:tabular-nums; }
 .erp-month-value-cell button:hover { background:var(--color-primary-soft); box-shadow:inset 0 0 0 1px var(--color-focus-ring); }
 .erp-month-value-cell button:empty::after { content:"+"; opacity:0; color:var(--color-primary); font-weight:800; }
 .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"?"; opacity:1; color:var(--color-error); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-missing button:empty::after { content:"!"; opacity:1; color:var(--color-warning); }
-.erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"; opacity:1; color:var(--color-primary-hover); }
+.erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave button:empty::after { content:"P"; opacity:1; color:var(--color-paid-leave); }
 .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance button:not(:empty)::before { content:"? "; color:var(--color-error); font-size:10px; font-weight:800; }
-.erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave button:not(:empty)::before { content:"P "; color:var(--color-primary-hover); font-size:10px; font-weight:800; }
+.erp-month-value-cell.erp-month-status-marker.erp-month-paid-leave button:not(:empty)::before { content:"P "; color:var(--color-paid-leave); font-size:10px; font-weight:800; }
 .erp-month-value-cell button:empty:hover::after { opacity:1; }
 .erp-month-value-cell sup { margin-left:3px; color:var(--color-warning); font-size:9px; }
 .erp-month-total { min-width:90px; width:90px; text-align:right; font-variant-numeric:tabular-nums; }

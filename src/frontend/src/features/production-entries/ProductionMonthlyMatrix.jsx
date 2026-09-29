@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { dateRangeAxis, isEmployeeNewInPeriod, mergeHourlyEmployeesIntoOrders, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
+import { dateRangeAxis, isEmployeeNewInPeriod, isFutureProductionDate, mergeHourlyEmployeesIntoOrders, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
 
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
@@ -51,6 +51,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
         <span role="listitem"><i className="is-no-attendance" aria-hidden="true">?</i>Chưa chấm công</span>
         <span role="listitem"><i className="is-missing-operation" aria-hidden="true">!</i>Chưa nhập công đoạn</span>
         <span role="listitem"><i className="is-paid-leave" aria-hidden="true">P</i>Nghỉ phép</span>
+        <span role="listitem"><i className="is-future-date" aria-hidden="true">—</i>Chưa tới ngày</span>
       </div>
       {loading && <div className="erp-table-state">Đang tải sản lượng...</div>}
       {!loading && !error && <>
@@ -76,20 +77,25 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                 <td className="erp-month-sticky-operation erp-month-operation">{operation.operationNumber ? `CĐ${operation.operationNumber}` : ""}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
+                  const futureDate = isFutureProductionDate(day.isoDate, todayIso);
                   const noAttendance = !inactive
+                    && !futureDate
                     && !workedDates.has(day.isoDate)
                     && !paidLeaveDates.has(day.isoDate);
                   const missingOperation = !cell
+                    && !futureDate
                     && !hourly
                     && workedDates.has(day.isoDate)
                     && !paidLeaveDates.has(day.isoDate)
                     && !enteredDates.has(day.isoDate);
                   const paidLeave = !inactive && paidLeaveDates.has(day.isoDate);
-                  const valueCellClass = `erp-month-value-cell${noAttendance ? " erp-month-no-attendance" : paidLeave ? " erp-month-paid-leave" : missingOperation ? " erp-month-missing" : ""}`;
+                  const futureBlank = futureDate && !cell && !paidLeave && !inactive;
+                  const valueCellClass = ["erp-month-value-cell", futureBlank ? "erp-month-future" : "", noAttendance ? "erp-month-no-attendance" : paidLeave ? "erp-month-paid-leave" : missingOperation ? "erp-month-missing" : ""].filter(Boolean).join(" ");
                   const statusLabel = noAttendance ? " - chưa chấm công" : paidLeave ? " - nghỉ phép (P)" : missingOperation ? " - chưa nhập công đoạn" : "";
+                  const cellLabel = statusLabel || (futureBlank ? " - chưa tới ngày" : "");
                   const statusMarkerClass = statusLabel ? `${valueCellClass} erp-month-status-marker` : valueCellClass;
                   const context = { cell, order, employee, operation, workDate: day.isoDate };
-                  return [<td key={`${day.isoDate}-hc`} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC${statusLabel}`} title={statusLabel ? statusLabel.slice(3) : undefined}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC${statusLabel}`} title={statusLabel ? statusLabel.slice(3) : undefined}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
+                  return [<td key={`${day.isoDate}-hc`} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} HC${cellLabel}`} title={statusLabel ? statusLabel.slice(3) : undefined}>{cell ? quantity(cell.hcQuantity) : ""}</button></td>, <td key={`${day.isoDate}-tc`} data-date={day.isoDate} className={valueCellClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} TC${cellLabel}`} title={statusLabel ? statusLabel.slice(3) : undefined}>{cell ? quantity(cell.tcQuantity) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>];
                 })}
                 <td className="erp-month-total erp-month-total-hc">{quantity(operation.hcQuantity)}</td><td className="erp-month-total erp-month-total-tc">{quantity(operation.tcQuantity)}</td><td className="erp-month-total erp-month-total-all"><strong>{quantity(operation.totalQuantity)}</strong></td>
               </tr>);

@@ -138,6 +138,72 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(matrixSource).toContain("offsetLeft");
   });
 
+  test("keeps future dates neutral instead of warning about missing attendance or production", () => {
+    const data = dataWithOneOrder();
+    const employee = data.orders[0].employees[0];
+    employee.workedDates = [];
+    employee.paidLeaveDates = [];
+    employee.productionDates = [];
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={data}
+      fromDate="2026-08-20"
+      untilDate="2026-08-21"
+      excludeSundays={false}
+      today={new Date("2026-08-20T08:00:00")}
+    />);
+    const cellsOnDate = (date) => [...html.matchAll(new RegExp(`<td data-date="${date}" class="([^"]*)"`, "g"))].map((match) => match[1]);
+
+    expect(cellsOnDate("2026-08-20").every((className) => className.includes("erp-month-no-attendance"))).toBe(true);
+    expect(cellsOnDate("2026-08-21").every((className) => className.includes("erp-month-future") && !className.includes("erp-month-no-attendance") && !className.includes("erp-month-missing"))).toBe(true);
+    expect(html).toContain("Chưa tới ngày");
+    expect(html).toContain("21/08 HC - chưa tới ngày");
+  });
+
+  test("does not label future dates as not-yet-arrived when production is already entered", () => {
+    const data = dataWithOneOrder();
+    const employee = data.orders[0].employees[0];
+    employee.workedDates = [];
+    employee.paidLeaveDates = [];
+    employee.productionDates = ["2026-08-21"];
+    employee.operations[0].cells = [{
+      workDate: "2026-08-21",
+      hcQuantity: 100,
+      tcQuantity: 20,
+      totalQuantity: 120,
+      entryCount: 1,
+      records: [{ id: "entry-future", entryMode: "ByShift" }],
+    }];
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={data}
+      fromDate="2026-08-21"
+      untilDate="2026-08-21"
+      excludeSundays={false}
+      today={new Date("2026-08-20T08:00:00")}
+    />);
+
+    const enteredOperationRow = html.match(/<tr class="erp-month-group-start">.*?<\/tr>/)?.[0] ?? "";
+    expect(enteredOperationRow).toContain('aria-label="Bạch Thị Đào CĐ4 21/08 HC"');
+    expect(enteredOperationRow).not.toContain("chưa tới ngày");
+    expect(enteredOperationRow).not.toContain("erp-month-future");
+  });
+
+  test("renders one visible status marker in HC while keeping both cells marked for styling", () => {
+    const data = dataWithOneOrder();
+    const employee = data.orders[0].employees[0];
+    employee.workedDates = [];
+    employee.paidLeaveDates = [];
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix
+      data={data}
+      fromDate="2026-08-20"
+      untilDate="2026-08-20"
+      today={new Date("2026-08-20T08:00:00")}
+    />);
+    const classes = [...html.matchAll(/<td data-date="2026-08-20" class="([^"]*)"/g)].map((match) => match[1]);
+
+    expect(classes).toHaveLength(6);
+    expect(classes.filter((className) => className.includes("erp-month-status-marker"))).toHaveLength(3);
+  });
+
   test("marks Sundays separately while keeping today highlighted", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix
       data={dataWithOneOrder()}

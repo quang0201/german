@@ -19,21 +19,23 @@ describe("Industrial Clarity visual system", () => {
     expect(styles).toContain("--radius-md: 6px;");
     expect(styles).toContain("--control-height: 38px;");
     expect(styles).toContain("--table-row-height: 42px;");
-    expect(styles).toContain("--color-text-muted: #475569;");
-    expect(styles).toContain("--color-focus-ring: #2563eb;");
+    expect(styles).toContain("--color-text-muted: #4e605b;");
+    expect(styles).toContain("--color-primary: #2e746c;");
+    expect(styles).toContain("--color-focus-ring: #2e746c;");
+    expect(styles).toContain("--color-paid-leave: #2563eb;");
     expect(styles).toMatch(/\.erp-page-title\s*\{[^}]*font-size:\s*24px/s);
     expect(styles).toMatch(/\.erp-nav-item\s*\{[^}]*min-height:\s*var\(--control-height\)/s);
   });
 
-  test("keeps workflow sections flat instead of turning each group into a card", () => {
+  test("uses consistent surfaces for page headers, filters, tables, and forms", () => {
     const styles = read("src/styles.css");
 
-    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s);
-    expect(styles).not.toMatch(/\.erp-filter-bar\s*\{[^}]*box-shadow:/s);
-    expect(styles).toMatch(/\.erp-form-section\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s);
-    expect(styles).not.toMatch(/\.erp-form-section\s*\{[^}]*box-shadow:/s);
-    expect(styles).toMatch(/\.erp-report-toolbar\s*\{[^}]*border-bottom:\s*1px solid var\(--color-border\)/s);
-    expect(styles).not.toMatch(/\.erp-summary-grid\s*>\s*div\s*\{[^}]*box-shadow:/s);
+    expect(styles).toMatch(/\.erp-page-header\s*\{[^}]*background:\s*var\(--color-surface\)/s);
+    expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border-radius:\s*8px/s);
+    expect(styles).toMatch(/\.erp-form-section\s*\{[^}]*background:\s*var\(--color-surface\)/s);
+    expect(styles).toMatch(/\.erp-report-toolbar\s*\{[^}]*background:\s*var\(--color-surface\)/s);
+    expect(styles).toMatch(/\.erp-table th\s*\{[^}]*background:\s*#eef4f1/s);
+    expect(styles).toMatch(/\.erp-production-manager-page \.erp-page-header\s*\{[^}]*background:\s*transparent/s);
   });
 
   test("uses a shared SVG icon component instead of text glyph navigation icons", () => {

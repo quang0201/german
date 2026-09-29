@@ -42,6 +42,10 @@ export function isEmployeeNewInPeriod(joinedDate, fromDate, untilDate) {
   return joined >= fromDate && joined <= untilDate;
 }
 
+export function isFutureProductionDate(workDate, todayIso) {
+  return Boolean(workDate && todayIso && String(workDate).slice(0, 10) > todayIso);
+}
+
 function parseIsoDate(isoDate) {
   const [year, month, day] = String(isoDate).split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day));

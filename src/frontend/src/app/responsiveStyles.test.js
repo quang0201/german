@@ -10,6 +10,13 @@ const productionListPage = readFileSync(resolve(import.meta.dir, "../features/pr
 const productionManagerMatrixPage = readFileSync(resolve(import.meta.dir, "../features/production-entries/ProductionEntryManagerMatrixPage.jsx"), "utf8");
 
 describe("ERP responsive CSS contract", () => {
+  test("uses a calm shared shell and restrained table headings across pages", () => {
+    expect(styles).toContain("--color-bg: #f2f5f2;");
+    expect(styles).toContain("background: #edf2ef; color: var(--color-text-muted); transition: width 160ms ease;");
+    expect(styles).toContain(".erp-nav-item.is-active { border-color: #c7ddd5; background: #dcebe5;");
+    expect(styles).toContain("font-size: 12px; font-weight: 750; letter-spacing: .015em; white-space: nowrap;");
+  });
+
   test("defines compact sidebar and drawer breakpoints", () => {
     expect(styles).toContain("@media (min-width: 1024px) and (max-width: 1279px)");
     expect(styles).toContain("@media (min-width: 768px) and (max-width: 1023px)");
@@ -90,7 +97,7 @@ describe("ERP responsive CSS contract", () => {
     expect(styles).toContain(".erp-production-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }");
     expect(styles).toContain("@media (min-width: 768px) and (max-width: 1023px) {");
     expect(mobileStyles).toContain(".erp-production-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }");
-    expect(mobileStyles).toContain(".erp-period-presets { flex-wrap: nowrap; overflow-x: auto;");
+    expect(mobileStyles).toContain(".erp-period-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));");
     expect(styles).toContain(".erp-period-presets { display: flex; flex-wrap: wrap;");
   });
 
@@ -121,6 +128,15 @@ describe("ERP responsive CSS contract", () => {
     expect(mobileStyles).toContain(".erp-production-manager-content > nav { display:none; }");
     expect(styles).toContain(".erp-production-filter-close { min-height:44px;");
     expect(mobileStyles).toContain(".erp-icon-button { width:44px; height:44px; }");
+  });
+
+  test("keeps weekly matrix navigation fully visible on narrow mobile screens", () => {
+    const mobileStyles = styles.slice(styles.indexOf("@media (max-width: 640px)"));
+
+    expect(mobileStyles).toContain("grid-template-columns:44px minmax(0, 1fr) 44px;");
+    expect(mobileStyles).toContain("grid-template-columns:repeat(2, minmax(0, 1fr));");
+    expect(mobileStyles).toContain(".erp-production-month-nav-button span:not([aria-hidden]) { display:none; }");
+    expect(mobileStyles).toContain(".erp-production-month-nav-button { min-width:44px;");
   });
 
   test("integrates the production page period, summary, export, and grouped table contracts", () => {
