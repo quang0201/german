@@ -10,6 +10,8 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(appCss).toContain("@media (max-width: 767.98px)");
     expect(appCss).toContain("@media (min-width: 768px) and (max-width: 1023.98px)");
     expect(appCss).toContain("@media (max-width: 1023.98px)");
+    const tabletRules = appCss.match(/@media \(min-width: 768px\) and \(max-width: 1023\.98px\)\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(tabletRules).toMatch(/\.erp-mobile-menu\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;/);
   });
 
   test("releases sticky-right totals when the viewport is too narrow", () => {
@@ -167,6 +169,6 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
   });
 
   test("uses the page as the only vertical scroller on narrow screens", () => {
-    expect(matrixCss).toMatch(/@media \(max-width: 767px\)[\s\S]*\.erp-month-matrix-scroll\s*\{\s*max-height:none;/);
+    expect(matrixCss).toMatch(/@media \(max-width: 767\.98px\)[\s\S]*\.erp-month-matrix-scroll\s*\{\s*max-height:none;/);
   });
 });
