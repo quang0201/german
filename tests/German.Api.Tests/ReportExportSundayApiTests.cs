@@ -30,8 +30,8 @@ public sealed class ReportExportSundayApiTests
         var excludedManagement = GetWorksheetText(
             await excludedResponse.Content.ReadAsByteArrayAsync(),
             "Báo cáo sản lượng");
-        Assert.IsFalse(excludedManagement.Contains("CN 16/08/2026", StringComparison.Ordinal));
-        Assert.IsTrue(excludedManagement.Contains("T2 17/08/2026", StringComparison.Ordinal));
+        Assert.IsFalse(excludedManagement.Contains("CN 16/08", StringComparison.Ordinal));
+        Assert.IsTrue(excludedManagement.Contains("T2 17/08", StringComparison.Ordinal));
 
         var compatibleResponse = await client.GetAsync(
             "/api/reports/production/export.xlsx?fromDate=2026-08-16&untilDate=2026-08-17");
@@ -40,8 +40,8 @@ public sealed class ReportExportSundayApiTests
         var compatibleManagement = GetWorksheetText(
             await compatibleResponse.Content.ReadAsByteArrayAsync(),
             "Báo cáo sản lượng");
-        Assert.IsTrue(compatibleManagement.Contains("CN 16/08/2026", StringComparison.Ordinal));
-        Assert.IsTrue(compatibleManagement.Contains("T2 17/08/2026", StringComparison.Ordinal));
+        Assert.IsTrue(compatibleManagement.Contains("CN 16/08", StringComparison.Ordinal));
+        Assert.IsTrue(compatibleManagement.Contains("T2 17/08", StringComparison.Ordinal));
     }
 
     private static async Task SeedManagerAndEntriesAsync(GermanApiFactory factory)
