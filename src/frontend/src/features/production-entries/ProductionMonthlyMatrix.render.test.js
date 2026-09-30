@@ -127,12 +127,17 @@ describe("ProductionMonthlyMatrix render", () => {
     data.orders[0].employees[0].productionDates = ["2026-08-05"];
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} fromDate="2026-08-05" untilDate="2026-08-05" excludeSundays={false} />);
 
-    expect(html).toContain('title="Nhân viên: Bạch Thị Đào');
+    const cellButtonAttributes = [...html.matchAll(/<td data-date="2026-08-05"[^>]*><button\b([^>]*)>/g)].map((match) => match[1]);
+    expect(cellButtonAttributes).toHaveLength(3);
+    expect(cellButtonAttributes.every((attributes) => !/\stitle=/.test(attributes))).toBe(true);
+    expect(cellButtonAttributes.every((attributes) => /\saria-description=/.test(attributes))).toBe(true);
     expect(html).toContain("Mã SX: 0417");
     expect(html).toContain("Ngày: T4 05/08/2026");
     expect(html).toContain("HC: 12 · TC: 3");
     expect(html).toContain("Đã có sản lượng");
     expect(html).toContain("aria-description=");
+    expect(matrixSource).toContain('button.getAttribute("aria-description")');
+    expect(matrixSource).not.toContain("button.title");
   });
 
   test("caches hover columns and delays tooltip updates to avoid work while quickly scanning cells", () => {

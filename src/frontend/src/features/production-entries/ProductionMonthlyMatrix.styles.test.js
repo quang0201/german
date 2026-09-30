@@ -3,8 +3,15 @@ import { readFileSync } from "node:fs";
 
 const matrixCss = readFileSync(new URL("./ProductionMonthlyMatrix.css", import.meta.url), "utf8");
 const dialogsCss = readFileSync(new URL("./ProductionMatrixDialogs.css", import.meta.url), "utf8");
+const appCss = readFileSync(new URL("../../styles.css", import.meta.url), "utf8");
 
 describe("ProductionMonthlyMatrix responsive CSS", () => {
+  test("covers fractional viewport widths at mobile and tablet breakpoints", () => {
+    expect(appCss).toContain("@media (max-width: 767.98px)");
+    expect(appCss).toContain("@media (min-width: 768px) and (max-width: 1023.98px)");
+    expect(appCss).toContain("@media (max-width: 1023.98px)");
+  });
+
   test("releases sticky-right totals when the viewport is too narrow", () => {
     expect(matrixCss).toMatch(/@media \(max-width: 900px\)[\s\S]*\.erp-month-total-all[\s\S]*right:\s*auto/);
     expect(matrixCss).toMatch(/@media \(max-width: 900px\)[\s\S]*tbody \.erp-month-total[\s\S]*position:\s*static/);
