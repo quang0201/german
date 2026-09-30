@@ -33,7 +33,9 @@ public sealed class ProductionEntryBatchDirectService(IGermanDbContext db, Atten
 
         var employee = await db.Employees.AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == command.EmployeeId, cancellationToken);
-        if (employee is null || !employee.IsActive)
+        if (employee is null
+            || (!employee.IsActive
+                && (!employee.DeactivatedAt.HasValue || command.WorkDate >= employee.DeactivatedAt.Value)))
         {
             return Failure("production_entry.employee_not_found", "Nhân viên không tồn tại hoặc đã ngừng hoạt động.");
         }

@@ -66,7 +66,7 @@ internal static class ProductionMonthlyMatrixBuilder
         var employees = group
             .GroupBy(row => (row.EmployeeId, row.EmployeeCode, row.EmployeeName, row.EmployeeIsActive))
             .OrderBy(employeeGroup => employeeGroup.Key.EmployeeCode)
-            .Select(employeeGroup => BuildEmployee(employeeGroup, group.Key.OrderId, visibleRows, activityRows, workedDates, attendanceDates, paidLeaveDates))
+            .Select(employeeGroup => BuildEmployee(employeeGroup, visibleRows, activityRows, workedDates, attendanceDates, paidLeaveDates))
             .ToList();
         return new ProductionMatrixOrderBlockDto(
             group.Key.OrderId, group.Key.OrderCode, group.Key.ProductName, employees);
@@ -74,7 +74,6 @@ internal static class ProductionMonthlyMatrixBuilder
 
     private static ProductionMatrixEmployeeGroupDto BuildEmployee(
         IGrouping<(Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive), ProductionMonthlyMatrixRow> group,
-        Guid orderId,
         IReadOnlyList<ProductionMonthlyMatrixRow> visibleRows,
         IReadOnlyList<ProductionMonthlyMatrixRow> activityRows,
         IReadOnlySet<(Guid EmployeeId, DateOnly WorkDate)> workedDates,
@@ -90,7 +89,7 @@ internal static class ProductionMonthlyMatrixBuilder
                     && row.OperationId == operationGroup.Key.OperationId)))
             .ToList();
         var productionDates = activityRows
-            .Where(row => row.EmployeeId == group.Key.EmployeeId && row.OrderId == orderId)
+            .Where(row => row.EmployeeId == group.Key.EmployeeId)
             .Select(row => row.WorkDate)
             .Distinct()
             .OrderBy(date => date)
@@ -118,6 +117,7 @@ internal static class ProductionMonthlyMatrixBuilder
             group.Key.EmployeeId, group.Key.EmployeeCode, group.Key.EmployeeName, group.Key.EmployeeIsActive, group.First().CompensationType, operations)
         {
             JoinedDate = DateOnly.FromDateTime(group.First().EmployeeCreatedAt.Date),
+            DeactivatedAt = group.First().EmployeeDeactivatedAt,
             ProductionDates = productionDates,
             WorkedDates = employeeWorkedDates,
             AttendanceDates = employeeAttendanceDates,

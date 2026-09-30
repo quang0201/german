@@ -208,6 +208,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
           const rows = [];
           for (const employee of (order.employees ?? [])) {
             const inactive = employee.isActive === false;
+            const deactivatedAt = String(employee.deactivatedAt ?? "").slice(0, 10);
             const workedDates = new Set(employee.workedDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
             const enteredDates = new Set(employee.productionDates ?? []);
@@ -223,6 +224,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                 <td className="erp-month-sticky-operation erp-month-operation">{operation.operationNumber ? `CĐ${operation.operationNumber}` : ""}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
+                  const readOnlyInactiveDate = inactive && (!deactivatedAt || day.isoDate >= deactivatedAt);
                   const futureDate = isFutureProductionDate(day.isoDate, todayIso);
                   const noAttendance = !inactive
                     && !futureDate
@@ -236,8 +238,8 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                     && !enteredDates.has(day.isoDate);
                   const paidLeave = !inactive && paidLeaveDates.has(day.isoDate);
                   const futureBlank = futureDate && !cell && !paidLeave && !inactive;
-                  const valueCellClass = ["erp-month-value-cell", futureBlank ? "erp-month-future" : "", noAttendance ? "erp-month-no-attendance" : paidLeave ? "erp-month-paid-leave" : missingOperation ? "erp-month-missing" : ""].filter(Boolean).join(" ");
-                  const statusLabel = noAttendance ? " - chưa chấm công" : paidLeave ? " - nghỉ phép (P)" : missingOperation ? " - chưa nhập công đoạn" : "";
+                  const valueCellClass = ["erp-month-value-cell", futureBlank ? "erp-month-future" : "", readOnlyInactiveDate ? "erp-month-after-deactivation" : "", noAttendance ? "erp-month-no-attendance" : paidLeave ? "erp-month-paid-leave" : missingOperation ? "erp-month-missing" : ""].filter(Boolean).join(" ");
+                  const statusLabel = readOnlyInactiveDate ? " - nhân viên đã nghỉ" : noAttendance ? " - chưa chấm công" : paidLeave ? " - nghỉ phép (P)" : missingOperation ? " - chưa nhập công đoạn" : "";
                   const cellLabel = statusLabel || (futureBlank ? " - chưa tới ngày" : "");
                   const statusMarkerClass = statusLabel ? `${valueCellClass} erp-month-status-marker` : valueCellClass;
                   const context = { cell, order, employee, operation, workDate: day.isoDate };
@@ -246,7 +248,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                   const cellStatus = statusLabel ? statusLabel.slice(3) : futureBlank ? "Chưa tới ngày" : cell ? "Đã có sản lượng" : "Chưa có sản lượng";
                   const cellInfo = `Nhân viên: ${employee.employeeName}\nMã SX: ${order.orderCode ?? order.code ?? ""}\nCĐ${operation.operationNumber}${operation.operationName ? ` — ${operation.operationName}` : ""}\nNgày: ${day.weekdayLabel} ${fullDate}\nHC: ${quantity(cell?.hcQuantity)} · TC: ${quantity(cell?.tcQuantity)}\n${cellStatus}\n${actionDescription}`;
                   const total = cell ? cell.totalQuantity ?? Number(cell.hcQuantity ?? 0) + Number(cell.tcQuantity ?? 0) : null;
-                  return <td key={day.isoDate} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} Tổng${cellLabel}`} aria-description={cellInfo}>{cell ? quantity(total) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>;
+                  return <td key={day.isoDate} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={readOnlyInactiveDate} aria-disabled={readOnlyInactiveDate} onClick={() => { if (!readOnlyInactiveDate) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} Tổng${cellLabel}`} aria-description={cellInfo}>{cell ? quantity(total) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>;
                 })}
                 <td className="erp-month-total erp-month-total-hc">{quantity(operation.hcQuantity)}</td><td className="erp-month-total erp-month-total-tc">{quantity(operation.tcQuantity)}</td><td className="erp-month-total erp-month-total-all"><strong>{quantity(operation.totalQuantity)}</strong></td>
               </tr>);

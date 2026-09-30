@@ -367,6 +367,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
 
         Assert.IsTrue(deactivationMonth.IsSuccess, deactivationMonth.Error?.Message);
         Assert.AreEqual(1, deactivationMonth.Value!.Orders.Count);
+        Assert.AreEqual(new DateOnly(2026, 8, 20), deactivationMonth.Value.Orders.Single().Employees.Single().DeactivatedAt);
         Assert.IsTrue(nextMonth.IsSuccess, nextMonth.Error?.Message);
         Assert.AreEqual(0, nextMonth.Value!.Orders.Count);
         Assert.AreEqual(0, nextMonth.Value.Summary.EntryCount);
@@ -421,6 +422,33 @@ public sealed class ProductionMonthlyMatrixServiceTests
         CollectionAssert.AreEqual(
             new[] { new DateOnly(2026, 8, 10), new DateOnly(2026, 8, 11) },
             matrixEmployee.ProductionDates.ToArray());
+    }
+
+    [TestMethod]
+    public async Task GetAsync_ProductionDatesIncludeEntriesFromOtherOrdersForTheSameEmployeeAndDate()
+    {
+        await using var db = CreateDb();
+        var employee = new Employee { EmployeeCode = "E011", FullName = "Bạch Thị Đào" };
+        var order0417 = NewOrder("0417", "Mã hàng 0417");
+        var operation0417 = NewOperation(order0417, 3, "Cắt");
+        var order4004 = NewOrder("4004 đen", "Mã hàng 4004 đen");
+        var operation4004 = NewOperation(order4004, 3, "Cắt");
+        db.AddRange(employee, order0417, operation0417, order4004, operation4004);
+        AddEntry(db, employee, order0417, operation0417, new DateOnly(2026, 9, 14), 100m, 0m);
+        AddEntry(db, employee, order4004, operation4004, new DateOnly(2026, 9, 15), 200m, 0m);
+        await db.SaveChangesAsync();
+
+        var result = await new ProductionMonthlyMatrixService(db).GetAsync(
+            new ProductionMonthlyMatrixQuery(2026, 9, null, order4004.Id, null, null, false),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var matrixEmployee = result.Value!.Orders.Single().Employees.Single();
+        Assert.AreEqual("4004 đen", result.Value.Orders.Single().OrderCode);
+        CollectionAssert.AreEqual(
+            new[] { new DateOnly(2026, 9, 14), new DateOnly(2026, 9, 15) },
+            matrixEmployee.ProductionDates.ToArray());
+        Assert.AreEqual(new DateOnly(2026, 9, 15), matrixEmployee.Operations.Single().Cells.Single().WorkDate);
     }
 
     private static GermanDbContext CreateDb()

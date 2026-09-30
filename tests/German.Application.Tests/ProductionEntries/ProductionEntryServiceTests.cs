@@ -107,6 +107,38 @@ public sealed class ProductionEntryServiceTests
     }
 
     [TestMethod]
+    public async Task Manager_CanCreateHistoricalProductionBeforeEmployeeDeactivationButNotOnOrAfterIt()
+    {
+        await using var db = CreateDbContext();
+        var deactivationDate = new DateOnly(2026, 8, 15);
+        var employee = new Employee
+        {
+            EmployeeCode = "E-PAST",
+            FullName = "Nhân viên đã nghỉ",
+            IsActive = false,
+            DeactivatedAt = deactivationDate
+        };
+        var order = new ProductionOrder { Code = "PAST", ProductName = "Túi", PlannedQuantity = 10000m, Status = ProductionOrderStatus.InProduction };
+        var operation = new ProductionOperation { ProductionOrderId = order.Id, OperationNumber = 1, Name = "Cắt", Unit = "cái", SortOrder = 1 };
+        db.AddRange(employee, order, operation);
+        await db.SaveChangesAsync();
+
+        var service = new ProductionEntryService(db);
+        var actor = new CurrentActor(Guid.NewGuid(), UserRole.Manager, employee.Id);
+        var historical = await service.CreateAsync(actor, new CreateProductionEntryCommand(
+            deactivationDate.AddDays(-1), employee.Id, order.Id, operation.Id,
+            ProductionEntryMode.Direct, DirectHcQuantity: 10m, DirectTcQuantity: 0m), CancellationToken.None);
+        var onDeactivationDate = await service.CreateAsync(actor, new CreateProductionEntryCommand(
+            deactivationDate, employee.Id, order.Id, operation.Id,
+            ProductionEntryMode.Direct, DirectHcQuantity: 20m, DirectTcQuantity: 0m), CancellationToken.None);
+
+        Assert.IsTrue(historical.IsSuccess, historical.Error?.Message);
+        Assert.IsFalse(onDeactivationDate.IsSuccess);
+        Assert.AreEqual("production_entry.employee_not_found", onDeactivationDate.Error?.Code);
+        Assert.AreEqual(1, await db.ProductionEntries.CountAsync());
+    }
+
+    [TestMethod]
     public async Task Worker_CannotSubmitToDraftOrder()
     {
         await using var db = CreateDbContext();

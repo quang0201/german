@@ -295,6 +295,18 @@ describe("ProductionMonthlyMatrix render", () => {
     expect(html).toMatch(/button[^>]*disabled=""[^>]*aria-label="Bạch Thị Đào CĐ4 01\/08 Tổng/);
   });
 
+  test("keeps dates before an inactive employee's deactivation date editable", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].employees[0].isActive = false;
+    data.orders[0].employees[0].deactivatedAt = "2026-08-15";
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+    const buttonForDate = (date) => html.match(new RegExp(`<td data-date="${date}"[^>]*><button([^>]*)`))?.[1] ?? "";
+
+    expect(buttonForDate("2026-08-14")).not.toMatch(/\sdisabled=""/);
+    expect(buttonForDate("2026-08-15")).toMatch(/\sdisabled=""/);
+    expect(buttonForDate("2026-08-20")).toMatch(/\sdisabled=""/);
+  });
+
   test("does not warn when at least one operation is entered on a production day", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={dataWithMissingOperationWarning()} monthKey="2026-08" excludeSundays />);
     const cellsOnDate = (date) => [...html.matchAll(new RegExp(`<td data-date="${date}" class="([^"]*)"`, "g"))].map((match) => match[1]);
@@ -341,6 +353,20 @@ describe("ProductionMonthlyMatrix render", () => {
     const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
     const cellsOnDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
 
+    expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
+  });
+
+  test("does not warn when the employee entered production under a different order that day", () => {
+    const data = dataWithOneOrder();
+    data.orders[0].orderCode = "4004 đen";
+    data.orders[0].employees[0].productionDates = ["2026-08-05"];
+    data.orders[0].employees[0].workedDates = ["2026-08-05"];
+    data.orders[0].employees[0].attendanceDates = ["2026-08-05"];
+
+    const html = renderToStaticMarkup(<ProductionMonthlyMatrix data={data} monthKey="2026-08" excludeSundays />);
+    const cellsOnDate = [...html.matchAll(/<td data-date="2026-08-05" class="([^"]*)"/g)].map((match) => match[1]);
+
+    expect(html).toContain("Mã SX: 4004 đen");
     expect(cellsOnDate.every((className) => !className.includes("erp-month-missing"))).toBe(true);
   });
 

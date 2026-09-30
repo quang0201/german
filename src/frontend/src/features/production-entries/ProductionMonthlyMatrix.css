@@ -32,11 +32,11 @@
 .erp-month-employee { font-weight:700; vertical-align:top; padding-top:10px !important; }
 .erp-month-employee-name { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; max-height:2.7em; text-overflow:ellipsis; white-space:normal; overflow-wrap:anywhere; word-break:normal; line-height:1.35; }
 .erp-month-matrix-table tbody tr.erp-month-group-end td { border-bottom:2px solid var(--color-border-strong); }
-.erp-month-matrix-table tbody tr.erp-month-hover-row:not(.erp-month-inactive) > td:not(.erp-month-no-attendance):not(.erp-month-missing):not(.erp-month-paid-leave):not(.erp-month-future):not(.erp-month-new-employee) { background-color:color-mix(in srgb, var(--color-border) 22%, var(--color-surface)) !important; }
+.erp-month-matrix-table tbody tr.erp-month-hover-row > td:not(.erp-month-after-deactivation):not(.erp-month-no-attendance):not(.erp-month-missing):not(.erp-month-paid-leave):not(.erp-month-future):not(.erp-month-new-employee) { background-color:color-mix(in srgb, var(--color-border) 22%, var(--color-surface)) !important; }
 .erp-month-employee em { display:block; margin-top:5px; color:var(--color-error); font-size:11px; font-style:normal; font-weight:800; }
-.erp-month-matrix-table tbody tr.erp-month-inactive td { background:var(--color-error-soft) !important; color:var(--color-error); }
-.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-employee,
-.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-operation { background:var(--color-error-soft) !important; }
+.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-sticky-employee { background:var(--color-error-soft) !important; color:var(--color-error); }
+.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-after-deactivation { background:var(--color-error-soft) !important; }
+.erp-month-matrix-table tbody tr.erp-month-inactive .erp-month-after-deactivation button { color:var(--color-error); cursor:not-allowed; }
 .erp-month-matrix-table tbody tr.erp-month-new-employee .erp-month-employee { background:var(--color-warning-soft) !important; color:var(--color-warning); }
 .erp-month-operation { text-align:center; font-weight:700; }
 .erp-month-value-cell { padding:0 !important; text-align:right; border-right:2px solid var(--color-border-strong) !important; }

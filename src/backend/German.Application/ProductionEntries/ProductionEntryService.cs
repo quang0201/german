@@ -22,7 +22,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         }
 
         var validation = await ValidateReferencesAsync(
-            actor, command.EmployeeId, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
+            actor, command.EmployeeId, command.WorkDate, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
         if (!validation.IsSuccess)
         {
             return AppResult<ProductionEntryPreviewDto>.Failure(validation.Error!.Code, validation.Error.Message);
@@ -70,7 +70,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         }
 
         var validation = await ValidateReferencesAsync(
-            actor, command.EmployeeId, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
+            actor, command.EmployeeId, command.WorkDate, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
         if (!validation.IsSuccess)
         {
             return AppResult<ProductionEntryDto>.Failure(validation.Error!.Code, validation.Error.Message);
@@ -184,7 +184,7 @@ public sealed class ProductionEntryService(IGermanDbContext db)
         }
 
         var validation = await ValidateReferencesAsync(
-            actor, command.EmployeeId, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
+            actor, command.EmployeeId, command.WorkDate, command.ProductionOrderId, command.ProductionOperationId, cancellationToken);
         if (!validation.IsSuccess)
         {
             return AppResult<ProductionEntryDto>.Failure(validation.Error!.Code, validation.Error.Message);
@@ -313,13 +313,16 @@ public sealed class ProductionEntryService(IGermanDbContext db)
     private async Task<AppResult> ValidateReferencesAsync(
         CurrentActor actor,
         Guid employeeId,
+        DateOnly workDate,
         Guid orderId,
         Guid operationId,
         CancellationToken cancellationToken)
     {
         var employee = await db.Employees.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == employeeId, cancellationToken);
-        if (employee is null || !employee.IsActive)
+        if (employee is null
+            || (!employee.IsActive
+                && (!employee.DeactivatedAt.HasValue || workDate >= employee.DeactivatedAt.Value)))
         {
             return AppResult.Failure("production_entry.employee_not_found", "Nhân viên không tồn tại hoặc đã ngừng hoạt động.");
         }

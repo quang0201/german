@@ -45,6 +45,7 @@ public sealed record ProductionMatrixEmployeeGroupDto(
     IReadOnlyList<ProductionMatrixOperationRowDto> Operations)
 {
     public DateOnly? JoinedDate { get; init; }
+    public DateOnly? DeactivatedAt { get; init; }
     public IReadOnlyList<DateOnly> ProductionDates { get; init; } = [];
     public IReadOnlyList<DateOnly> WorkedDates { get; init; } = [];
     public IReadOnlyList<DateOnly> AttendanceDates { get; init; } = [];
@@ -59,6 +60,7 @@ public sealed record ProductionMatrixHourlyEmployeeDto(
     EmployeeCompensationType CompensationType,
     DateOnly? JoinedDate)
 {
+    public DateOnly? DeactivatedAt { get; init; }
     public IReadOnlyList<DateOnly> WorkedDates { get; init; } = [];
     public IReadOnlyList<DateOnly> AttendanceDates { get; init; } = [];
     public IReadOnlyList<DateOnly> PaidLeaveDates { get; init; } = [];
