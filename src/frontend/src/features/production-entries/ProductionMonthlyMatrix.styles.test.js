@@ -14,6 +14,10 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(tabletRules).toMatch(/\.erp-mobile-menu\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;/);
   });
 
+  test("keeps production entry dialogs within the viewport with internal scrolling", () => {
+    expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog,.erp-dialog.erp-matrix-batch-dialog{max-height:calc(100dvh - 32px); overflow-y:auto}");
+  });
+
   test("releases sticky-right totals when the viewport is too narrow", () => {
     expect(matrixCss).toMatch(/@media \(max-width: 900px\)[\s\S]*\.erp-month-total-all[\s\S]*right:\s*auto/);
     expect(matrixCss).toMatch(/@media \(max-width: 900px\)[\s\S]*tbody \.erp-month-total[\s\S]*position:\s*static/);
