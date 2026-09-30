@@ -19,8 +19,8 @@ describe("ERP responsive CSS contract", () => {
 
   test("defines compact sidebar and drawer breakpoints", () => {
     expect(styles).toContain("@media (min-width: 1024px) and (max-width: 1279px)");
-    expect(styles).toContain("@media (min-width: 768px) and (max-width: 1023px)");
-    expect(styles).toContain("@media (max-width: 767px)");
+    expect(styles).toContain("@media (min-width: 768px) and (max-width: 1023.98px)");
+    expect(styles).toContain("@media (max-width: 767.98px)");
   });
 
   test("defaults compact desktop to collapsed while preserving a real expand toggle", () => {
@@ -44,7 +44,7 @@ describe("ERP responsive CSS contract", () => {
       );
       const compactStyles = styles.slice(
         styles.indexOf("@media (min-width: 1024px) and (max-width: 1279px)"),
-        styles.indexOf("@media (min-width: 768px) and (max-width: 1023px)")
+        styles.indexOf("@media (min-width: 768px) and (max-width: 1023.98px)")
       );
 
       expect(html).toContain("sidebar-collapsed");
@@ -63,7 +63,7 @@ describe("ERP responsive CSS contract", () => {
 
   test("hides the desktop collapse control inside tablet and mobile drawers", () => {
     expect(styles).toMatch(
-      /@media \(max-width: 1023px\)\s*\{\s*\.mobile-nav-open \.erp-sidebar-toggle\s*\{\s*display:\s*none;/s
+      /@media \(max-width: 1023\.98px\)\s*\{\s*\.mobile-nav-open \.erp-sidebar-toggle\s*\{\s*display:\s*none;/s
     );
   });
 
@@ -74,7 +74,7 @@ describe("ERP responsive CSS contract", () => {
   });
 
   test("keeps mobile topbar actions compact without truncating the page context", () => {
-    const mobileStyles = styles.slice(styles.indexOf("@media (max-width: 767px)"));
+    const mobileStyles = styles.slice(styles.indexOf("@media (max-width: 767.98px)"));
 
     expect(mobileStyles).toMatch(/\.erp-topbar-context\s*\{[^}]*min-width:\s*0;/s);
     expect(mobileStyles).toContain(".erp-topbar-mcp-full { display: none; }");
@@ -88,14 +88,14 @@ describe("ERP responsive CSS contract", () => {
 
   test("keeps the production summary responsive without changing ERP tokens", () => {
     const mobileStyles = styles.slice(
-      styles.indexOf("@media (max-width: 767px) {"),
+      styles.indexOf("@media (max-width: 767.98px) {"),
       styles.indexOf("@media (max-width: 640px) {")
     );
 
     expect(styles).toContain(".erp-production-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));");
     expect(styles).toContain("@media (min-width: 1024px) and (max-width: 1279px) {");
     expect(styles).toContain(".erp-production-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }");
-    expect(styles).toContain("@media (min-width: 768px) and (max-width: 1023px) {");
+    expect(styles).toContain("@media (min-width: 768px) and (max-width: 1023.98px) {");
     expect(mobileStyles).toContain(".erp-production-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }");
     expect(mobileStyles).toContain(".erp-period-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));");
     expect(styles).toContain(".erp-period-presets { display: flex; flex-wrap: wrap;");
@@ -118,7 +118,7 @@ describe("ERP responsive CSS contract", () => {
   });
 
   test("keeps mobile manager controls compact and gives the matrix the remaining viewport", () => {
-    const mobileStyles = styles.slice(styles.lastIndexOf("@media (max-width: 767px)"));
+    const mobileStyles = styles.slice(styles.lastIndexOf("@media (max-width: 767.98px)"));
     expect(mobileStyles).toMatch(/\.erp-production-manager-content\s*\{[^}]*height:\s*calc\(100dvh - var\(--app-header-height\)\);[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/s);
     expect(mobileStyles).toMatch(/\.erp-production-manager-page\s*\{[^}]*height:\s*100%;/s);
     expect(mobileStyles).toMatch(/\.erp-production-manager-page \.erp-month-matrix-scroll\s*\{[^}]*max-height:\s*none;/s);

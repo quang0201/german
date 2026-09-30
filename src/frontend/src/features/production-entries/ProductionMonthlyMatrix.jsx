@@ -121,7 +121,8 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
     setMatrixHoverCell(table, cell);
     const button = cell.querySelector("button");
     if (!button || !tooltip) return;
-    if (tooltip.dataset.content === button.title) {
+    const content = button.getAttribute("aria-description") ?? "";
+    if (tooltip.dataset.content === content) {
       tooltip.hidden = false;
       tooltip.setAttribute("aria-hidden", "false");
       return;
@@ -133,7 +134,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
     const top = rect.bottom + tooltipHeight + 12 <= window.innerHeight
       ? rect.bottom + 8
       : Math.max(8, rect.top - tooltipHeight - 8);
-    tooltip.replaceChildren(...button.title.split("\n").map((line, index) => {
+    tooltip.replaceChildren(...content.split("\n").map((line, index) => {
       const element = document.createElement(index === 0 ? "strong" : "span");
       element.textContent = line;
       return element;
@@ -141,7 +142,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
     tooltip.style.width = `${tooltipWidth}px`;
-    tooltip.dataset.content = button.title;
+    tooltip.dataset.content = content;
     tooltip.hidden = false;
     tooltip.setAttribute("aria-hidden", "false");
   }
@@ -158,7 +159,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
       return;
     }
     setMatrixHoverCell(table, nextCell);
-    if (hoverTooltipRef.current?.dataset.content === nextCell.querySelector("button")?.title && !hoverTooltipRef.current.hidden) return;
+    if (hoverTooltipRef.current?.dataset.content === nextCell.querySelector("button")?.getAttribute("aria-description") && !hoverTooltipRef.current.hidden) return;
     hoverTooltipTimerRef.current = setTimeout(() => showCellTooltip(table, nextCell), 140);
   }
 
@@ -245,7 +246,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                   const cellStatus = statusLabel ? statusLabel.slice(3) : futureBlank ? "Chưa tới ngày" : cell ? "Đã có sản lượng" : "Chưa có sản lượng";
                   const cellInfo = `Nhân viên: ${employee.employeeName}\nMã SX: ${order.orderCode ?? order.code ?? ""}\nCĐ${operation.operationNumber}${operation.operationName ? ` — ${operation.operationName}` : ""}\nNgày: ${day.weekdayLabel} ${fullDate}\nHC: ${quantity(cell?.hcQuantity)} · TC: ${quantity(cell?.tcQuantity)}\n${cellStatus}\n${actionDescription}`;
                   const total = cell ? cell.totalQuantity ?? Number(cell.hcQuantity ?? 0) + Number(cell.tcQuantity ?? 0) : null;
-                  return <td key={day.isoDate} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} Tổng${cellLabel}`} aria-description={cellInfo} title={cellInfo}>{cell ? quantity(total) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>;
+                  return <td key={day.isoDate} data-date={day.isoDate} className={statusMarkerClass}><button type="button" disabled={inactive} aria-disabled={inactive} onClick={() => { if (!inactive) onCellClick?.(context); }} aria-label={`${employee.employeeName} CĐ${operation.operationNumber} ${day.displayDate} Tổng${cellLabel}`} aria-description={cellInfo}>{cell ? quantity(total) : ""}{cell?.entryCount > 1 && <sup>{cell.entryCount}</sup>}</button></td>;
                 })}
                 <td className="erp-month-total erp-month-total-hc">{quantity(operation.hcQuantity)}</td><td className="erp-month-total erp-month-total-tc">{quantity(operation.tcQuantity)}</td><td className="erp-month-total erp-month-total-all"><strong>{quantity(operation.totalQuantity)}</strong></td>
               </tr>);

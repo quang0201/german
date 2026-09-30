@@ -500,18 +500,18 @@
   .erp-production-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
   .mobile-nav-open .erp-sidebar-toggle { display: none; }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 1023.98px) {
   .erp-sidebar-layer { z-index: 40; display: none; width: 100vw; background: rgb(15 23 42 / 42%); }
   .erp-sidebar-layer.is-open { display: block; }
   .erp-sidebar-layer > div { width: 280px; height: 100%; }
   .erp-main, .sidebar-collapsed .erp-main { width: 100%; margin-left: 0; }
   .erp-topbar { padding: 0 20px; }
   .erp-topbar { gap: 10px; }
-  .erp-mobile-menu { display: block; }
+  .erp-mobile-menu { display: block; min-width:44px; min-height:44px; }
   .erp-topbar-context { display: block; }
   .erp-user-copy { display: none; }
   .erp-user-menu { flex: 0 0 auto; gap: 6px; }
@@ -527,7 +527,7 @@
   .erp-production-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .erp-sidebar-layer { z-index: 40; display: none; width: 100vw; background: rgb(15 23 42 / 42%); }
   .erp-sidebar-layer.is-open { display: block; }
   .erp-sidebar-layer > div { width: 280px; height: 100%; }
@@ -609,7 +609,7 @@
   .erp-dialog-actions > * { width: 100%; }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
   .erp-production-manager-overview { flex-direction: column; }
   .erp-production-manager-page .erp-production-month-header { min-width: 0; justify-content: space-between; }
   .erp-production-manager-page .erp-production-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -628,7 +628,7 @@
   .erp-production-manager-page .erp-month-matrix-toolbar { align-items: flex-start; flex-direction: column; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .erp-production-manager-page .erp-production-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .erp-production-manager-page .erp-filter-fields { grid-template-columns: 1fr; }
   .erp-production-manager-page .erp-filter-fields .erp-field:last-child { grid-column: auto; }
@@ -656,7 +656,7 @@
   .erp-production-controls-header .erp-page-actions > * { flex: 1; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .erp-icon-button { width:44px; height:44px; }
   .erp-production-manager-content > nav { display:none; }
   .erp-production-manager-content {

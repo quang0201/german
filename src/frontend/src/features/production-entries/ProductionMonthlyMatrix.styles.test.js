@@ -15,7 +15,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
   });
 
   test("keeps production entry dialogs within the viewport with internal scrolling", () => {
-    expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog,.erp-dialog.erp-matrix-batch-dialog{max-height:calc(100dvh - 32px); overflow-y:auto}");
+    expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog,.erp-dialog.erp-matrix-batch-dialog{max-height:calc(100dvh - 32px); overflow-y:auto; overscroll-behavior:contain;");
   });
 
   test("releases sticky-right totals when the viewport is too narrow", () => {
@@ -118,7 +118,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
     expect(matrixCss).toContain(".erp-month-day-head button:focus-visible");
     expect(matrixCss).not.toContain("erp-month-day-action");
     expect(matrixCss).toContain("border-left-width:3px; border-radius:3px; background:var(--color-surface);");
-    expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog,.erp-dialog.erp-matrix-batch-dialog{border-radius:4px}");
+    expect(dialogsCss).toMatch(/\.erp-dialog\.erp-matrix-dialog,\.erp-dialog\.erp-matrix-batch-dialog\{[^}]*border-radius:4px\}/);
     expect(dialogsCss).toContain(".erp-dialog.erp-matrix-dialog .erp-mode-option,.erp-dialog.erp-matrix-dialog .erp-control,.erp-dialog.erp-matrix-dialog .erp-button{border-radius:3px}");
   });
 

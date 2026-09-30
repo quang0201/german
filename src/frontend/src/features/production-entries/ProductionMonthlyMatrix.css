@@ -127,7 +127,7 @@
   .erp-month-matrix-table tbody .erp-month-total { position:static; }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .erp-month-matrix-table { --erp-month-employee-column-width:13ch; --erp-month-operation-column-width:52px; --erp-month-day-column-width:80px; --erp-month-total-column-width:80px; }
   .erp-month-matrix-toolbar { align-items:flex-start; flex-direction:column; }
   .erp-month-matrix-scroll-hint { display:flex; align-items:center; justify-content:space-between; padding:5px 10px; color:var(--color-text-muted); background:var(--color-surface-soft); border-inline:1px solid var(--color-border); font-size:11px; }
