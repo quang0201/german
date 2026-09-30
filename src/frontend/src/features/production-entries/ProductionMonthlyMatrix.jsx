@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../../components/erp/Icon.jsx";
-import { dateRangeAxis, isEmployeeNewInPeriod, isFutureProductionDate, mergeHourlyEmployeesIntoOrders, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
+import { dateRangeAxis, isEmployeeNewInPeriod, isEmployeeReadOnlyOnDate, isFutureProductionDate, mergeHourlyEmployeesIntoOrders, monthBounds, monthDateAxis, monthLabel } from "./productionMonthlyMatrix.js";
 
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const quantity = (value) => numberFormat.format(Number(value ?? 0));
@@ -208,7 +208,6 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
           const rows = [];
           for (const employee of (order.employees ?? [])) {
             const inactive = employee.isActive === false;
-            const deactivatedAt = String(employee.deactivatedAt ?? "").slice(0, 10);
             const workedDates = new Set(employee.workedDates ?? []);
             const paidLeaveDates = new Set(employee.paidLeaveDates ?? []);
             const enteredDates = new Set(employee.productionDates ?? []);
@@ -224,7 +223,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
                 <td className="erp-month-sticky-operation erp-month-operation">{operation.operationNumber ? `CĐ${operation.operationNumber}` : ""}</td>
                 {axis.flatMap((day) => {
                   const cell = map.get(day.isoDate) ?? null;
-                  const readOnlyInactiveDate = inactive && (!deactivatedAt || day.isoDate >= deactivatedAt);
+                  const readOnlyInactiveDate = isEmployeeReadOnlyOnDate(employee, day.isoDate);
                   const futureDate = isFutureProductionDate(day.isoDate, todayIso);
                   const noAttendance = !inactive
                     && !futureDate

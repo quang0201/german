@@ -61,6 +61,13 @@ describe("ProductionEntryRoutePage", () => {
     expect(source).toContain("availableOrders[0].id");
   });
 
+  test("does not block an inactive employee's production cell before the deactivation date", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
+
+    expect(source).toContain("isEmployeeReadOnlyOnDate(context.employee, context.workDate)");
+    expect(source).not.toContain("if (context.employee?.isActive === false) return;");
+  });
+
   test("groups manager production controls and removes the duplicate page heading", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
 

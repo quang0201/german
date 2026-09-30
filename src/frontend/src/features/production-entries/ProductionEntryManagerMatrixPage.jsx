@@ -15,7 +15,7 @@ import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDi
 import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
 import { buildProductionExportUrl } from "./productionEntryQuery.js";
 import { productionExportFileName } from "./productionExport.js";
-import { buildProductionWeeklyMatrixUrl, currentMonthKey, matrixCellAction } from "./productionMonthlyMatrix.js";
+import { buildProductionWeeklyMatrixUrl, currentMonthKey, isEmployeeReadOnlyOnDate, matrixCellAction } from "./productionMonthlyMatrix.js";
 import { localIsoDate } from "./productionPeriod.js";
 import { derivePeriodRange, shiftPeriod } from "./productionPeriod.js";
 import { ProductionWeekNavigator } from "./ProductionWeekNavigator.jsx";
@@ -131,7 +131,7 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   }
 
   function handleCell(context) {
-    if (context.employee?.isActive === false) return;
+    if (isEmployeeReadOnlyOnDate(context.employee, context.workDate)) return;
     const action = matrixCellAction(context.cell);
     if (action === "create" || action === "edit-direct") setQuickContext(context);
     else if (action === "open-entry") openEntry(context.cell.records[0].id);

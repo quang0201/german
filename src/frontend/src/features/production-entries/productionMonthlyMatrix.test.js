@@ -4,6 +4,7 @@ import {
   buildProductionWeeklyMatrixUrl,
   currentMonthKey,
   isFutureProductionDate,
+  isEmployeeReadOnlyOnDate,
   mergeHourlyEmployeesIntoOrders,
   matrixCellAction,
   monthBounds,
@@ -14,6 +15,16 @@ import {
 } from "./productionMonthlyMatrix.js";
 
 describe("production monthly matrix helpers", () => {
+  test("locks inactive employees starting on their deactivation date, not before", () => {
+    const employee = { isActive: false, deactivatedAt: "2026-09-29" };
+
+    expect(isEmployeeReadOnlyOnDate(employee, "2026-09-28")).toBe(false);
+    expect(isEmployeeReadOnlyOnDate(employee, "2026-09-29")).toBe(true);
+    expect(isEmployeeReadOnlyOnDate(employee, "2026-09-30")).toBe(true);
+    expect(isEmployeeReadOnlyOnDate({ isActive: false }, "2026-09-28")).toBe(true);
+    expect(isEmployeeReadOnlyOnDate({ isActive: true, deactivatedAt: "2026-09-01" }, "2026-09-28")).toBe(false);
+  });
+
   test("identifies only production dates after today as future", () => {
     expect(isFutureProductionDate("2026-09-30", "2026-09-29")).toBe(true);
     expect(isFutureProductionDate("2026-09-29", "2026-09-29")).toBe(false);
