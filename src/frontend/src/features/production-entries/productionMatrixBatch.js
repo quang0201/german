@@ -8,6 +8,13 @@ export function isCurrentBatchOrdersRequest(active, requestedDay, currentDay) {
     && String(requestedDay?.preferredOrderId ?? "") === String(currentDay?.preferredOrderId ?? "");
 }
 
+export function isEmployeeAvailableOnDate(employee, workDate) {
+  if (employee?.isActive !== false) return true;
+  const deactivatedAt = String(employee?.deactivatedAt ?? "").slice(0, 10);
+  const date = String(workDate ?? "").slice(0, 10);
+  return Boolean(deactivatedAt && date && date < deactivatedAt);
+}
+
 export function buildBatchAttendanceMonthUrl({ date, employeeCursor = "" }) {
   const [year, month, day] = String(date).split("-");
   const params = new URLSearchParams({

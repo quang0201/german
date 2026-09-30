@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { firstActiveEmployeeId, initialBatchEmployeeId, initialBatchInputMode, initialBatchOrderId, ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
-import { buildBatchAttendanceMonthUrl, classifyBatchAttendanceDay, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest } from "./productionMatrixBatch.js";
+import { buildBatchAttendanceMonthUrl, classifyBatchAttendanceDay, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, isEmployeeAvailableOnDate } from "./productionMatrixBatch.js";
 
 describe("ProductionMatrixBatchEntryDialog helpers", () => {
   test("defaults to the first active employee instead of an inactive first row", () => {
@@ -26,6 +26,36 @@ describe("ProductionMatrixBatchEntryDialog helpers", () => {
     expect(initialBatchEmployeeId(employees, "employee-2")).toBe("employee-2");
     expect(initialBatchEmployeeId(employees, "missing")).toBe("employee-1");
     expect(initialBatchEmployeeId([{ id: "employee-2", isActive: false }], "employee-2")).toBe("");
+  });
+
+  test("keeps a selected inactive employee when that employee was active on the batch date", () => {
+    const employees = [
+      { id: "employee-1", isActive: true },
+      { id: "employee-2", isActive: false, deactivatedAt: "2026-09-28" },
+    ];
+
+    expect(initialBatchEmployeeId(employees, "employee-2", "2026-09-24")).toBe("employee-2");
+    expect(initialBatchEmployeeId(employees, "employee-2", "2026-09-28")).toBe("employee-1");
+  });
+
+  test("shows inactive employees in the batch picker only before their deactivation date", () => {
+    const employee = { id: "employee-2", employeeCode: "E002", fullName: "Nguyễn Thị Thanh", isActive: false, deactivatedAt: "2026-09-28" };
+    const renderPicker = (isoDate) => renderToStaticMarkup(
+      <ProductionMatrixBatchEntryDialog day={{ isoDate, weekdayLabel: "T5", displayDate: isoDate }} employees={[employee]} />,
+    );
+
+    expect(renderPicker("2026-09-24")).toContain("Nguyễn Thị Thanh");
+    expect(renderPicker("2026-09-28")).not.toContain("Nguyễn Thị Thanh");
+  });
+
+  test("offers employees who were still employed on the selected historical date", () => {
+    const employee = { id: "inactive-1", isActive: false, deactivatedAt: "2026-09-28" };
+
+    expect(isEmployeeAvailableOnDate(employee, "2026-09-24")).toBe(true);
+    expect(isEmployeeAvailableOnDate(employee, "2026-09-28")).toBe(false);
+    expect(isEmployeeAvailableOnDate(employee, "2026-09-29")).toBe(false);
+    expect(isEmployeeAvailableOnDate({ id: "unknown-inactive", isActive: false }, "2026-09-24")).toBe(false);
+    expect(isEmployeeAvailableOnDate({ id: "active", isActive: true }, "2026-09-24")).toBe(true);
   });
 
   test("opens hourly employees in attendance mode automatically", () => {
