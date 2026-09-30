@@ -169,11 +169,14 @@ public sealed class AttendanceService(IGermanDbContext db)
             }
 
             var key = (inputDay.EmployeeId, inputDay.WorkDate);
-            if (!employees[inputDay.EmployeeId].IsActive && !existingByKey.ContainsKey(key))
+            if (IsAttendanceDateLocked(
+                    employees[inputDay.EmployeeId],
+                    inputDay.WorkDate,
+                    existingByKey.ContainsKey(key)))
             {
                 return AppResult<AttendanceSaveResult>.Failure(
                     "attendance.inactive_employee",
-                    "Nhân viên đã được tắt và không thể tạo ngày chấm công mới.");
+                    "Không thể chấm công từ ngày nhân viên nghỉ trở đi.");
             }
 
             if (!existingByKey.TryGetValue(key, out var day))
@@ -229,11 +232,6 @@ public sealed class AttendanceService(IGermanDbContext db)
             return AppResult.Failure("attendance.employee_not_found", "Không tìm thấy nhân viên.");
         }
 
-        if (!employee.IsActive)
-        {
-            return AppResult.Failure("attendance.inactive_employee", "Nhân viên đã được tắt và không thể tạo ngày chấm công mới.");
-        }
-
         if (input.OvertimeHours < 0 || input.OvertimeHours > 24)
         {
             return AppResult.Failure("attendance.invalid_value", "Giờ TC phải nằm trong khoảng từ 0 đến 24.");
@@ -247,6 +245,11 @@ public sealed class AttendanceService(IGermanDbContext db)
         var existingDay = await db.AttendanceDays
             .Include(item => item.Shifts)
             .SingleOrDefaultAsync(item => item.EmployeeId == input.EmployeeId && item.WorkDate == input.WorkDate, cancellationToken);
+        if (IsAttendanceDateLocked(employee, input.WorkDate, existingDay is not null))
+        {
+            return AppResult.Failure("attendance.inactive_employee", "Không thể chấm công từ ngày nhân viên nghỉ trở đi.");
+        }
+
         var day = existingDay;
         if (day is null)
         {
@@ -464,6 +467,13 @@ public sealed class AttendanceService(IGermanDbContext db)
         shift.ValueKind = kind;
         shift.WorkedHours = workedHours;
         return AppResult.Success();
+    }
+
+    private static bool IsAttendanceDateLocked(Employee employee, DateOnly workDate, bool hasExistingDay)
+    {
+        if (employee.IsActive) return false;
+        if (employee.DeactivatedAt.HasValue) return workDate >= employee.DeactivatedAt.Value;
+        return !hasExistingDay;
     }
 
     private static void ValidateMonth(int year, int month)

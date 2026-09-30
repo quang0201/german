@@ -306,6 +306,81 @@ public sealed class AttendanceServiceTests
     }
 
     [TestMethod]
+    public async Task SaveMonth_AllowsBackfillingDaysBeforeDeactivationButRejectsDeactivationDate()
+    {
+        await using var db = CreateDbContext();
+        var deactivatedAt = new DateOnly(2026, 8, 20);
+        var employee = new Employee
+        {
+            EmployeeCode = "A105D",
+            FullName = "Nhập bù trước ngày nghỉ",
+            IsActive = false,
+            DeactivatedAt = deactivatedAt
+        };
+        var shift = CreateShift("Ca lịch sử", ("Ca 1", 1, 7, 11));
+        db.AddRange(employee, shift, new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        });
+        await db.SaveChangesAsync();
+        var service = new AttendanceService(db);
+
+        var backfill = await service.SaveMonthAsync(new SaveAttendanceMonthCommand(
+            2026, 8, [new AttendanceDayInput(employee.Id, new DateOnly(2026, 8, 19), 0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.PaidLeave, null)])]), CancellationToken.None);
+
+        Assert.IsTrue(backfill.IsSuccess, backfill.Error?.Message);
+        Assert.AreEqual(1, await db.AttendanceDays.CountAsync());
+
+        var onDeactivationDate = await service.SaveMonthAsync(new SaveAttendanceMonthCommand(
+            2026, 8, [new AttendanceDayInput(employee.Id, deactivatedAt, 0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.PaidLeave, null)])]), CancellationToken.None);
+
+        Assert.IsFalse(onDeactivationDate.IsSuccess);
+        Assert.AreEqual("attendance.inactive_employee", onDeactivationDate.Error?.Code);
+        Assert.AreEqual(1, await db.AttendanceDays.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task PrepareDay_AllowsBackfillingAttendanceBeforeDeactivation()
+    {
+        await using var db = CreateDbContext();
+        var employee = new Employee
+        {
+            EmployeeCode = "A105E",
+            FullName = "Nhập bù qua batch",
+            IsActive = false,
+            DeactivatedAt = new DateOnly(2026, 8, 20)
+        };
+        var shift = CreateShift("Ca lịch sử", ("Ca 1", 1, 7, 11));
+        db.AddRange(employee, shift, new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id,
+            ShiftTemplateId = shift.Id,
+            EffectiveFrom = new DateOnly(2026, 8, 1)
+        });
+        await db.SaveChangesAsync();
+
+        var service = new AttendanceService(db);
+        var result = await service.PrepareDayAsync(
+            new AttendanceDayInput(employee.Id, new DateOnly(2026, 8, 19), 0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.PaidLeave, null)]), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(1, db.AttendanceDays.Local.Count);
+
+        var onDeactivationDate = await service.PrepareDayAsync(
+            new AttendanceDayInput(employee.Id, new DateOnly(2026, 8, 20), 0m,
+                [new AttendanceShiftInput(1, AttendanceShiftValueKind.PaidLeave, null)]), CancellationToken.None);
+
+        Assert.IsFalse(onDeactivationDate.IsSuccess);
+        Assert.AreEqual("attendance.inactive_employee", onDeactivationDate.Error?.Code);
+        Assert.AreEqual(1, db.AttendanceDays.Local.Count);
+    }
+
+    [TestMethod]
     public async Task SaveMonth_PersistsOnlySubmittedDays()
     {
         await using var db = CreateDbContext();
