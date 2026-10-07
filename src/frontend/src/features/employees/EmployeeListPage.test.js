@@ -52,6 +52,7 @@ describe("EmployeeListPage", () => {
     const source = readFileSync(resolve(import.meta.dir, "EmployeeListPage.jsx"), "utf8");
 
     expect(source).toContain('label: "Ngày sinh"');
+    expect(source).toContain('label: "Ngày vào làm"');
     expect(source).toContain("formatEmployeeDate(row.dateOfBirth)");
   });
 

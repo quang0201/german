@@ -111,7 +111,7 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.entry.Id, item.entry.Version, item.entry.WorkDate, item.entry.EntryMode,
                 item.entry.HcQuantity, item.entry.TcQuantity, item.entry.TotalQuantity,
                 item.entry.Note, item.entry.CreatedAt,
-                item.employee.Id, item.employee.EmployeeCode, item.employee.FullName, item.employee.IsActive, item.employee.DeactivatedAt, item.employee.CompensationType, item.employee.CreatedAt,
+                item.employee.Id, item.employee.EmployeeCode, item.employee.FullName, item.employee.IsActive, item.employee.DeactivatedAt, item.employee.CompensationType, item.employee.CreatedAt, item.employee.EmploymentStartDate,
                 item.order.Id, item.order.Code, item.order.ProductName,
                 item.order.CreatedAt,
                 item.operation.Id, item.operation.OperationNumber, item.operation.Name))
@@ -150,11 +150,12 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 employee.IsActive,
                 employee.DeactivatedAt,
                 employee.CompensationType,
-                employee.CreatedAt
+                employee.CreatedAt,
+                employee.EmploymentStartDate
             })
             .ToListAsync(cancellationToken);
         var hourlyEmployeeIds = hourlyEmployeeRecords
-            .Where(employee => DateOnly.FromDateTime(employee.CreatedAt.Date) <= untilDate)
+            .Where(employee => (employee.EmploymentStartDate ?? DateOnly.FromDateTime(employee.CreatedAt.Date)) <= untilDate)
             .Select(employee => employee.Id)
             .ToList();
 
@@ -196,14 +197,14 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 .Select(day => (day.EmployeeId, day.WorkDate))
                 .ToHashSet();
         var hourlyEmployees = hourlyEmployeeRecords
-            .Where(employee => DateOnly.FromDateTime(employee.CreatedAt.Date) <= untilDate)
+            .Where(employee => (employee.EmploymentStartDate ?? DateOnly.FromDateTime(employee.CreatedAt.Date)) <= untilDate)
             .Select(employee => new ProductionMatrixHourlyEmployeeDto(
                 employee.Id,
                 employee.EmployeeCode,
                 employee.FullName,
                 employee.IsActive,
                 employee.CompensationType,
-                DateOnly.FromDateTime(employee.CreatedAt.Date))
+                employee.EmploymentStartDate ?? DateOnly.FromDateTime(employee.CreatedAt.Date))
             {
                 DeactivatedAt = employee.DeactivatedAt,
                 WorkedDates = workedDates
@@ -233,6 +234,6 @@ internal sealed record ProductionMonthlyMatrixRow(
     Guid Id, int Version, DateOnly WorkDate, ProductionEntryMode EntryMode,
     decimal HcQuantity, decimal TcQuantity, decimal TotalQuantity,
     string? Note, DateTimeOffset CreatedAt,
-    Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive, DateOnly? EmployeeDeactivatedAt, EmployeeCompensationType CompensationType, DateTimeOffset EmployeeCreatedAt,
+    Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive, DateOnly? EmployeeDeactivatedAt, EmployeeCompensationType CompensationType, DateTimeOffset EmployeeCreatedAt, DateOnly? EmployeeEmploymentStartDate,
     Guid OrderId, string OrderCode, string ProductName, DateTimeOffset OrderCreatedAt,
     Guid OperationId, int OperationNumber, string OperationName);

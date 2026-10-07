@@ -12,7 +12,8 @@ public sealed record EmployeeDto(
     string? CurrentShiftTemplateName = null,
     DateOnly? CurrentShiftEffectiveFrom = null,
     DateOnly? DeactivatedAt = null,
-    DateOnly? DateOfBirth = null);
+    DateOnly? DateOfBirth = null,
+    DateOnly? EmploymentStartDate = null);
 
 public sealed record CreateEmployeeCommand(
     string EmployeeCode,
@@ -20,12 +21,14 @@ public sealed record CreateEmployeeCommand(
     Guid? ShiftTemplateId = null,
     DateOnly? EffectiveFrom = null,
     EmployeeCompensationType CompensationType = EmployeeCompensationType.PieceRate,
-    DateOnly? DateOfBirth = null);
+    DateOnly? DateOfBirth = null,
+    DateOnly? EmploymentStartDate = null);
 public sealed record UpdateEmployeeCommand(
     string EmployeeCode,
     string FullName,
     bool IsActive,
     EmployeeCompensationType? CompensationType = null,
     DateOnly? DeactivatedAt = null,
-    DateOnly? DateOfBirth = null);
+    DateOnly? DateOfBirth = null,
+    DateOnly? EmploymentStartDate = null);
 public sealed record AssignShiftCommand(Guid ShiftTemplateId, DateOnly EffectiveFrom);

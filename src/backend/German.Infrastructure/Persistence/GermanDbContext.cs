@@ -37,6 +37,7 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.Property(x => x.EmployeeCode).HasMaxLength(64).IsRequired();
             builder.Property(x => x.FullName).HasMaxLength(200).IsRequired();
             builder.Property(x => x.DateOfBirth).HasColumnType("date");
+            builder.Property(x => x.EmploymentStartDate).HasColumnType("date");
             builder.HasIndex(x => x.EmployeeCode).IsUnique();
         });
 

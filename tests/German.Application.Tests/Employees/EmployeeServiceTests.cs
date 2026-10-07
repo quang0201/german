@@ -50,6 +50,45 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task CreateAsyncPersistsEmploymentStartDate()
+    {
+        await using var db = CreateDb();
+        var shift = new ShiftTemplate { Name = "Ca hành chính", IsActive = true };
+        db.ShiftTemplates.Add(shift);
+        await db.SaveChangesAsync();
+        var startDate = new DateOnly(2026, 9, 5);
+
+        var result = await new EmployeeService(db).CreateAsync(
+            new CreateEmployeeCommand("E008", "Hoàng Thị Nga", shift.Id, new DateOnly(2026, 9, 5), EmploymentStartDate: startDate),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(startDate, (await db.Employees.SingleAsync()).EmploymentStartDate);
+        Assert.AreEqual(startDate, result.Value?.EmploymentStartDate);
+    }
+
+    [TestMethod]
+    public async Task UpdateAsyncPersistsEmploymentStartDateWithoutChangingCreatedAt()
+    {
+        await using var db = CreateDb();
+        var createdAt = new DateTimeOffset(2026, 9, 14, 8, 0, 0, TimeSpan.FromHours(7));
+        var employee = new Employee { EmployeeCode = "E009", FullName = "Trần Thị Loan", CreatedAt = createdAt };
+        db.Employees.Add(employee);
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).UpdateAsync(
+            employee.Id,
+            new UpdateEmployeeCommand("E009", "Trần Thị Loan", true, EmploymentStartDate: new DateOnly(2026, 9, 4)),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        var saved = await db.Employees.SingleAsync();
+        Assert.AreEqual(new DateOnly(2026, 9, 4), saved.EmploymentStartDate);
+        Assert.AreEqual(createdAt, saved.CreatedAt);
+        Assert.AreEqual(new DateOnly(2026, 9, 4), result.Value?.EmploymentStartDate);
+    }
+
+    [TestMethod]
     public async Task UpdateAsyncPersistsHourlyCompensationType()
     {
         await using var db = CreateDb();

@@ -19,6 +19,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
         {
             EmployeeCode = "E001",
             FullName = "Bạch Thị Đào",
+            EmploymentStartDate = new DateOnly(2026, 8, 1),
             CreatedAt = new DateTimeOffset(2026, 8, 3, 8, 0, 0, TimeSpan.FromHours(7))
         };
         var order0417 = NewOrder("0417", "Mã hàng 0417");
@@ -48,7 +49,7 @@ public sealed class ProductionMonthlyMatrixServiceTests
         Assert.AreEqual(2, result.Value.Orders.Count);
         var firstBlock = result.Value.Orders.Single(x => x.OrderCode == "0417");
         Assert.AreEqual(1, firstBlock.Employees.Count);
-        Assert.AreEqual(new DateOnly(2026, 8, 3), firstBlock.Employees[0].JoinedDate);
+        Assert.AreEqual(new DateOnly(2026, 8, 1), firstBlock.Employees[0].JoinedDate);
         Assert.AreEqual(3, firstBlock.Employees[0].Operations.Count);
         Assert.AreEqual(280m, firstBlock.Employees[0].Operations.Sum(x => x.TotalQuantity));
         Assert.AreEqual(4, result.Value.Summary.EntryCount);
