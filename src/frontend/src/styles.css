@@ -722,30 +722,32 @@
 }
 
 /* Login: factory ledger */
-.erp-login { --ink: #10302d; --paper: #f4f1e8; --rule: rgb(16 48 45 / 9%); display: grid; min-height: 100dvh; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); background-color: var(--paper); background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px); background-size: 40px 40px; color: var(--ink); font-family: "Be Vietnam Pro", Roboto, ui-sans-serif, system-ui, sans-serif; }
-.erp-login-intro { display: flex; flex-direction: column; justify-content: space-between; padding: 40px 64px 56px; }
+.erp-login { --ink: #1b3f3a; --paper: #f7f5ee; --rule: rgb(27 63 58 / 5%); display: grid; min-height: 100dvh; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); background-color: var(--paper); background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px); background-size: 40px 40px; color: var(--ink); font-family: "Be Vietnam Pro", Roboto, ui-sans-serif, system-ui, sans-serif; }
+.erp-login-intro { display: flex; flex-direction: column; justify-content: space-between; padding: 40px 64px 64px; }
 .erp-login-brand { display: flex; align-items: center; gap: 10px; }
-.erp-login-brand strong { font-size: 18px; font-weight: 800; }
-.erp-login-brand span { padding-left: 10px; border-left: 2px solid var(--ink); font-size: 13px; font-weight: 500; opacity: .75; }
-.erp-login-modules { margin: 0; padding: 0; list-style: none; font-size: clamp(44px, 7vw, 92px); font-weight: 800; line-height: 1.02; letter-spacing: -.035em; }
-.erp-login-modules li { border-bottom: 3px solid var(--ink); padding: 6px 0 10px; }
+.erp-login-brand strong { font-size: 18px; font-weight: 700; }
+.erp-login-brand span { padding-left: 10px; border-left: 1px solid rgb(27 63 58 / 35%); font-size: 13px; font-weight: 500; opacity: .75; }
+.erp-login-modules { margin: 0; padding: 0; list-style: none; font-size: clamp(40px, 6vw, 80px); font-weight: 700; line-height: 1.08; letter-spacing: -.03em; }
+.erp-login-modules li { border-bottom: 1px solid rgb(27 63 58 / 18%); padding: 8px 0 12px; }
 .erp-login-modules li:last-child { border-bottom: 0; }
 .erp-login-modules li span { color: var(--color-primary); }
 .erp-login-panel { display: grid; place-items: center; padding: 32px 40px; }
-.erp-login-form { display: grid; width: min(400px, 100%); gap: 6px; border: 2px solid var(--ink); border-radius: 2px; background: #fff; padding: 32px 32px 28px; box-shadow: 8px 8px 0 var(--ink); }
-.erp-login-title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
-.erp-login-subtitle { margin: 4px 0 18px; font-size: 14px; opacity: .75; }
-.erp-login-label { margin-top: 12px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.erp-login-input { width: 100%; min-height: 48px; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; background: var(--paper); padding: 0 12px; color: var(--ink); font: inherit; font-size: 16px; outline: none; transition: background 120ms ease, border-color 120ms ease; }
-.erp-login-input:focus { border-bottom-color: var(--color-primary); background: #e3efe9; }
+.erp-login-form { display: grid; width: min(400px, 100%); gap: 6px; border: 1px solid rgb(27 63 58 / 14%); border-radius: 16px; background: #fff; padding: 36px 32px 32px; box-shadow: 0 1px 2px rgb(27 63 58 / 6%), 0 24px 48px -12px rgb(27 63 58 / 18%); }
+.erp-login-title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.erp-login-subtitle { margin: 4px 0 18px; font-size: 14px; opacity: .7; }
+.erp-login-label { margin-top: 12px; font-size: 13px; font-weight: 500; }
+.erp-login-input { width: 100%; min-height: 48px; border: 1px solid #d3dcd8; border-radius: 10px; background: #fbfcfb; padding: 0 14px; color: var(--ink); font: inherit; font-size: 15px; outline: none; transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease; }
+.erp-login-input:hover { border-color: #b3c4be; }
+.erp-login-input:focus { border-color: var(--color-primary); background: #fff; box-shadow: 0 0 0 4px rgb(15 118 110 / 14%); }
 .erp-login-password { position: relative; }
 .erp-login-password .erp-login-input { padding-right: 48px; }
-.erp-login-toggle { position: absolute; top: 0; right: 0; display: grid; width: 48px; height: 48px; place-items: center; border: 0; background: transparent; color: var(--ink); }
-.erp-login-toggle:hover { color: var(--color-primary); }
-.erp-login-hint { margin: 0; color: var(--color-warning); font-size: 13px; font-weight: 700; }
-.erp-login-error { margin-top: 6px; border-left: 4px solid var(--color-error); background: var(--color-error-soft); padding: 8px 12px; color: var(--color-error); font-size: 13px; font-weight: 500; }
-.erp-login-submit { margin-top: 20px; min-height: 52px; border: 2px solid var(--ink); border-radius: 2px; background: var(--ink); color: #fff; font: inherit; font-size: 16px; font-weight: 700; letter-spacing: .02em; transition: background 120ms ease, color 120ms ease; }
-.erp-login-submit:hover:not(:disabled) { background: var(--color-primary); border-color: var(--color-primary); }
+.erp-login-toggle { position: absolute; top: 4px; right: 4px; display: grid; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #5f7873; }
+.erp-login-toggle:hover { background: #eef3f1; color: var(--color-primary); }
+.erp-login-hint { margin: 0; color: var(--color-warning); font-size: 13px; font-weight: 500; }
+.erp-login-error { margin-top: 6px; border-radius: 10px; background: var(--color-error-soft); padding: 10px 12px; color: var(--color-error); font-size: 13px; }
+.erp-login-submit { margin-top: 20px; min-height: 50px; border: 0; border-radius: 10px; background: var(--color-primary); color: #fff; font: inherit; font-size: 15px; font-weight: 600; transition: background 140ms ease, transform 140ms ease; }
+.erp-login-submit:hover:not(:disabled) { background: var(--color-primary-hover); }
+.erp-login-submit:active:not(:disabled) { transform: translateY(1px); }
 .erp-login-submit:disabled { opacity: .6; }
 @media (max-width: 860px) {
   .erp-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -753,5 +755,5 @@
   .erp-login-modules { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 26px; }
   .erp-login-modules li { border: 0; padding: 0; }
   .erp-login-panel { place-items: start center; padding: 16px 20px 32px; }
-  .erp-login-form { padding: 24px 20px; box-shadow: 5px 5px 0 var(--ink); }
+  .erp-login-form { padding: 28px 20px; }
 }
