@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI/UX Design"
+  short_description: "Design clear, accessible product interfaces"
+  default_prompt: "Apply the UI/UX workflow to the requested interface: inspect existing patterns, improve hierarchy and states, preserve accessibility and responsive behavior, then verify the result."
