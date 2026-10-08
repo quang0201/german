@@ -29,10 +29,10 @@
   --radius-md: 10px;
   --radius-button: 3px;
   --font-size-body: 14px;
-  --control-height: 38px;
-  --table-row-height: 42px;
-  --app-header-height: 72px;
-  --sidebar-width: 240px;
+  --control-height: 34px;
+  --table-row-height: 34px;
+  --app-header-height: 52px;
+  --sidebar-width: 216px;
   --sidebar-width-collapsed: 64px;
   --shadow-panel: 0 12px 32px rgb(15 23 42 / 12%);
 }
@@ -685,4 +685,37 @@
   .erp-production-mobile-filter-toggle { display:none; }
   .erp-production-filter-panel { display:block; }
   .erp-production-filter-panel-header { display:none; }
+}
+
+/* Compact, data-dense desktop density */
+@media (min-width: 768px) {
+  .erp-sidebar-brand { min-height: var(--app-header-height); padding: 0 14px; }
+  .erp-brand-mark { width: 30px; height: 30px; border-radius: 7px; box-shadow: none; }
+  .erp-sidebar-nav { gap: 8px; padding: 10px 8px; }
+  .erp-nav-group { gap: 1px; }
+  .erp-nav-item { gap: 10px; padding: 0 10px; font-size: 13px; }
+  .erp-nav-group-label { padding: 4px 10px 2px; }
+  .erp-sidebar-toggle { margin: auto 8px 10px; }
+  .erp-topbar { padding: 0 20px; box-shadow: none; }
+  .erp-user-menu { margin-left: auto; gap: 8px; }
+  .erp-user-avatar { width: 30px; height: 30px; font-size: 12px; }
+  .erp-user-menu .erp-button { min-height: 30px; padding: 0 10px; font-size: 13px; }
+  .erp-topbar-mcp { border-color: transparent; background: transparent; box-shadow: none; color: var(--color-text-muted); font-weight: 500; }
+  .erp-content { padding: 16px 20px 40px; }
+  .erp-feature-page { gap: 12px; }
+  .erp-page-header { align-items: center; gap: 12px; border-left-width: 3px; border-radius: var(--radius-sm); padding: 10px 14px; box-shadow: none; }
+  .erp-page-title { font-size: 18px; letter-spacing: -.01em; }
+  .erp-page-description { margin-top: 2px; font-size: 13px; }
+  .erp-filter-bar { gap: 10px; border-radius: var(--radius-sm); padding: 10px 12px; box-shadow: none; }
+  .erp-filter-fields { gap: 10px; }
+  .erp-table-wrap { border-radius: var(--radius-sm); box-shadow: none; }
+  .erp-table { font-size: 13px; }
+  .erp-table th { height: 34px; }
+  .erp-table th, .erp-table td { padding: 0 12px; }
+  .erp-table-actions .erp-button { min-height: 26px; padding: 0 10px; font-size: 12px; }
+  .erp-control { padding: 0 10px; font-size: 13px; }
+  .erp-button { padding: 0 12px; font-size: 13px; }
+  .erp-button-primary { box-shadow: none; }
+  .erp-button-primary:hover:not(:disabled) { transform: none; box-shadow: none; }
+  .erp-dialog { padding: 16px; }
 }

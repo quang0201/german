@@ -17,8 +17,8 @@ describe("Industrial Clarity visual system", () => {
 
     expect(styles).toContain("--radius-sm: 7px;");
     expect(styles).toContain("--radius-md: 10px;");
-    expect(styles).toContain("--control-height: 38px;");
-    expect(styles).toContain("--table-row-height: 42px;");
+    expect(styles).toContain("--control-height: 34px;");
+    expect(styles).toContain("--table-row-height: 34px;");
     expect(styles).toContain("--color-text-muted: #465b60;");
     expect(styles).toContain("--color-primary: #0f766e;");
     expect(styles).toContain("--color-focus-ring: #0f766e;");
