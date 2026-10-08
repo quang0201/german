@@ -73,6 +73,37 @@ public sealed class OpenXmlAttendanceExporterTests
         Assert.AreEqual(1U, GetBorderId(document, GetCell(data, "C7")));
     }
 
+    [TestMethod]
+    public void Export_HighlightsEmployeeWithBirthdayInSelectedMonth()
+    {
+        var source = CreateData(2026, 8);
+        var data = source with
+        {
+            Employees = [source.Employees[0] with { DateOfBirth = new DateOnly(2000, 8, 19) }]
+        };
+        using var document = OpenWorkbook(data);
+        var sheetData = GetSheetData(document);
+
+        Assert.AreEqual("FFFFE2B8", GetFillColor(document, GetCell(sheetData, "B6")));
+        Assert.AreEqual("FFFFE2B8", GetFillColor(document, GetCell(sheetData, "C6")));
+        Assert.AreEqual("Ghi chú", GetCell(sheetData, "AN4").InnerText);
+        StringAssert.Contains(GetCell(sheetData, "AN6").InnerText, "Sinh nhật: 19/08");
+        StringAssert.Contains(GetCell(sheetData, "AN6").InnerText, "Ghi chú");
+    }
+
+    [TestMethod]
+    public void Export_DoesNotHighlightBirthdayOutsideSelectedMonth()
+    {
+        var source = CreateData(2026, 8);
+        var data = source with
+        {
+            Employees = [source.Employees[0] with { DateOfBirth = new DateOnly(2000, 9, 19) }]
+        };
+        using var document = OpenWorkbook(data);
+
+        Assert.AreEqual(15U, GetCell(GetSheetData(document), "C6").StyleIndex!.Value);
+    }
+
     [DataTestMethod]
     [DataRow(2026, 2, 28)]
     [DataRow(2028, 2, 29)]

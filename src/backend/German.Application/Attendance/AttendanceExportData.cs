@@ -12,7 +12,8 @@ public sealed record AttendanceExportEmployee(
     string EmployeeCode,
     string FullName,
     IReadOnlyList<AttendanceExportDay> Days,
-    AttendanceTotalsDto Totals);
+    AttendanceTotalsDto Totals,
+    DateOnly? DateOfBirth = null);
 
 public sealed record AttendanceExportDay(
     DateOnly WorkDate,

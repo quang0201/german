@@ -14,3 +14,8 @@ tools/german-mcp/node_modules/
 src/frontend/src/tailwind.css
 src/backend/German.Api/wwwroot/
 .worktrees/
+
+# Local tooling output
+.playwright-cli/
+.playwright-mcp/
+output/

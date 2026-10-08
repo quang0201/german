@@ -49,7 +49,8 @@ public sealed class AttendanceExportService(
                     shift.ScheduledHours,
                     shift.ValueKind,
                     shift.WorkedHours)).ToList())).ToList(),
-            totals.GetValueOrDefault(employee.Id, AttendanceTotalsDto.Empty))).ToList();
+            totals.GetValueOrDefault(employee.Id, AttendanceTotalsDto.Empty),
+            employee.DateOfBirth)).ToList();
 
         return exporter.Export(new AttendanceExportData(year, month, data));
     }

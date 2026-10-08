@@ -25,6 +25,7 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
     private const uint NoteStyle = 14U;
     private const uint EmployeeCellStyle = 15U;
     private const uint EmployeeNumberStyle = 16U;
+    private const uint BirthdayEmployeeStyle = 17U;
 
     public byte[] Export(AttendanceExportData data)
     {
@@ -83,6 +84,7 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
             var startRow = row;
             var endRow = row + (uint)rowCount - 1U;
             var byDate = employee.Days.ToDictionary(day => day.WorkDate);
+            var hasBirthdayThisMonth = employee.DateOfBirth is { } dateOfBirth && dateOfBirth.Month == data.Month;
             var paidLeaveTerms = new List<string>();
             var sickLeaveTerms = new List<string>();
             var dayIndexes = days.Select((day, index) => (day, index)).ToDictionary(item => item.day, item => item.index);
@@ -106,8 +108,9 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
                 if (rowIndex == 0)
                 {
                     cells.Add(At($"A{row}", Num(employeeNumber, EmployeeNumberStyle)));
-                    cells.Add(At($"B{row}", Text(employee.EmployeeCode, EmployeeCellStyle)));
-                    cells.Add(At($"C{row}", Text(employee.FullName, EmployeeCellStyle)));
+                    var employeeStyle = hasBirthdayThisMonth ? BirthdayEmployeeStyle : EmployeeCellStyle;
+                    cells.Add(At($"B{row}", Text(employee.EmployeeCode, employeeStyle)));
+                    cells.Add(At($"C{row}", Text(employee.FullName, employeeStyle)));
                 }
                 else
                 {
@@ -134,7 +137,12 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
                     cells.Add(At($"{Col(totalStart + 1)}{row}", Formula(overtimeFormula, employee.Totals.OvertimeHours)));
                     cells.Add(At($"{Col(totalStart + 2)}{row}", Formula(SumFormula(paidLeaveTerms), employee.Totals.PaidLeaveHours)));
                     cells.Add(At($"{Col(totalStart + 3)}{row}", Formula(SumFormula(sickLeaveTerms), employee.Totals.SickLeaveHours)));
-                    var note = string.Join("; ", employee.Days.Select(day => day.Note).Where(note => !string.IsNullOrWhiteSpace(note)).Distinct());
+                    var notes = employee.Days.Select(day => day.Note).Where(note => !string.IsNullOrWhiteSpace(note)).Distinct().ToList();
+                    if (hasBirthdayThisMonth)
+                    {
+                        notes.Insert(0, $"Sinh nhật: {employee.DateOfBirth!.Value:dd/MM}");
+                    }
+                    var note = string.Join("; ", notes);
                     cells.Add(At($"{Col(totalStart + 4)}{row}", Text(note, NoteStyle)));
                 }
                 else
@@ -323,7 +331,8 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
             SolidFill("FFFDECEC"),
             SolidFill("FFE2F0D9"),
             SolidFill("FFD9EAF7"),
-            SolidFill("FFF4CCCC")) { Count = 8U };
+            SolidFill("FFF4CCCC"),
+            SolidFill("FFFFE2B8")) { Count = 9U };
         var borders = new Borders(
             new Border(),
             GridBorder("FFD0D7DE", BorderStyleValues.Thin),
@@ -345,7 +354,8 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
             Format(borderId: 1U, alignment: HorizontalAlignmentValues.Right),
             Format(borderId: 1U, alignment: HorizontalAlignmentValues.Left),
             Format(borderId: 1U, alignment: HorizontalAlignmentValues.Left),
-            Format(borderId: 1U, alignment: HorizontalAlignmentValues.Center)) { Count = 17U };
+            Format(borderId: 1U, alignment: HorizontalAlignmentValues.Center),
+            Format(fillId: 8U, borderId: 1U, alignment: HorizontalAlignmentValues.Left)) { Count = 18U };
         return new Stylesheet(
             new NumberingFormats(),
             fonts,
