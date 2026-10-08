@@ -719,3 +719,17 @@
   .erp-button-primary:hover:not(:disabled) { transform: none; box-shadow: none; }
   .erp-dialog { padding: 16px; }
 }
+
+/* Login */
+.erp-login { display: grid; min-height: 100dvh; place-items: center; padding: 24px 16px; background: linear-gradient(160deg, var(--color-primary-soft) 0%, var(--color-bg) 55%); }
+.erp-login-card { width: min(400px, 100%); border: 1px solid var(--color-border); border-top: 4px solid var(--color-primary); border-radius: var(--radius-md); background: var(--color-surface); padding: 28px 28px 24px; box-shadow: var(--shadow-panel); }
+.erp-login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.erp-login-brand strong { display: block; font-size: 16px; line-height: 1.2; }
+.erp-login-brand span { color: var(--color-text-subtle); font-size: 12px; }
+.erp-login-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.erp-login-subtitle { margin: 4px 0 18px; color: var(--color-text-muted); font-size: 13px; }
+.erp-login-form { display: grid; gap: 6px; }
+.erp-login-label { margin-top: 8px; font-size: 13px; font-weight: 700; }
+.erp-login .erp-control { min-height: 42px; }
+.erp-login-error { margin-top: 8px; border-left: 3px solid var(--color-error); border-radius: var(--radius-sm); background: var(--color-error-soft); padding: 8px 12px; color: var(--color-error); font-size: 13px; }
+.erp-login-submit { width: 100%; min-height: 42px; margin-top: 14px; }
