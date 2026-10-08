@@ -22,16 +22,16 @@ export function LoginPage({ onLoggedIn }) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-10 sm:py-16">
+    <main className="min-h-screen bg-[var(--color-primary-strong)] px-4 py-10 sm:py-16">
       <div className="mx-auto max-w-md">
         <div className="mb-8 text-white">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-300">German · Hệ thống sản xuất</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#9fded4]">German · Hệ thống sản xuất</p>
           <h1 className="mt-3 text-3xl font-bold tracking-tight">Nhập sản lượng</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-300">Đăng nhập bằng tên tài khoản hoặc mã nhân viên.</p>
+          <p className="mt-2 text-sm leading-6 text-[#cfe5e1]">Đăng nhập bằng tên tài khoản hoặc mã nhân viên.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-3xl bg-white p-6 shadow-2xl shadow-black/20">
-          <label className="block text-sm font-semibold text-slate-700" htmlFor="identifier">
+        <form onSubmit={handleSubmit} className="rounded-[var(--radius-md)] bg-white p-6 shadow-2xl shadow-black/20">
+          <label className="block text-sm font-semibold text-[var(--color-text)]" htmlFor="identifier">
             Tên đăng nhập hoặc mã nhân viên
           </label>
           <input
@@ -40,10 +40,10 @@ export function LoginPage({ onLoggedIn }) {
             required
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
-            className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className="mt-2 min-h-12 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] px-4 outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-soft)]"
           />
 
-          <label className="mt-5 block text-sm font-semibold text-slate-700" htmlFor="password">
+          <label className="mt-5 block text-sm font-semibold text-[var(--color-text)]" htmlFor="password">
             Mật khẩu
           </label>
           <input
@@ -53,11 +53,11 @@ export function LoginPage({ onLoggedIn }) {
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-2 min-h-12 w-full rounded-xl border border-slate-300 px-4 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className="mt-2 min-h-12 w-full rounded-[var(--radius-sm)] border border-[var(--color-border-strong)] px-4 outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-soft)]"
           />
 
           {error && (
-            <div role="alert" className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div role="alert" className="mt-4 rounded-[var(--radius-sm)] bg-[var(--color-error-soft)] px-4 py-3 text-sm text-[var(--color-error)]">
               {error}
             </div>
           )}
@@ -65,7 +65,7 @@ export function LoginPage({ onLoggedIn }) {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-6 min-h-12 w-full rounded-xl bg-slate-950 px-4 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 min-h-12 w-full rounded-xl bg-[var(--color-primary-strong)] px-4 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>

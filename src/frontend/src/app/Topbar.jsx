@@ -1,4 +1,5 @@
 import React from "react";
+import { ConfirmDialog } from "../components/erp/ConfirmDialog.jsx";
 import { Icon } from "../components/erp/Icon.jsx";
 import { api } from "../lib/api.js";
 import { roleLabel } from "../lib/i18n.js";
@@ -22,10 +23,12 @@ export function Topbar({ session, pathname = "", breadcrumbs = [], onLogout, onM
   const routeContext = pageContexts.find(([path]) => pathname === path || pathname.startsWith(`${path}/`))?.[1];
   const context = breadcrumbs.at(-1)?.label || routeContext || "Hệ thống sản xuất";
   const [copyingMcpSession, setCopyingMcpSession] = useState(false);
+  const [confirmingMcp, setConfirmingMcp] = useState(false);
   const [mcpSessionMessage, setMcpSessionMessage] = useState("");
   const canCopyMcpSession = session?.role === "Manager" || session?.role === "Admin";
 
   async function copyMcpSession() {
+    setConfirmingMcp(false);
     setCopyingMcpSession(true);
     setMcpSessionMessage("");
     try {
@@ -49,7 +52,7 @@ export function Topbar({ session, pathname = "", breadcrumbs = [], onLogout, onM
       <div className="erp-user-menu">
         <div className="erp-user-avatar">{displayName(session).slice(0, 1).toUpperCase()}</div>
         <div className="erp-user-copy"><strong>{displayName(session)}</strong><span>{roleLabel(session.role)}</span></div>
-        {canCopyMcpSession && <button type="button" className="erp-button erp-button-secondary erp-topbar-mcp" onClick={copyMcpSession} disabled={copyingMcpSession} aria-label="Tạo token MCP" title="Tạo token để kết nối MCP; token mới sẽ thu hồi token cũ">{copyingMcpSession ? "Đang tạo..." : <><span className="erp-topbar-mcp-full">Tạo token MCP</span><span className="erp-topbar-mcp-compact">MCP</span></>}</button>}
+        {canCopyMcpSession && <button type="button" className="erp-button erp-button-secondary erp-topbar-mcp" onClick={() => setConfirmingMcp(true)} disabled={copyingMcpSession} aria-label="Tạo token MCP" title="Tạo token để kết nối MCP; token mới sẽ thu hồi token cũ">{copyingMcpSession ? "Đang tạo..." : <><span className="erp-topbar-mcp-full">Tạo token MCP</span><span className="erp-topbar-mcp-compact">MCP</span></>}</button>}
         {mcpSessionMessage && <span className="erp-topbar-mcp-message" role="status">{mcpSessionMessage}</span>}
         <button type="button" className="erp-button erp-button-secondary erp-topbar-logout" onClick={onLogout} aria-label="Đăng xuất">
           <Icon name="logout" size={17} />
@@ -57,6 +60,7 @@ export function Topbar({ session, pathname = "", breadcrumbs = [], onLogout, onM
           <span className="erp-topbar-logout-compact">Thoát</span>
         </button>
       </div>
+    <ConfirmDialog open={confirmingMcp} title="Tạo token MCP mới?" confirmLabel="Tạo token" onClose={() => setConfirmingMcp(false)} onConfirm={copyMcpSession}>Token mới sẽ được copy vào clipboard và thu hồi token MCP hiện tại. Các kết nối đang dùng token cũ sẽ ngừng hoạt động.</ConfirmDialog>
     </header>
   );
 }

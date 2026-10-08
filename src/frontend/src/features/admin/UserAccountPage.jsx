@@ -95,7 +95,7 @@ export function UserAccountPage() {
             Sửa
           </button>
           {row.isActive && (
-            <button type="button" className="erp-button erp-button-danger" disabled={deletingAccountId === row.id} onClick={() => setConfirmingDelete(row)}>
+            <button type="button" className="erp-button erp-button-danger-quiet" disabled={deletingAccountId === row.id} onClick={() => setConfirmingDelete(row)}>
               {deletingAccountId === row.id ? "Đang xóa..." : "Xóa"}
             </button>
           )}

@@ -95,7 +95,7 @@ export function ShiftListPage() {
           <button type="button" className="erp-button erp-button-secondary" onClick={() => { setEditingShift(row); setEditError(""); }}>
             Sửa
           </button>
-          {row.isActive && <button type="button" className="erp-button erp-button-danger" disabled={deletingShiftId === row.id} onClick={() => setConfirmingDelete(row)}>
+          {row.isActive && <button type="button" className="erp-button erp-button-danger-quiet" disabled={deletingShiftId === row.id} onClick={() => setConfirmingDelete(row)}>
             {deletingShiftId === row.id ? "Đang xóa..." : "Xóa"}
           </button>}
         </div>
