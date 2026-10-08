@@ -5,10 +5,10 @@
 .erp-production-external-fields { display:grid; gap:14px; margin-top:16px; }
 .erp-production-external-history { display:grid; gap:8px; padding:10px 12px; background:var(--color-surface-soft); border-top:1px solid var(--color-border); }
 .erp-production-external-summary-row > th, .erp-production-external-summary-row > td { background: #faf8ff; }
-.erp-production-external-source { color: #6750a4; font-weight: 800; }
+.erp-production-external-source { color: #9f7a55; font-weight: 800; }
 .erp-production-external-operation-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.erp-production-external-operation-chip { display: inline-flex; align-items: center; border: 1px solid #d8ccf2; border-radius: 999px; background: #f1edfb; color: #5b468e; padding: 4px 8px; font-size: 12px; white-space: nowrap; }
-.erp-production-external-total { color: #6750a4; font-weight: 800; white-space: nowrap; }
+.erp-production-external-operation-chip { display: inline-flex; align-items: center; border: 1px solid #d8ccf2; border-radius: 999px; background: #f1edfb; color: #8a6a4a; padding: 4px 8px; font-size: 12px; white-space: nowrap; }
+.erp-production-external-total { color: #9f7a55; font-weight: 800; white-space: nowrap; }
 .erp-production-external-total span { display: block; }
 .erp-production-external-history-title { font-size:13px; font-weight:700; color:var(--color-text); }
 .erp-production-external-history-row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; font-size:13px; }
@@ -17,5 +17,5 @@
 .erp-production-external-history-groups { display:grid; gap:8px; }
 .erp-production-external-history-group { border:1px solid var(--color-border); border-radius:var(--radius-sm); overflow:hidden; background:var(--color-surface-soft); }
 .erp-production-external-history-group summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; cursor:pointer; list-style-position:inside; color:var(--color-text-muted); }
-.erp-production-external-history-group summary::marker { color:#6750a4; }
+.erp-production-external-history-group summary::marker { color:#9f7a55; }
 .erp-production-external-history-group-body { display:grid; gap:8px; padding:10px 12px; border-top:1px solid var(--color-border); background:var(--color-surface); }

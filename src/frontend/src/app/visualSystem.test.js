@@ -19,7 +19,7 @@ describe("Industrial Clarity visual system", () => {
     expect(styles).toContain("--radius-md: 10px;");
     expect(styles).toContain("--control-height: 34px;");
     expect(styles).toContain("--table-row-height: 34px;");
-    expect(styles).toContain("--color-text-muted: #465b60;");
+    expect(styles).toContain("--color-text-muted: #5f5347;");
     expect(styles).toContain("--color-primary: #c2410c;");
     expect(styles).toContain("--color-focus-ring: #c2410c;");
     expect(styles).toContain("--color-paid-leave: #2563eb;");
@@ -44,7 +44,7 @@ describe("Industrial Clarity visual system", () => {
     expect(styles).toMatch(/\.erp-filter-bar\s*\{[^}]*border-radius:\s*10px/s);
     expect(styles).toMatch(/\.erp-form-section\s*\{[^}]*background:\s*var\(--color-surface\)/s);
     expect(styles).toMatch(/\.erp-report-toolbar\s*\{[^}]*background:\s*var\(--color-surface\)/s);
-    expect(styles).toMatch(/\.erp-table th\s*\{[^}]*background:\s*#eaf2f3/s);
+    expect(styles).toMatch(/\.erp-table th\s*\{[^}]*background:\s*#f3eeea/s);
     expect(styles).toMatch(/\.erp-production-manager-page \.erp-page-header\s*\{[^}]*background:\s*transparent/s);
   });
 

@@ -141,3 +141,29 @@
   .erp-month-day-head { min-width:var(--erp-month-day-column-width); }
   .erp-month-value-cell { min-width:var(--erp-month-day-column-width); width:var(--erp-month-day-column-width); }
 }
+
+/* Matrix redesign: calm ledger grid, state color only where it carries meaning */
+.erp-month-matrix-scroll { border-radius:10px; box-shadow:0 1px 2px color-mix(in srgb, var(--color-text) 8%, transparent); }
+.erp-month-matrix-table { font-size:13px; }
+.erp-month-matrix-table th, .erp-month-matrix-table td { border-right:1px solid var(--color-grid-line); border-bottom:1px solid var(--color-grid-line-soft); }
+.erp-month-matrix-table .erp-month-day-head, .erp-month-matrix-table .erp-month-value-cell { border-right:1px solid var(--color-grid-line) !important; }
+.erp-month-matrix-table tbody tr.erp-month-group-end td { border-bottom:1px solid var(--color-border-strong); }
+.erp-month-matrix-table thead th { background:var(--color-grid-head); color:var(--color-text-muted); font-size:12px; font-weight:700; letter-spacing:.02em; }
+.erp-month-day-head span { font-size:12px; font-weight:600; letter-spacing:.04em; opacity:.85; }
+.erp-month-day-head strong { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
+.erp-month-day-head.erp-month-today { background:var(--color-today-bg); color:var(--color-primary); box-shadow:inset 0 -3px 0 var(--color-primary); }
+.erp-month-day-head.erp-month-sunday { background:var(--color-grid-head); color:var(--color-error); }
+.erp-month-employee { font-size:13px; font-weight:600; }
+.erp-month-operation { color:var(--color-text-muted); font-size:12px; font-weight:600; letter-spacing:.02em; }
+.erp-month-value-cell button { padding:0 10px; font-weight:500; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-no-attendance { background:color-mix(in srgb, var(--color-error-soft) 55%, var(--color-surface)) !important; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-no-attendance button, .erp-month-matrix-table .erp-month-value-cell.erp-month-missing button { color:var(--color-text); }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-missing { background:color-mix(in srgb, var(--color-warning-soft) 70%, var(--color-surface)) !important; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-future { background:var(--color-grid-future) !important; }
+.erp-month-total-hc { border-left:1px solid var(--color-border-strong) !important; }
+.erp-month-matrix-table tbody .erp-month-total { background:var(--color-grid-total); color:var(--color-text-muted); }
+.erp-month-matrix-table tbody .erp-month-total-all { background:var(--color-grid-total-strong); color:var(--color-text); }
+.erp-month-total-all strong { font-weight:700; }
+.erp-month-matrix-table thead .erp-month-total-all { background:var(--color-grid-total-head) !important; color:var(--color-primary-strong); }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 2px 0 color-mix(in srgb, var(--color-error) 45%, transparent); }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-missing { box-shadow:inset 2px 0 color-mix(in srgb, var(--color-warning) 55%, transparent); }

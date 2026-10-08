@@ -11,8 +11,8 @@ const productionManagerMatrixPage = readFileSync(resolve(import.meta.dir, "../fe
 
 describe("ERP responsive CSS contract", () => {
   test("uses a calm shared shell and restrained table headings across pages", () => {
-    expect(styles).toContain("--color-bg: #f1f5f7;");
-    expect(styles).toContain("background: #eaf1f2; color: var(--color-text-muted); transition: width 160ms ease;");
+    expect(styles).toContain("--color-bg: #f7f4f1;");
+    expect(styles).toContain("background: #f2eeea; color: var(--color-text-muted); transition: width 160ms ease;");
     expect(styles).toContain(".erp-nav-item.is-active { border-color: #f5c9a3; background: #ffe4cc;");
     expect(styles).toContain("font-size: 12px; font-weight: 800; letter-spacing: .025em; white-space: nowrap;");
   });
