@@ -37,7 +37,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
 
   test("keeps employee and operation headers fixed above single-row dates", () => {
     expect(matrixCss).toMatch(/\.erp-month-matrix-table thead \.erp-month-sticky-employee,[\s\n]*\.erp-month-matrix-table thead \.erp-month-sticky-operation[\s\S]*z-index:\s*12/);
-    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:first-child th { top:0; height:68px;");
+    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:first-child th { top:0; height:46px;");
     expect(matrixCss).not.toContain("thead tr:nth-child(2)");
   });
 
@@ -54,7 +54,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
   });
 
   test("gives the single sticky header row enough height for the date and total", () => {
-    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:first-child th { top:0; height:68px; vertical-align:middle; }");
+    expect(matrixCss).toContain(".erp-month-matrix-table thead tr:first-child th { top:0; height:46px; vertical-align:middle; }");
   });
 
   test("marks Sunday headers red and today's header blue without heavy fills", () => {
@@ -140,7 +140,7 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
   test("uses balanced fixed widths for employee, operation, day, and total columns", () => {
     expect(matrixCss).toContain("--erp-month-employee-column-width:14ch;");
     expect(matrixCss).toContain("--erp-month-operation-column-width:64px;");
-    expect(matrixCss).toContain("--erp-month-day-column-width:90px;");
+    expect(matrixCss).toContain("--erp-month-day-column-width:80px;");
     expect(matrixCss).toContain("--erp-month-total-column-width:88px;");
     expect(matrixCss).toContain("--erp-month-employee-column-width:13ch; --erp-month-operation-column-width:52px; --erp-month-day-column-width:80px;");
     expect(matrixCss).toContain("width:max-content; min-width:0;");
@@ -166,10 +166,10 @@ describe("ProductionMonthlyMatrix responsive CSS", () => {
 
   test("uses a compact vertical density on scaled desktop viewports", () => {
     expect(matrixCss).toMatch(/@media \(min-width: 1440px\) and \(max-height: 1200px\)[\s\S]*height:clamp\(37px, calc\(6\.25dvh - 23px\), 46px\)/);
-    expect(matrixCss).toMatch(/@media \(min-width: 1680px\) and \(max-height: 1200px\)[\s\S]*height:56px/);
+    expect(matrixCss).toMatch(/@media \(min-width: 1680px\) and \(max-height: 1200px\)[\s\S]*height:44px/);
     expect(matrixCss).toMatch(/@media \(min-width: 1440px\) and \(max-height: 900px\)[\s\S]*height:28px/);
     expect(matrixCss).toMatch(/@media \(min-width: 1680px\) and \(max-height: 900px\)[\s\S]*height:28px/);
-    expect(matrixCss).toMatch(/@media \(min-width: 1440px\) and \(max-height: 900px\)[\s\S]*height:52px/);
+    expect(matrixCss).toMatch(/@media \(min-width: 1440px\) and \(max-height: 900px\)[\s\S]*height:44px/);
   });
 
   test("uses the page as the only vertical scroller on narrow screens", () => {

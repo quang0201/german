@@ -421,7 +421,7 @@
 .erp-icon-button { display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-muted); font-size: 24px; }
 .erp-icon-button:hover { background: var(--color-bg); color: var(--color-text); }
 
-.erp-empty-state { display: grid; place-content: center; justify-items: center; gap: 8px; min-height: 176px; border: 1px dashed var(--color-border-strong); border-radius: 8px; background: var(--color-surface-soft); color: var(--color-text-muted); padding: 24px; text-align: center; }
+.erp-empty-state { display: grid; place-content: center; justify-items: center; gap: 8px; min-height: 112px; border: 1px dashed var(--color-border-strong); border-radius: 8px; background: var(--color-surface-soft); color: var(--color-text-muted); padding: 24px; text-align: center; }
 .erp-empty-state strong { color: var(--color-text); font-size: 16px; }
 .erp-alert { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border: 1px solid; border-radius: var(--radius-md); padding: 14px 16px; font-size: 14px; }
 .erp-alert-copy { display: grid; gap: 3px; }
