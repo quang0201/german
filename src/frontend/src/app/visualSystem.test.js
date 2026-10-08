@@ -20,8 +20,8 @@ describe("Industrial Clarity visual system", () => {
     expect(styles).toContain("--control-height: 34px;");
     expect(styles).toContain("--table-row-height: 34px;");
     expect(styles).toContain("--color-text-muted: #465b60;");
-    expect(styles).toContain("--color-primary: #0f766e;");
-    expect(styles).toContain("--color-focus-ring: #0f766e;");
+    expect(styles).toContain("--color-primary: #c2410c;");
+    expect(styles).toContain("--color-focus-ring: #c2410c;");
     expect(styles).toContain("--color-paid-leave: #2563eb;");
     expect(styles).toMatch(/\.erp-page-title\s*\{[^}]*font-size:\s*24px/s);
     expect(styles).toMatch(/\.erp-nav-item\s*\{[^}]*min-height:\s*var\(--control-height\)/s);

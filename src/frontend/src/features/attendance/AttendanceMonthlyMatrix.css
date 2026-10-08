@@ -67,3 +67,4 @@
   .erp-attendance-matrix-section { min-height: 60vh; }
   .erp-attendance-block-navigation { width: 100%; justify-content: space-between; }
 }
+.erp-attendance-dirty.is-synced { color: var(--color-success); }

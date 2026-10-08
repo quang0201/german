@@ -28,7 +28,9 @@ export function ProductionMonthlyReportPage() {
     setOrdersLoading(true);
     api.get("/api/production-orders")
       .then((items) => {
-        if (active) setOrders(items);
+        if (!active) return;
+        setOrders(items);
+        setOrderId((current) => current || (items.find((order) => order.status === "InProduction") ?? items[0])?.id || "");
       })
       .catch((requestError) => {
         if (active) setOrderError(requestError.message || "Không thể tải danh sách Mã SX.");
