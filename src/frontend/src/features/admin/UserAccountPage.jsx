@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { DataTable } from "../../components/erp/DataTable.jsx";
+import { Icon } from "../../components/erp/Icon.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
 import { roleLabel } from "../../lib/i18n.js";
@@ -109,11 +110,11 @@ export function UserAccountPage() {
       <PageHeader
         title="Tài khoản"
         description="Quản lý tài khoản và vai trò truy cập."
-        actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setCreateOpen(true); setCreateError(""); }}>+ Tạo tài khoản</button>}
+        actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setCreateOpen(true); setCreateError(""); }}><Icon name="plus" size={17} />Tạo tài khoản</button>}
       />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
       {deleteError && <Alert variant="error" title="Không thể xóa tài khoản.">{deleteError}</Alert>}
-      <div className="erp-section-description">Dùng popup để tạo, sửa hoặc xóa tài khoản. Xóa sẽ chuyển tài khoản sang trạng thái đã tắt và giữ nguyên lịch sử.</div>
+      <div className="erp-section-description">Xóa sẽ chuyển tài khoản sang trạng thái đã tắt và giữ nguyên lịch sử.</div>
       <DataTable columns={columns} rows={accounts} loading={false} error={error} emptyMessage="Chưa có tài khoản." rowKey="id" />
       <UserAccountDialog mode="create" open={createOpen} employees={employees} assignedIds={assignedIds} loading={createSaving} error={createError} onClose={() => setCreateOpen(false)} onSubmit={submitCreate} onChange={() => setCreateError("")} />
       <UserAccountDialog mode="edit" open={Boolean(editingAccount)} account={editingAccount} employees={employees} assignedIds={assignedIds} loading={editSaving} error={editError} onClose={() => setEditingAccount(null)} onSubmit={submitEdit} onChange={() => setEditError("")} />

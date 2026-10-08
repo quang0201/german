@@ -108,7 +108,7 @@ export function ShiftListPage() {
       <PageHeader title="Ca làm việc" description="Quản lý bộ ca và khung giờ HC." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setCreateOpen(true); setCreateError(""); }}><Icon name="plus" size={17} />Tạo bộ ca</button>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
       {deleteError && <Alert variant="error" title="Không thể xóa bộ ca.">{deleteError}</Alert>}
-      <div className="erp-section-description">Dùng popup để tạo, sửa hoặc xóa bộ ca. Xóa sẽ tắt bộ ca và giữ nguyên lịch sử chấm công.</div>
+      <div className="erp-section-description">Xóa sẽ tắt bộ ca và giữ nguyên lịch sử chấm công.</div>
       <DataTable columns={columns} rows={rows} loading={false} error={error} emptyMessage="Chưa có bộ ca." rowKey="id" />
       <ShiftTemplateDialog mode="create" open={createOpen} shift={emptyShift} loading={createSaving} error={createError} onClose={() => setCreateOpen(false)} onSubmit={submitCreate} onChange={() => setCreateError("")} />
       <ShiftTemplateDialog mode="edit" open={Boolean(editingShift)} shift={editingShift} loading={editSaving} error={editError} onClose={() => setEditingShift(null)} onSubmit={submitEdit} onChange={() => setEditError("")} />
