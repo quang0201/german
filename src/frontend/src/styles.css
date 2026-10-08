@@ -730,17 +730,6 @@
 .erp-login-brand span { color: var(--login-hero-muted); font-size: 12px; }
 .erp-login-hero-copy h2 { max-width: 480px; margin: 0; font-size: 32px; font-weight: 700; line-height: 1.25; letter-spacing: -.02em; }
 .erp-login-hero-copy p { max-width: 420px; margin: 14px 0 0; color: var(--login-hero-muted); font-size: 15px; }
-.erp-login-preview { width: min(380px, 100%); border: 1px solid var(--login-cell); border-radius: var(--radius-md); background: rgb(255 255 255 / 8%); padding: 16px; }
-.erp-login-b .erp-login-preview { background: #fff; box-shadow: 0 8px 24px rgb(15 118 110 / 10%); }
-.erp-login-preview-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; color: var(--login-hero-muted); font-size: 13px; }
-.erp-login-preview-head b { color: var(--login-hero-fg); font-size: 22px; font-weight: 700; }
-.erp-login-preview-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.erp-login-preview-grid i, .erp-login-preview-legend i { display: block; height: 22px; border-radius: 3px; background: var(--login-cell); }
-.erp-login-preview-grid i.is-on, .erp-login-preview-legend i.is-on { background: var(--login-cell-on); }
-.erp-login-preview-grid i.is-warn, .erp-login-preview-legend i.is-warn { background: var(--login-accent); }
-.erp-login-preview-legend { display: flex; gap: 16px; margin-top: 12px; color: var(--login-hero-muted); font-size: 12px; }
-.erp-login-preview-legend span { display: flex; align-items: center; gap: 6px; }
-.erp-login-preview-legend i { width: 12px; height: 12px; }
 .erp-login-panel { display: grid; place-items: center; padding: 32px 24px; background: var(--color-surface); }
 .erp-login-card { width: min(380px, 100%); }
 .erp-login-kicker { margin: 0 0 6px; color: var(--color-primary); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -759,6 +748,6 @@
 @media (max-width: 860px) {
   .erp-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .erp-login-hero { gap: 0; padding: 16px 20px; }
-  .erp-login-hero-copy, .erp-login-preview { display: none; }
+  .erp-login-hero-copy { display: none; }
   .erp-login-panel { place-items: start center; padding-top: 32px; }
 }

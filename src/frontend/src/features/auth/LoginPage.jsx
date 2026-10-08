@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { Icon } from "../../components/erp/Icon.jsx";
 import { api } from "../../lib/api.js";
 
-const previewCells = Array.from({ length: 28 }, (_, index) => ([2, 5, 8, 9, 13, 16, 18, 21, 24, 25].includes(index) ? "is-on" : index === 11 ? "is-warn" : ""));
-
 export function LoginPage({ onLoggedIn }) {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -37,13 +35,6 @@ export function LoginPage({ onLoggedIn }) {
         <div className="erp-login-hero-copy">
           <h2>Sản lượng của cả tuần,<br />trong một bảng nhìn là thấy.</h2>
           <p>Nhập theo ngày và công đoạn, đối chiếu chấm công, xuất báo cáo Excel.</p>
-        </div>
-        <div className="erp-login-preview" aria-hidden="true">
-          <div className="erp-login-preview-head"><span>Tuần 40</span><b>12.480</b></div>
-          <div className="erp-login-preview-grid">
-            {previewCells.map((state, index) => <i key={index} className={state} />)}
-          </div>
-          <div className="erp-login-preview-legend"><span><i className="is-on" />Đã nhập</span><span><i className="is-warn" />Chưa chấm công</span></div>
         </div>
       </aside>
       <section className="erp-login-panel">
