@@ -721,28 +721,44 @@
 }
 
 /* Login */
-.erp-login { display: grid; min-height: 100dvh; grid-template-columns: minmax(0, 5fr) minmax(0, 4fr); background: var(--color-surface); }
-.erp-login-hero { display: flex; flex-direction: column; justify-content: space-between; gap: 40px; background: linear-gradient(155deg, var(--color-primary-strong) 0%, #0f5f59 100%); color: #fff; padding: 40px 56px; }
+.erp-login { --login-hero-bg: linear-gradient(155deg, #0d9488 0%, #0f766e 55%, #115e59 100%); --login-hero-fg: #fff; --login-hero-muted: #d3f0eb; --login-cell: rgb(255 255 255 / 16%); --login-cell-on: #5eead4; --login-accent: #fcd34d; display: grid; min-height: 100dvh; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); background: var(--color-surface); }
+.erp-login-b { --login-hero-bg: #f0f7f6; --login-hero-fg: var(--color-text); --login-hero-muted: var(--color-text-muted); --login-cell: #d6e6e3; --login-cell-on: #0f766e; --login-accent: #d97706; }
+.erp-login-c { --login-hero-bg: linear-gradient(155deg, #1e293b 0%, #0f172a 100%); --login-hero-fg: #f8fafc; --login-hero-muted: #cbd5e1; --login-cell: rgb(255 255 255 / 10%); --login-cell-on: #fbbf24; --login-accent: #f97316; }
+.erp-login-hero { display: flex; flex-direction: column; justify-content: space-between; gap: 32px; background: var(--login-hero-bg); color: var(--login-hero-fg); padding: 40px 56px; }
 .erp-login-brand { display: flex; align-items: center; gap: 12px; }
 .erp-login-brand strong { display: block; font-size: 18px; line-height: 1.2; }
-.erp-login-brand span { color: #b9ded8; font-size: 12px; }
-.erp-login-hero-copy h2 { max-width: 460px; margin: 0; font-size: 30px; font-weight: 700; line-height: 1.25; letter-spacing: -.02em; }
-.erp-login-hero-copy ul { display: grid; gap: 10px; margin: 24px 0 0; padding: 0; list-style: none; color: #d4ebe7; font-size: 14px; }
-.erp-login-hero-copy li { display: flex; align-items: center; gap: 10px; }
-.erp-login-hero-copy li::before { content: ""; width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: #5fd1c0; }
-.erp-login-hero::after { content: "© German"; color: #8fc4bc; font-size: 12px; }
-.erp-login-panel { display: grid; place-items: center; padding: 32px 24px; background: var(--color-bg); }
+.erp-login-brand span { color: var(--login-hero-muted); font-size: 12px; }
+.erp-login-hero-copy h2 { max-width: 480px; margin: 0; font-size: 32px; font-weight: 700; line-height: 1.25; letter-spacing: -.02em; }
+.erp-login-hero-copy p { max-width: 420px; margin: 14px 0 0; color: var(--login-hero-muted); font-size: 15px; }
+.erp-login-preview { width: min(380px, 100%); border: 1px solid var(--login-cell); border-radius: var(--radius-md); background: rgb(255 255 255 / 8%); padding: 16px; }
+.erp-login-b .erp-login-preview { background: #fff; box-shadow: 0 8px 24px rgb(15 118 110 / 10%); }
+.erp-login-preview-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; color: var(--login-hero-muted); font-size: 13px; }
+.erp-login-preview-head b { color: var(--login-hero-fg); font-size: 22px; font-weight: 700; }
+.erp-login-preview-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.erp-login-preview-grid i, .erp-login-preview-legend i { display: block; height: 22px; border-radius: 3px; background: var(--login-cell); }
+.erp-login-preview-grid i.is-on, .erp-login-preview-legend i.is-on { background: var(--login-cell-on); }
+.erp-login-preview-grid i.is-warn, .erp-login-preview-legend i.is-warn { background: var(--login-accent); }
+.erp-login-preview-legend { display: flex; gap: 16px; margin-top: 12px; color: var(--login-hero-muted); font-size: 12px; }
+.erp-login-preview-legend span { display: flex; align-items: center; gap: 6px; }
+.erp-login-preview-legend i { width: 12px; height: 12px; }
+.erp-login-panel { display: grid; place-items: center; padding: 32px 24px; background: var(--color-surface); }
 .erp-login-card { width: min(380px, 100%); }
-.erp-login-title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
-.erp-login-subtitle { margin: 6px 0 22px; color: var(--color-text-muted); font-size: 14px; }
+.erp-login-kicker { margin: 0 0 6px; color: var(--color-primary); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.erp-login-title { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+.erp-login-subtitle { margin: 6px 0 24px; color: var(--color-text-muted); font-size: 14px; }
 .erp-login-form { display: grid; gap: 6px; }
-.erp-login-label { margin-top: 8px; font-size: 13px; font-weight: 700; }
-.erp-login .erp-control { min-height: 44px; }
+.erp-login-label { margin-top: 10px; font-size: 13px; font-weight: 700; }
+.erp-login-field { position: relative; display: flex; align-items: center; }
+.erp-login-field > svg { position: absolute; left: 12px; color: var(--color-text-subtle); pointer-events: none; }
+.erp-login-field .erp-control { min-height: 46px; padding: 0 44px; }
+.erp-login-toggle { position: absolute; right: 4px; display: grid; width: 38px; height: 38px; place-items: center; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-muted); }
+.erp-login-toggle:hover { background: var(--color-surface-soft); color: var(--color-primary); }
+.erp-login-hint { margin: 2px 0 0; color: var(--color-warning); font-size: 12px; font-weight: 700; }
 .erp-login-error { margin-top: 8px; border-left: 3px solid var(--color-error); border-radius: var(--radius-sm); background: var(--color-error-soft); padding: 8px 12px; color: var(--color-error); font-size: 13px; }
-.erp-login-submit { width: 100%; min-height: 44px; margin-top: 16px; }
+.erp-login-submit { width: 100%; min-height: 46px; margin-top: 18px; font-size: 15px; }
 @media (max-width: 860px) {
   .erp-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .erp-login-hero { gap: 0; padding: 16px 20px; }
-  .erp-login-hero-copy, .erp-login-hero::after { display: none; }
+  .erp-login-hero-copy, .erp-login-preview { display: none; }
   .erp-login-panel { place-items: start center; padding-top: 32px; }
 }
