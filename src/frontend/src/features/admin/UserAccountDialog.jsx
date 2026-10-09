@@ -3,6 +3,7 @@ import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { buildUserAccountCreatePayload, buildUserAccountUpdatePayload, userAccountForm } from "./userAccountDialog.js";
 import "./UserAccountDialog.css";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 export function UserAccountDialog({ open = false, mode = "create", account = null, employees = [], assignedIds = new Set(), loading = false, error = "", onClose, onSubmit, onChange }) {
   const [draft, setDraft] = useState(() => userAccountForm(account ?? {}));
@@ -11,14 +12,7 @@ export function UserAccountDialog({ open = false, mode = "create", account = nul
     if (open) setDraft(userAccountForm(account ?? {}));
   }, [open, account]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === "Escape" && !loading) onClose?.();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, loading, onClose]);
+  useEscapeKey(open, onClose, loading);
 
   if (!open) return null;
 

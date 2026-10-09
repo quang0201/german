@@ -6,6 +6,7 @@ import { calculateHourSplitPreview, resolveQuickEntryQuantities } from "./produc
 import { attendanceHoursDefaults } from "./productionAttendanceHours.js";
 import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
 import "./ProductionMatrixDialogs.css";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 const DIRECT_MODE = "direct";
 const HOUR_SPLIT_MODE = "hour-split";
@@ -30,6 +31,8 @@ export function ProductionMatrixQuickEntryDialog({ context, onClose, onSaved, on
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const attendanceHoursEditedRef = useRef(false);
+
+  useEscapeKey(Boolean(context), onClose, saving);
 
   useEffect(() => {
     if (!context) return undefined;

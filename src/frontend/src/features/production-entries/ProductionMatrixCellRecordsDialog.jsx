@@ -1,9 +1,11 @@
 import React from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 import { entryModeLabel } from "../../lib/i18n.js";
 
 const format = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 
 export function ProductionMatrixCellRecordsDialog({ context, onClose, onOpenEntry }) {
+  useEscapeKey(Boolean(context?.cell) && context.cell.entryCount > 1, onClose);
   if (!context?.cell || context.cell.entryCount <= 1) return null;
   return (
     <div className="erp-dialog-backdrop" role="presentation">

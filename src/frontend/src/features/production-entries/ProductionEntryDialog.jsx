@@ -1,7 +1,10 @@
 import React from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 import { ProductionEntryFormPage } from "./ProductionEntryFormPage.jsx";
 
 export function ProductionEntryDialog({ open = false, session, entry = null, onClose, onSaved }) {
+  useEscapeKey(open, onClose);
+
   if (!open) return null;
 
   return (

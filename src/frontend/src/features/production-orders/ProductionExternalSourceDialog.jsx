@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { externalSourceForm, buildExternalSourcePayload } from "./externalSourceConfig.js";
@@ -10,6 +11,7 @@ export function ProductionExternalSourceDialog({ open = false, source = null, lo
     if (open) setDraft(externalSourceForm(source || {}));
   }, [open, source]);
 
+  useEscapeKey(open, onClose, loading);
   if (!open) return null;
 
   function update(key, value) {

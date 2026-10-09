@@ -5,6 +5,7 @@ import { buildEmployeeCreatePayload, employeeCreateForm } from "./employeeCreate
 import { buildEmployeeShiftAssignmentPayload, buildEmployeeUpdatePayload, employeeForm } from "./employeeDialog.js";
 import { formatEmployeeDate } from "./employeeDate.js";
 import "./EmployeeDialog.css";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 export function EmployeeDialog({ open = false, mode = "edit", employee = null, shifts = [], shiftLoading = false, loading = false, assignmentLoading = false, error = "", assignmentError = "", onClose, onSubmit, onAssignShift, onChange }) {
   const [draft, setDraft] = useState(() => mode === "create" ? employeeCreateForm() : employeeForm(employee ?? {}));
@@ -19,14 +20,7 @@ export function EmployeeDialog({ open = false, mode = "edit", employee = null, s
     }
   }, [open, employee, mode]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === "Escape" && !loading) onClose?.();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, loading, onClose]);
+  useEscapeKey(open, onClose, loading);
 
   if (!open) return null;
 

@@ -3,6 +3,7 @@ import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { emptyProductionOperation, productionOperationForm } from "./productionOperationDialog.js";
 import "./ProductionOperationDialog.css";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 export function ProductionOperationDialog({ open = false, mode = "create", operation = null, loading = false, error = "", onClose, onSubmit, onChange }) {
   const [draft, setDraft] = useState(() => productionOperationForm(operation ?? emptyProductionOperation()));
@@ -11,14 +12,7 @@ export function ProductionOperationDialog({ open = false, mode = "create", opera
     if (open) setDraft(productionOperationForm(operation ?? emptyProductionOperation()));
   }, [open, operation]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === "Escape" && !loading) onClose?.();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, loading, onClose]);
+  useEscapeKey(open, onClose, loading);
 
   if (!open) return null;
 

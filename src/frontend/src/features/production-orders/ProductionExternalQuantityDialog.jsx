@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import "./ProductionExternalQuantityDialog.css";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 function localToday() {
   const date = new Date();
@@ -29,14 +30,7 @@ export function ProductionExternalQuantityDialog({ open = false, order, operatio
     if (open) setDraft(draftFor(item, externalSources));
   }, [open, item, externalSources]);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === "Escape" && !loading) onClose?.();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, loading, onClose]);
+  useEscapeKey(open, onClose, loading);
 
   if (!open) return null;
 

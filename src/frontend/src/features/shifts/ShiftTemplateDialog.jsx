@@ -3,6 +3,7 @@ import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { buildShiftUpdatePayload, shiftTemplateForm } from "./shiftTemplateDialog.js";
 import "./ShiftTemplateDialog.css";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 export function ShiftTemplateDialog({ open = false, mode = "edit", shift = null, loading = false, error = "", onClose, onSubmit, onChange }) {
   const [draft, setDraft] = useState(() => shiftTemplateForm(shift ?? {}));
@@ -10,6 +11,8 @@ export function ShiftTemplateDialog({ open = false, mode = "edit", shift = null,
   useEffect(() => {
     if (open) setDraft(shiftTemplateForm(shift ?? {}));
   }, [open, shift]);
+
+  useEscapeKey(open, onClose, loading);
 
   if (!open) return null;
 

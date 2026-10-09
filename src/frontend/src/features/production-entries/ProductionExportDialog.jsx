@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 import {
   createProductionExportDraft,
   createProductionExportPayload,
@@ -45,6 +46,7 @@ export function ProductionExportDialog({
     }
   }, [open, initialMode, initialAnchorDate, initialFromDate, initialUntilDate]);
 
+  useEscapeKey(open, onClose);
   if (!open) return null;
 
   const rangeError = exportRangeError(draft.fromDate, draft.untilDate);

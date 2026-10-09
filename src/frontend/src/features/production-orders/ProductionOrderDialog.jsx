@@ -1,4 +1,5 @@
 import React from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { formatFixedPrice } from "./productionOrderForm.js";
@@ -7,6 +8,7 @@ import { orderStatusLabel } from "../../lib/i18n.js";
 const STATUSES = ["Draft", "InProduction", "Completed", "Cancelled"];
 
 export function ProductionOrderDialog({ open = false, mode = "create", draft = {}, loading = false, error = "", onClose, onSubmit, onChange, onAddOperation, onEditOperation, onRemoveOperation }) {
+  useEscapeKey(open, onClose, loading);
   if (!open) return null;
 
   const editing = mode === "edit";

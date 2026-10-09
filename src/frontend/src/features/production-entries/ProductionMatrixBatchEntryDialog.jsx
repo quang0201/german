@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 import { api } from "../../lib/api.js";
 import { buildAttendanceMonthPayload, buildBatchAttendanceMonthUrl, buildBatchDirectPayload, buildBatchExistingEmployeesPath, buildBatchExistingEntriesPath, buildBatchExistingEntryUpdatePayload, buildExistingOperationDraft, buildPaidLeaveHourDraft, classifyBatchAttendanceDay, collectExistingEmployeeIds, isCurrentAttendanceRequest, isCurrentBatchOperationsRequest, isCurrentBatchOrdersRequest, isEmployeeAvailableOnDate, mergeAttendanceHourDraft, mergeExistingOperationDrafts, resolveBatchEntryQuantities } from "./productionMatrixBatch.js";
 import { sanitizeProductionQuantityInput } from "./productionQuantityInput.js";
@@ -44,6 +45,7 @@ export function ProductionMatrixBatchEntryDialog({ day, employees = [], onClose,
   const [drafts, setDrafts] = useState({});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  useEscapeKey(Boolean(day), onClose, saving);
   const [operationsLoading, setOperationsLoading] = useState(false);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [employeeAttendanceStatuses, setEmployeeAttendanceStatuses] = useState({});

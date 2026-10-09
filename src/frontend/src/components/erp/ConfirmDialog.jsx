@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
 
 export function ConfirmDialog({ open, title, children, confirmLabel = "Xác nhận", cancelLabel = "Hủy", loading = false, onConfirm, onClose }) {
   const dialogRef = useRef(null);
@@ -11,12 +12,10 @@ export function ConfirmDialog({ open, title, children, confirmLabel = "Xác nh�
     }
     triggerRef.current = document.activeElement;
     dialogRef.current?.focus();
-    function handleKeyDown(event) {
-      if (event.key === "Escape" && !loading) onClose?.();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, loading, onClose]);
+    return undefined;
+  }, [open]);
+
+  useEscapeKey(open, onClose, loading);
 
   if (!open) return null;
 
