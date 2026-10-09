@@ -6,6 +6,7 @@ import { FilterBar } from "../../components/erp/FilterBar.jsx";
 import { Icon } from "../../components/erp/Icon.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
+import { queryDate, readQuery, useQuerySync } from "../../lib/queryState.js";
 import { employeeVisibleForMonth } from "../employees/employeeVisibility.js";
 import { ProductionEntryDetailPage } from "./ProductionEntryDetailPage.jsx";
 import { ProductionExportDialog } from "./ProductionExportDialog.jsx";
@@ -26,10 +27,12 @@ const emptyMatrix = { summary: {}, availableOrders: [], orders: [] };
 const emptyFilters = { employeeId: "", operationId: "", search: "" };
 
 export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPanelClose }) {
-  const [weekAnchorDate, setWeekAnchorDate] = useState(() => localIsoDate());
-  const [selectedOrderId, setSelectedOrderId] = useState("");
-  const [filters, setFilters] = useState(emptyFilters);
-  const [draft, setDraft] = useState(emptyFilters);
+  const [initialQuery] = useState(() => readQuery(["date", "order", "employee", "operation", "q"]));
+  const initialFilters = { employeeId: initialQuery.employee, operationId: initialQuery.operation, search: initialQuery.q };
+  const [weekAnchorDate, setWeekAnchorDate] = useState(() => queryDate(initialQuery.date, localIsoDate()));
+  const [selectedOrderId, setSelectedOrderId] = useState(initialQuery.order);
+  const [filters, setFilters] = useState(initialFilters);
+  const [draft, setDraft] = useState(initialFilters);
   const [mobileFiltersOpen, dispatchMobileFilterPanel] = useReducer(mobileFilterPanelReducer, false);
   const [employees, setEmployees] = useState([]);
   const [operations, setOperations] = useState([]);
@@ -44,6 +47,10 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   const toast = useToast();
   const weekRange = useMemo(() => derivePeriodRange({ periodMode: "week", anchorDate: weekAnchorDate }), [weekAnchorDate]);
   const monthKey = currentMonthKey(weekAnchorDate);
+  useQuerySync(
+    { date: weekAnchorDate, order: selectedOrderId, employee: filters.employeeId, operation: filters.operationId, q: filters.search },
+    { date: localIsoDate() },
+  );
 
   useEffect(() => {
     api.get("/api/employees").then(setEmployees)

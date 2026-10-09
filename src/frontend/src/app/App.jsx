@@ -44,7 +44,7 @@ export function App() {
   const Page = backgroundMatch?.route.component ?? matched.route.component;
   const breadcrumbs = (backgroundMatch?.route ?? matched.route).breadcrumb(backgroundMatch?.params ?? matched.params);
   const pageProps = backgroundMatch
-    ? { session, params: backgroundMatch.params, pathname: location.state.backgroundRoute, panelEntryId: matched.params.id, onPanelClose: () => navigate(location.state.backgroundRoute), presentation }
+    ? { session, params: backgroundMatch.params, pathname: location.state.backgroundRoute, panelEntryId: matched.params.id, onPanelClose: () => navigate(`${location.state.backgroundRoute}${location.state.backgroundSearch ?? ""}`), presentation }
     : { session, params: matched.params, pathname: location.pathname, presentation };
   const isManagerMatrix = session.role !== "Worker"
     && (location.pathname === "/production" || backgroundMatch?.route.component === ProductionEntryRoutePage);

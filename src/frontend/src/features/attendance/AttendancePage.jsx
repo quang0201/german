@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
+import { queryInteger, queryMonth, readQuery, useQuerySync } from "../../lib/queryState.js";
 import { AttendanceMonthlyMatrix } from "./AttendanceMonthlyMatrix.jsx";
 import {
   attendanceBlockKey,
@@ -31,12 +32,14 @@ function monthLabel(monthKey) {
 }
 
 export function AttendancePage() {
-  const [monthKey, setMonthKey] = useState(() => currentAttendanceMonth());
-  const [cache, setCache] = useState(() => emptyAttendanceCache(currentAttendanceMonth(), 0));
-  const [activeBlockIndex, setActiveBlockIndex] = useState(() => attendanceBlockIndexForMonth(currentAttendanceMonth()));
+  const [initialQuery] = useState(() => readQuery(["month", "block", "employee"]));
+  const urlBlockRef = useRef(initialQuery.block);
+  const [monthKey, setMonthKey] = useState(() => queryMonth(initialQuery.month, currentAttendanceMonth()));
+  const [cache, setCache] = useState(() => emptyAttendanceCache(queryMonth(initialQuery.month, currentAttendanceMonth()), 0));
+  const [activeBlockIndex, setActiveBlockIndex] = useState(() => attendanceBlockIndexForMonth(queryMonth(initialQuery.month, currentAttendanceMonth())));
   const [blockNavigating, setBlockNavigating] = useState(false);
   const [drafts, setDrafts] = useState({});
-  const [employeeId, setEmployeeId] = useState("");
+  const [employeeId, setEmployeeId] = useState(initialQuery.employee);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -51,6 +54,10 @@ export function AttendancePage() {
   const dirtyDayKeysRef = useRef(new Set());
   const dayRevisionsRef = useRef({});
 
+  useQuerySync(
+    { month: monthKey, block: activeBlockIndex + 1, employee: employeeId },
+    { month: currentAttendanceMonth(), block: attendanceBlockIndexForMonth(monthKey) + 1 },
+  );
   const yearMonth = monthKey.split("-").map(Number);
   const blocks = attendanceDayBlocks(yearMonth[0], yearMonth[1]);
 
@@ -58,7 +65,10 @@ export function AttendancePage() {
     const generation = monthGenerationRef.current + 1;
     monthGenerationRef.current = generation;
     const [year, month] = monthKey.split("-").map(Number);
-    const initialBlockIndex = attendanceBlockIndexForMonth(monthKey);
+    const defaultBlockIndex = attendanceBlockIndexForMonth(monthKey);
+    const urlBlock = queryInteger(urlBlockRef.current ?? "", { min: 1, max: attendanceDayBlocks(year, month).length, fallback: null });
+    urlBlockRef.current = null;
+    const initialBlockIndex = urlBlock === null ? defaultBlockIndex : urlBlock - 1;
     const initialBlock = attendanceDayBlocks(year, month)[initialBlockIndex] ?? attendanceDayBlocks(year, month)[0];
     activeBlockIndexRef.current = initialBlockIndex;
     requestKeysRef.current = new Set();
@@ -98,10 +108,11 @@ export function AttendancePage() {
     [cache.employeesById],
   );
   useEffect(() => {
+    if (loading) return;
     if (employeeId && !selectableEmployees.some((employee) => String(employee.employeeId) === String(employeeId))) {
       setEmployeeId("");
     }
-  }, [employeeId, selectableEmployees]);
+  }, [employeeId, selectableEmployees, loading]);
   const visibleData = useMemo(() => ({
     ...data,
     employees: employeeId ? data.employees.filter((employee) => employee.employeeId === employeeId) : data.employees,

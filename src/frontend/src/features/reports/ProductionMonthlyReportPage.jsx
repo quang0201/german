@@ -4,15 +4,17 @@ import { Field } from "../../components/erp/Field.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
+import { queryMonth, readQuery, useQuerySync } from "../../lib/queryState.js";
 import { ProductionMonthlyOperationTable } from "./ProductionMonthlyOperationTable.jsx";
 import { buildProductionMonthlyExportUrl, buildProductionMonthlySummaryUrl, currentReportMonthKey, productionMonthlyExportFileName } from "./productionMonthlyReport.js";
 
 export function ProductionMonthlyReportPage() {
   const initialMonth = currentReportMonthKey();
-  const [fromMonth, setFromMonth] = useState(initialMonth);
-  const [untilMonth, setUntilMonth] = useState(initialMonth);
+  const [initialQuery] = useState(() => readQuery(["from", "until", "order"]));
+  const [fromMonth, setFromMonth] = useState(() => queryMonth(initialQuery.from, initialMonth));
+  const [untilMonth, setUntilMonth] = useState(() => queryMonth(initialQuery.until, initialMonth));
   const [orders, setOrders] = useState([]);
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(initialQuery.order);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [orderError, setOrderError] = useState("");
   const [summary, setSummary] = useState(null);
@@ -21,6 +23,7 @@ export function ProductionMonthlyReportPage() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
   const toast = useToast();
+  useQuerySync({ from: fromMonth, until: untilMonth, order: orderId }, { from: initialMonth, until: initialMonth });
   const selectedOrder = orders.find((item) => String(item.id) === String(orderId));
 
   useEffect(() => {

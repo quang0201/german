@@ -3,6 +3,7 @@ export function createNavigationState(options = {}) {
   return {
     presentation: "panel",
     backgroundRoute: options.backgroundRoute,
+    backgroundSearch: typeof window === "undefined" ? "" : window.location.search,
   };
 }
 

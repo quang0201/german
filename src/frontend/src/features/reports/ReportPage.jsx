@@ -5,6 +5,7 @@ import { Icon } from "../../components/erp/Icon.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
+import { queryChoice, queryDate, readQuery, useQuerySync } from "../../lib/queryState.js";
 import { PeriodSelector } from "../production-entries/PeriodSelector.jsx";
 import { productionExportFileName } from "../production-entries/productionExport.js";
 import { derivePeriodRange, localIsoDate, shiftPeriod } from "../production-entries/productionPeriod.js";
@@ -37,15 +38,23 @@ function reportRangeError(fromDate, untilDate) {
 export function ReportPage() {
   const initialRange = currentReportMonthRange();
   const [today] = useState(() => localIsoDate());
-  const [fromDate, setFromDate] = useState(initialRange.fromDate);
-  const [untilDate, setUntilDate] = useState(initialRange.untilDate);
-  const [appliedPeriod, setAppliedPeriod] = useState(() => ({ periodMode: "month", anchorDate: today, customFromDate: initialRange.fromDate, customUntilDate: initialRange.untilDate }));
-  const [customDraft, setCustomDraft] = useState(() => ({ fromDate: initialRange.fromDate, untilDate: initialRange.untilDate }));
+  const [initialQuery] = useState(() => readQuery(["mode", "date", "from", "until", "order"]));
+  const [initialPeriod] = useState(() => ({
+    periodMode: queryChoice(initialQuery.mode, ["day", "week", "month", "custom"], "month"),
+    anchorDate: queryDate(initialQuery.date, today),
+    customFromDate: queryDate(initialQuery.from, initialRange.fromDate),
+    customUntilDate: queryDate(initialQuery.until, initialRange.untilDate),
+  }));
+  const [initialDates] = useState(() => derivePeriodRange(initialPeriod));
+  const [fromDate, setFromDate] = useState(initialDates.fromDate);
+  const [untilDate, setUntilDate] = useState(initialDates.untilDate);
+  const [appliedPeriod, setAppliedPeriod] = useState(initialPeriod);
+  const [customDraft, setCustomDraft] = useState(() => ({ fromDate: initialDates.fromDate, untilDate: initialDates.untilDate }));
   const [isCustomEditing, setIsCustomEditing] = useState(false);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [orders, setOrders] = useState([]);
-  const [orderId, setOrderId] = useState("");
+  const [orderId, setOrderId] = useState(initialQuery.order);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [orderError, setOrderError] = useState("");
   const [summary, setSummary] = useState(null);
@@ -53,6 +62,16 @@ export function ReportPage() {
   const [summaryError, setSummaryError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
   const toast = useToast();
+  useQuerySync(
+    {
+      mode: appliedPeriod.periodMode,
+      date: appliedPeriod.anchorDate,
+      from: appliedPeriod.periodMode === "custom" ? appliedPeriod.customFromDate : "",
+      until: appliedPeriod.periodMode === "custom" ? appliedPeriod.customUntilDate : "",
+      order: orderId,
+    },
+    { mode: "month", date: today },
+  );
   const selectedOrder = orders.find((item) => String(item.id) === String(orderId));
   const customEditorVisible = isCustomEditing || appliedPeriod.periodMode === "custom";
   const customError = customEditorVisible ? reportRangeError(customDraft.fromDate, customDraft.untilDate) : "";

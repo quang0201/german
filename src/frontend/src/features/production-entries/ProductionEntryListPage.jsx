@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/api.js";
+import { queryChoice, queryDate, queryInteger, readQuery, useQuerySync } from "../../lib/queryState.js";
 import { navigate } from "../../app/navigation.js";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { Field } from "../../components/erp/Field.jsx";
@@ -37,13 +38,36 @@ function exportLabel() {
 export function ProductionEntryListPage({ session, panelEntryId, onPanelClose }) {
   const isWorker = session?.role === "Worker";
   const [today] = useState(() => localIsoDate());
-  const [appliedPeriod, setAppliedPeriod] = useState(() => ({ periodMode: "day", anchorDate: today, customFromDate: today, customUntilDate: today }));
-  const [customDraft, setCustomDraft] = useState(() => ({ fromDate: today, untilDate: today }));
+  const [initialQuery] = useState(() => readQuery(["mode", "date", "from", "until", "employee", "order", "operation", "q", "page"]));
+  const [initialPeriod] = useState(() => ({
+    periodMode: queryChoice(initialQuery.mode, ["day", "week", "month", "custom"], "day"),
+    anchorDate: queryDate(initialQuery.date, today),
+    customFromDate: queryDate(initialQuery.from, today),
+    customUntilDate: queryDate(initialQuery.until, today),
+  }));
+  const [initialRange] = useState(() => derivePeriodRange(initialPeriod));
+  const [initialBusiness] = useState(() => ({ employeeId: initialQuery.employee, orderId: initialQuery.order, operationId: initialQuery.operation, search: initialQuery.q }));
+  const [appliedPeriod, setAppliedPeriod] = useState(initialPeriod);
+  const [customDraft, setCustomDraft] = useState(() => ({ fromDate: initialRange.fromDate, untilDate: initialRange.untilDate }));
   const [isCustomEditing, setIsCustomEditing] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [filters, setFilters] = useState(() => initialFilters(today));
-  const [draft, setDraft] = useState(emptyBusinessFilters);
+  const [filters, setFilters] = useState(() => ({ ...initialFilters(today), ...initialRange, ...initialBusiness, page: queryInteger(initialQuery.page, { min: 1, fallback: 1 }) }));
+  const [draft, setDraft] = useState(initialBusiness);
+  useQuerySync(
+    {
+      mode: appliedPeriod.periodMode,
+      date: appliedPeriod.anchorDate,
+      from: appliedPeriod.periodMode === "custom" ? appliedPeriod.customFromDate : "",
+      until: appliedPeriod.periodMode === "custom" ? appliedPeriod.customUntilDate : "",
+      employee: filters.employeeId,
+      order: filters.orderId,
+      operation: filters.operationId,
+      q: filters.search,
+      page: filters.page,
+    },
+    { mode: "day", date: today, page: 1 },
+  );
   const [employees, setEmployees] = useState([]);
   const [orders, setOrders] = useState([]);
   const [operations, setOperations] = useState([]);
