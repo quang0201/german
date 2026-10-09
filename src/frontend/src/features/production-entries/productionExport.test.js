@@ -1,4 +1,3 @@
-import { buildProductionExportUrl } from "./productionEntryQuery.js";
 import { describe, expect, test } from "bun:test";
 import {
   createProductionExportDraft,
@@ -43,7 +42,6 @@ describe("production export date range", () => {
       fromDate: "2026-08-10",
       untilDate: "2026-08-17",
       excludeSundays: true,
-      mergeVariants: false,
     });
   });
 
@@ -56,15 +54,7 @@ describe("production export date range", () => {
       fromDate: "2026-08-10",
       untilDate: "2026-08-17",
       excludeSundays: false,
-      mergeVariants: false,
     });
-  });
-
-  test("passes the merge-variants choice to the export payload and the export URL", () => {
-    const payload = createProductionExportPayload({ fromDate: "2026-08-10", untilDate: "2026-08-17", excludeSundays: true, mergeVariants: true });
-    expect(payload.mergeVariants).toBe(true);
-    expect(buildProductionExportUrl({ ...payload })).toContain("mergeVariants=true");
-    expect(buildProductionExportUrl({ fromDate: "2026-08-10", untilDate: "2026-08-17", mergeVariants: false })).not.toContain("mergeVariants");
   });
 
   test("uses month-year in the downloaded filename for a single-month export", () => {

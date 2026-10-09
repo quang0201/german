@@ -484,11 +484,6 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .ThenBy(item => item.OperationNumber)
             .ToList();
 
-        if (filter.MergeOrderVariants)
-        {
-            rows = ProductionOrderCodeGrouping.MergeVariants(rows).ToList();
-        }
-
         var summary = new ProductionReportSummary(
             rows.Select(row => new { row.EmployeeCode, row.EmployeeName }).Distinct().Count(),
             rows.Count,

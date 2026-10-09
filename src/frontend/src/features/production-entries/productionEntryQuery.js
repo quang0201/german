@@ -12,9 +12,6 @@ export function buildProductionExportUrl(filters = {}) {
   if (typeof filters.excludeSundays === "boolean") {
     params.set("excludeSundays", String(filters.excludeSundays));
   }
-  if (filters.mergeVariants === true) {
-    params.set("mergeVariants", "true");
-  }
   return `${filters.basePath || "/api/reports/production/export.xlsx"}?${params.toString()}`;
 }
 

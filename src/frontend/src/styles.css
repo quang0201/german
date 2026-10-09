@@ -791,4 +791,3 @@
   .erp-report-summary-card { gap: 12px; margin-top: 0; padding: 12px; border-radius: var(--radius-sm); }
   .erp-attendance-matrix-table td > input.erp-attendance-cell { width: 72px; min-width: 72px; }
 }
-.erp-export-hint { display: block; margin-top: 2px; color: var(--color-text-muted); font-size: 12px; font-weight: 400; }

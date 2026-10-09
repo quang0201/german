@@ -7,5 +7,4 @@ public sealed record ProductionReportFilter(
     Guid? OrderId,
     Guid? OperationId,
     string? Search,
-    bool ExcludeSundays = false,
-    bool MergeOrderVariants = false);
+    bool ExcludeSundays = false);
