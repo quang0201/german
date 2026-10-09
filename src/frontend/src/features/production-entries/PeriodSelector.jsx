@@ -1,12 +1,13 @@
-import React from "react";
-import { derivePeriodRange, formatPeriodLabel, localIsoDate, shiftPeriod } from "./productionPeriod.js";
+import React, { useEffect, useRef, useState } from "react";
+import { useEscapeKey } from "../../lib/useEscapeKey.js";
+import { derivePeriodRange, formatDisplayDate, formatPeriodLabel, localIsoDate, shiftPeriod } from "./productionPeriod.js";
 
 const presets = [
   { key: "today", label: "Hôm nay" },
   { key: "yesterday", label: "Hôm qua" },
   { key: "week", label: "Tuần này" },
   { key: "month", label: "Tháng này" },
-  { key: "custom", label: "Tùy chọn" },
+  { key: "custom", label: "Tùy chọn khoảng ngày" },
 ];
 
 function activePreset(periodMode, anchorDate) {
@@ -31,6 +32,18 @@ function navigationLabels(periodMode) {
   return { previous: "Ngày trước", next: "Ngày sau" };
 }
 
+const shortDate = (isoDate) => formatDisplayDate(isoDate).slice(0, 5);
+
+function triggerText({ periodMode, anchorDate, customFromDate, customUntilDate }, active) {
+  const full = formatPeriodLabel({ periodMode, anchorDate, customFromDate, customUntilDate });
+  if (periodMode === "custom") return full;
+  const preset = presets.find((item) => item.key === active);
+  if (!preset) return periodMode === "month" ? `Tháng ${full}` : full;
+  const range = derivePeriodRange({ periodMode, anchorDate });
+  const short = range.fromDate === range.untilDate ? shortDate(range.fromDate) : `${shortDate(range.fromDate)} – ${shortDate(range.untilDate)}`;
+  return `${preset.label} · ${short}`;
+}
+
 export function PeriodSelector({
   periodMode,
   anchorDate,
@@ -42,62 +55,84 @@ export function PeriodSelector({
   onPreset,
   onShift,
   onCustomChange,
+  customActions = null,
+  initialOpen = false,
 }) {
+  const [open, setOpen] = useState(initialOpen);
+  const rootRef = useRef(null);
   const active = activePreset(periodMode, anchorDate);
   const labels = navigationLabels(periodMode);
-  const periodLabel = formatPeriodLabel({ periodMode, anchorDate, customFromDate: appliedCustomFromDate, customUntilDate: appliedCustomUntilDate });
+  const text = triggerText({ periodMode, anchorDate, customFromDate: appliedCustomFromDate, customUntilDate: appliedCustomUntilDate }, active);
   const showCustomFields = isCustomEditing || periodMode === "custom";
+  const closePopover = () => setOpen(false);
+
+  useEscapeKey(open, closePopover);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function closeOnOutsidePress(event) {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", closeOnOutsidePress);
+    return () => document.removeEventListener("mousedown", closeOnOutsidePress);
+  }, [open]);
+
+  // Applying a custom range finishes the edit, so the popover closes with it.
+  useEffect(() => {
+    if (!isCustomEditing && periodMode === "custom") setOpen(false);
+  }, [isCustomEditing, periodMode, appliedCustomFromDate, appliedCustomUntilDate]);
+
+  function choose(key) {
+    onPreset?.(key);
+    if (key !== "custom") setOpen(false);
+  }
 
   return (
-    <section className="erp-period-selector" aria-label="Khoảng thời gian">
-      <div className="erp-period-presets" role="group" aria-label="Chọn kỳ">
-        {presets.map((preset) => (
-          <button
-            key={preset.key}
-            type="button"
-            data-period-preset={preset.key}
-            aria-pressed={active === preset.key}
-            onClick={() => onPreset?.(preset.key)}
-            className="erp-button erp-button-secondary"
-          >
-            {preset.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="erp-period-navigation" role="group" aria-label="Điều hướng kỳ">
-        {periodMode !== "custom" && (
-          <>
-            <button type="button" aria-label={labels.previous} onClick={() => onShift?.(-1)} className="erp-button erp-button-secondary">‹</button>
-            <span className="erp-period-label" aria-live="polite">{periodLabel}</span>
-            <button type="button" aria-label={labels.next} onClick={() => onShift?.(1)} className="erp-button erp-button-secondary">›</button>
-          </>
-        )}
-        {periodMode === "custom" && <span className="erp-period-label" aria-live="polite">{periodLabel}</span>}
-      </div>
-
-      {showCustomFields && (
-        <div className="erp-period-custom-fields">
-          <label>
-            <span>Từ ngày</span>
-            <input
-              className="erp-control"
-              type="date"
-              value={customFromDate}
-              onChange={(event) => onCustomChange?.("fromDate", event.target.value)}
-            />
-          </label>
-          <label>
-            <span>Đến ngày</span>
-            <input
-              className="erp-control"
-              type="date"
-              value={customUntilDate}
-              onChange={(event) => onCustomChange?.("untilDate", event.target.value)}
-            />
-          </label>
-        </div>
+    <div className="erp-period-picker" ref={rootRef} role="group" aria-label="Khoảng thời gian">
+      {periodMode !== "custom" && (
+        <button type="button" className="erp-square-button" aria-label={labels.previous} onClick={() => onShift?.(-1)}>‹</button>
       )}
-    </section>
+      <div className="erp-period-anchor">
+        <button type="button" className="erp-pill erp-period-trigger" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen((value) => !value)}>
+          <span className="erp-pill-label">Kỳ</span>
+          <b className="erp-period-label" aria-live="polite">{text}</b>
+          <span className="erp-pill-caret" aria-hidden="true">▾</span>
+        </button>
+        {open && (
+          <div className="erp-period-popover" role="group" aria-label="Chọn kỳ">
+            <div className="erp-period-presets">
+              {presets.map((preset) => (
+                <button
+                  key={preset.key}
+                  type="button"
+                  data-period-preset={preset.key}
+                  aria-pressed={active === preset.key}
+                  onClick={() => choose(preset.key)}
+                  className={`erp-period-option${preset.key === "custom" ? " is-wide" : ""}`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            {showCustomFields && (
+              <div className="erp-period-custom-fields">
+                <label>
+                  <span>Từ ngày</span>
+                  <input className="erp-control" type="date" value={customFromDate} onChange={(event) => onCustomChange?.("fromDate", event.target.value)} />
+                </label>
+                <label>
+                  <span>Đến ngày</span>
+                  <input className="erp-control" type="date" value={customUntilDate} onChange={(event) => onCustomChange?.("untilDate", event.target.value)} />
+                </label>
+                {customActions}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {periodMode !== "custom" && (
+        <button type="button" className="erp-square-button" aria-label={labels.next} onClick={() => onShift?.(1)}>›</button>
+      )}
+    </div>
   );
 }

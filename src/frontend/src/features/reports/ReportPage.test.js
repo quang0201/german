@@ -17,16 +17,12 @@ describe("ReportPage", () => {
     expect(html).toContain('<h1 class="erp-page-title">Báo cáo sản lượng</h1>');
     expect(html).toContain("Chọn kỳ và mã sản xuất để xem tổng hợp theo công đoạn.");
     expect(html).not.toContain("Xuất báo cáo sản lượng theo khoảng thời gian.");
-    expect(html).toContain('data-period-preset="today"');
-    expect(html).toContain('data-period-preset="yesterday"');
-    expect(html).toContain('data-period-preset="week"');
-    expect(html).toContain('data-period-preset="month"');
-    expect(html).toContain('data-period-preset="custom"');
+    expect(html).toContain("erp-period-trigger");
     expect(html).toContain("Tháng này");
     expect(html).not.toContain('aria-label="Khoảng ngày export"');
     expect(html).toContain("Xuất Excel");
     expect(html).toContain('aria-label="Làm mới dữ liệu"');
-    expect(html).toContain("erp-report-toolbar-actions");
+    expect(html).toContain("erp-report-bar");
     expect(html).toContain("erp-report-refresh-button");
   });
 

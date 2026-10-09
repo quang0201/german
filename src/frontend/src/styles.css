@@ -791,3 +791,38 @@
   .erp-report-summary-card { gap: 12px; margin-top: 0; padding: 12px; border-radius: var(--radius-sm); }
   .erp-attendance-matrix-table td > input.erp-attendance-cell { width: 72px; min-width: 72px; }
 }
+
+@media (min-width: 768px) {
+  .erp-report-operation-table-header, .erp-report-operation-row { grid-template-columns: minmax(250px, 310px) minmax(280px, 640px) 110px 110px 120px; justify-content: start; }
+}
+
+/* Period picker: one compact trigger with a popover, shared by the report and the history pages */
+.erp-period-picker { display: inline-flex; align-items: center; gap: 6px; position: relative; }
+.erp-period-anchor { position: relative; }
+.erp-pill { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--color-border-strong); border-radius: 8px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 13px; cursor: pointer; }
+.erp-pill b { font-weight: 700; }
+.erp-pill:hover { border-color: var(--color-primary); }
+.erp-pill-label { color: var(--color-text-subtle); }
+.erp-pill-caret { color: var(--color-primary); }
+.erp-period-trigger[aria-expanded="true"] { border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent); }
+.erp-square-button { display: inline-grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--color-border-strong); border-radius: 8px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 16px; cursor: pointer; }
+.erp-square-button:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.erp-pill-field { cursor: default; }
+.erp-pill-select { max-width: 320px; min-width: 120px; border: 0; background: transparent; color: var(--color-text); font: inherit; font-size: 13px; font-weight: 700; outline: none; cursor: pointer; }
+.erp-period-popover { position: absolute; z-index: 20; top: calc(100% + 8px); left: 0; display: grid; gap: 10px; width: 340px; max-width: calc(100vw - 32px); padding: 10px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); box-shadow: var(--shadow-panel); }
+.erp-period-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+.erp-period-option { display: flex; align-items: center; min-height: 36px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--color-text-muted); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.erp-period-option:hover { background: var(--color-surface-soft); }
+.erp-period-option[aria-pressed="true"] { background: var(--color-primary-soft); color: var(--color-primary-strong); font-weight: 700; }
+.erp-period-option.is-wide { grid-column: 1 / -1; }
+.erp-period-custom-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+.erp-period-custom-fields label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; }
+.erp-period-custom-actions { grid-column: 1 / -1; display: grid; gap: 8px; margin: 0; }
+.erp-period-custom-actions .erp-inline-message { margin: 0; }
+.erp-report-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.erp-report-bar-spacer { flex: 1 1 0; }
+@media (max-width: 640px) {
+  .erp-report-bar-spacer { display: none; }
+  .erp-pill-select { max-width: 52vw; }
+  .erp-period-popover { position: fixed; top: auto; right: 16px; bottom: 16px; left: 16px; width: auto; }
+}

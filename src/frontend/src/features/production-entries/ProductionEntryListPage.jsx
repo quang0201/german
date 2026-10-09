@@ -196,22 +196,24 @@ export function ProductionEntryListPage({ session, panelEntryId, onPanelClose })
         description="Theo dõi và quản lý sản lượng sản xuất"
         actions={!isWorker && <><button type="button" className="erp-button erp-button-secondary" onClick={openExportDialog}>{exportLabel(appliedPeriod.periodMode)}</button><button type="button" className="erp-button erp-button-primary" onClick={() => setCreateOpen(true)}>+ Nhập sản lượng</button></>}
       />
-      <PeriodSelector
-        periodMode={appliedPeriod.periodMode}
-        anchorDate={appliedPeriod.anchorDate}
-        customFromDate={customDraft.fromDate}
-        customUntilDate={customDraft.untilDate}
-        appliedCustomFromDate={appliedPeriod.customFromDate}
-        appliedCustomUntilDate={appliedPeriod.customUntilDate}
-        isCustomEditing={isCustomEditing}
-        onPreset={selectPreset}
-        onShift={shiftCurrentPeriod}
-        onCustomChange={updateCustomDate}
-      />
-      {customEditorVisible && <div className="erp-period-custom-actions">
-        {rangeError && <p className="erp-inline-message erp-inline-error" role="alert">{rangeError}</p>}
-        <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(rangeError)}>Áp dụng khoảng ngày</button>
-      </div>}
+      <div className="erp-report-bar">
+        <PeriodSelector
+          periodMode={appliedPeriod.periodMode}
+          anchorDate={appliedPeriod.anchorDate}
+          customFromDate={customDraft.fromDate}
+          customUntilDate={customDraft.untilDate}
+          appliedCustomFromDate={appliedPeriod.customFromDate}
+          appliedCustomUntilDate={appliedPeriod.customUntilDate}
+          isCustomEditing={isCustomEditing}
+          onPreset={selectPreset}
+          onShift={shiftCurrentPeriod}
+          onCustomChange={updateCustomDate}
+          customActions={customEditorVisible ? <div className="erp-period-custom-actions">
+            {rangeError && <p className="erp-inline-message erp-inline-error" role="alert">{rangeError}</p>}
+            <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(rangeError)}>Áp dụng</button>
+          </div> : null}
+        />
+      </div>
       <ProductionSummary summary={data.summary} operationSelected={Boolean(filters.operationId)} />
       {!isWorker && <FilterBar loading={loading} onSubmit={submitFilters} onReset={resetFilters}>
         <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => updateDraft("employeeId", event.target.value)}><option value="">Tất cả</option>{employees.map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>

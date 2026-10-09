@@ -17,7 +17,7 @@ function renderFor(role) {
 describe("ProductionEntryRoutePage", () => {
   test("keeps Worker on the existing period/list production flow", () => {
     const html = renderFor("Worker");
-    expect(html).toContain('aria-label="Chọn kỳ"');
+    expect(html).toContain('aria-label="Khoảng thời gian"');
     expect(html).toContain("Hôm nay");
     expect(html).not.toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
   });

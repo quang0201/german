@@ -197,43 +197,43 @@ export function ReportPage() {
       <PageHeader title="Báo cáo sản lượng" description="Chọn kỳ và mã sản xuất để xem tổng hợp theo công đoạn." />
       {error && <Alert variant="error" title="Không thể xuất báo cáo.">{error}</Alert>}
       {orderError && <Alert variant="error" title="Không thể tải danh sách Mã SX.">{orderError}</Alert>}
-      <PeriodSelector
-        periodMode={appliedPeriod.periodMode}
-        anchorDate={appliedPeriod.anchorDate}
-        customFromDate={customDraft.fromDate}
-        customUntilDate={customDraft.untilDate}
-        appliedCustomFromDate={appliedPeriod.customFromDate}
-        appliedCustomUntilDate={appliedPeriod.customUntilDate}
-        isCustomEditing={isCustomEditing}
-        onPreset={selectPreset}
-        onShift={shiftCurrentPeriod}
-        onCustomChange={updateCustomDate}
-      />
-      {customEditorVisible && <div className="erp-period-custom-actions">
-        {customError && <p className="erp-inline-message erp-inline-error" role="alert">{customError}</p>}
-        <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(customError)}>Áp dụng khoảng ngày</button>
-      </div>}
-      <div className="erp-report-toolbar">
-        <Field label="Mã SX">
-          <select className="erp-control" value={orderId} onChange={(event) => setOrderId(event.target.value)} disabled={ordersLoading}>
+      <div className="erp-report-bar">
+        <PeriodSelector
+          periodMode={appliedPeriod.periodMode}
+          anchorDate={appliedPeriod.anchorDate}
+          customFromDate={customDraft.fromDate}
+          customUntilDate={customDraft.untilDate}
+          appliedCustomFromDate={appliedPeriod.customFromDate}
+          appliedCustomUntilDate={appliedPeriod.customUntilDate}
+          isCustomEditing={isCustomEditing}
+          onPreset={selectPreset}
+          onShift={shiftCurrentPeriod}
+          onCustomChange={updateCustomDate}
+          customActions={customEditorVisible ? <div className="erp-period-custom-actions">
+            {customError && <p className="erp-inline-message erp-inline-error" role="alert">{customError}</p>}
+            <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(customError)}>Áp dụng</button>
+          </div> : null}
+        />
+        <label className="erp-pill erp-pill-field">
+          <span className="erp-pill-label">Mã SX</span>
+          <select className="erp-pill-select" value={orderId} onChange={(event) => setOrderId(event.target.value)} disabled={ordersLoading} aria-label="Mã SX">
             <option value="">{ordersLoading ? "Đang tải Mã SX..." : "Chọn Mã SX"}</option>
             {orders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}
           </select>
-        </Field>
-        <div className="erp-report-toolbar-actions">
-          <button
-            className={`erp-button erp-button-secondary erp-report-refresh-button${refreshing ? " is-refreshing" : ""}`}
-            type="button"
-            onClick={refreshData}
-            disabled={refreshing}
-            aria-label="Làm mới dữ liệu"
-            title={refreshing ? "Đang làm mới dữ liệu" : "Làm mới dữ liệu"}
-            aria-busy={refreshing}
-          >
-            <Icon name="refresh" size={18} />
-          </button>
-          <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
-        </div>
+        </label>
+        <span className="erp-report-bar-spacer" />
+        <button
+          className={`erp-square-button erp-report-refresh-button${refreshing ? " is-refreshing" : ""}`}
+          type="button"
+          onClick={refreshData}
+          disabled={refreshing}
+          aria-label="Làm mới dữ liệu"
+          title={refreshing ? "Đang làm mới dữ liệu" : "Làm mới dữ liệu"}
+          aria-busy={refreshing}
+        >
+          <Icon name="refresh" size={18} />
+        </button>
+        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
       </div>
       {summaryError && <Alert variant="error" title="Không thể tải báo cáo công đoạn.">{summaryError}</Alert>}
       {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp sản lượng...</div>}

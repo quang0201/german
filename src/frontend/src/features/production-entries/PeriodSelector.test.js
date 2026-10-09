@@ -12,9 +12,28 @@ const baseProps = {
   onPreset: () => {},
   onShift: () => {},
   onCustomChange: () => {},
+  initialOpen: true,
 };
 
 describe("PeriodSelector", () => {
+  test("starts closed and shows the active period inside one compact trigger", () => {
+    const html = renderToStaticMarkup(React.createElement(PeriodSelector, { ...baseProps, initialOpen: false }));
+
+    expect(html).toContain("erp-period-trigger");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Tuần này ·");
+    expect(html).not.toContain("data-period-preset=");
+  });
+
+  test("labels shifted months by month and hides the arrows for a custom range", () => {
+    const shifted = renderToStaticMarkup(React.createElement(PeriodSelector, { ...baseProps, initialOpen: false, periodMode: "month", anchorDate: "2026-09-15" }));
+    const custom = renderToStaticMarkup(React.createElement(PeriodSelector, { ...baseProps, initialOpen: false, periodMode: "custom", customFromDate: "2026-10-01", customUntilDate: "2026-10-31" }));
+
+    expect(shifted).toContain("Tháng 09/2026");
+    expect(custom).toContain("01/10/2026 – 31/10/2026");
+    expect(custom).not.toContain("erp-square-button");
+  });
+
   test("renders five Vietnamese presets with the active preset pressed", () => {
     const html = renderToStaticMarkup(React.createElement(PeriodSelector, baseProps));
 
