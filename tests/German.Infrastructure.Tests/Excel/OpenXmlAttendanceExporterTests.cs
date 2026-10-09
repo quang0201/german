@@ -124,6 +124,14 @@ public sealed class OpenXmlAttendanceExporterTests
     }
 
     [TestMethod]
+    public void Export_DoesNotWriteAnEmptyNumberingFormatsElementThatMakesExcelRepairTheFile()
+    {
+        using var document = OpenWorkbook(CreateData(2026, 8));
+        var stylesheet = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!;
+        Assert.IsNull(stylesheet.NumberingFormats, "Excel reports 'Repaired Records: Format from /xl/styles.xml' for an empty <numFmts/>.");
+    }
+
+    [TestMethod]
     public void Export_RendersAnEmptySavedDaySetAsOneTcRowWithoutInvalidSelfMerges()
     {
         using var document = OpenWorkbook(new AttendanceExportData(2026, 8, [new AttendanceExportEmployee(

@@ -357,7 +357,6 @@ public sealed class OpenXmlAttendanceExporter : IAttendanceExcelExporter
             Format(borderId: 1U, alignment: HorizontalAlignmentValues.Center),
             Format(fillId: 8U, borderId: 1U, alignment: HorizontalAlignmentValues.Left)) { Count = 18U };
         return new Stylesheet(
-            new NumberingFormats(),
             fonts,
             fills,
             borders,
