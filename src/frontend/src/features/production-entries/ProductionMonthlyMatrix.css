@@ -175,3 +175,7 @@
   .erp-month-operation { padding:0 4px !important; font-size:11px; }
   .erp-month-value-cell button { padding:0 6px; font-size:13px; }
 }
+
+/* Fill the card: table spans the full width and the scroll frame is only as tall as its rows */
+.erp-month-matrix-scroll .erp-month-matrix-table { width:100%; min-width:max-content; margin-inline:0; }
+.erp-production-manager-page .erp-month-matrix-section .erp-month-matrix-scroll { flex:0 1 auto; }
