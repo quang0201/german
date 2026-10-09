@@ -62,8 +62,8 @@ public sealed class OpenXmlProductionReportExporterTests
         var pane = GetWorksheetPart(document, "Báo cáo sản lượng").Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
         Assert.IsNotNull(pane);
         Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
-        Assert.AreEqual(5D, pane.HorizontalSplit?.Value);
-        Assert.AreEqual(4D, pane.VerticalSplit?.Value);
+        Assert.AreEqual(4D, pane.HorizontalSplit?.Value);
+        Assert.AreEqual(5D, pane.VerticalSplit?.Value);
         Assert.AreEqual("E6", pane.TopLeftCell?.Value);
     }
 
@@ -75,9 +75,42 @@ public sealed class OpenXmlProductionReportExporterTests
 
         Assert.IsNotNull(pane);
         Assert.AreEqual(PaneStateValues.Frozen, pane.State?.Value);
-        Assert.AreEqual(5D, pane.HorizontalSplit?.Value);
-        Assert.AreEqual(3D, pane.VerticalSplit?.Value);
+        Assert.AreEqual(3D, pane.HorizontalSplit?.Value);
+        Assert.AreEqual(5D, pane.VerticalSplit?.Value);
         Assert.AreEqual("D6", pane.TopLeftCell?.Value);
+    }
+
+    [TestMethod]
+    public void Export_EverySheetHasAFreezePaneThatMatchesItsSplitsSoExcelDoesNotRepairTheView()
+    {
+        using var document = OpenWorkbook(CreateReport());
+        foreach (var worksheetPart in document.WorkbookPart!.WorksheetParts)
+        {
+            var pane = worksheetPart.Worksheet!.GetFirstChild<SheetViews>()?.GetFirstChild<SheetView>()?.GetFirstChild<Pane>();
+            if (pane is null) continue;
+            AssertConsistentFrozenPane(pane);
+        }
+    }
+
+    public static void AssertConsistentFrozenPane(Pane pane)
+    {
+        var columns = (int)(pane.HorizontalSplit?.Value ?? 0D);
+        var rows = (int)(pane.VerticalSplit?.Value ?? 0D);
+        Assert.IsTrue(columns > 0 || rows > 0, "A pane without any split is meaningless.");
+        var expectedTopLeft = $"{ColumnName(columns + 1)}{rows + 1}";
+        Assert.AreEqual(expectedTopLeft, pane.TopLeftCell?.Value, "topLeftCell must be the first cell after the frozen area.");
+        var expectedActive = columns > 0 && rows > 0 ? PaneValues.BottomRight : rows > 0 ? PaneValues.BottomLeft : PaneValues.TopRight;
+        Assert.AreEqual(expectedActive, pane.ActivePane?.Value, "activePane must be the pane that exists for the given splits.");
+    }
+
+    private static string ColumnName(int index)
+    {
+        var name = string.Empty;
+        for (var number = index; number > 0; number = (number - 1) / 26)
+        {
+            name = (char)('A' + ((number - 1) % 26)) + name;
+        }
+        return name;
     }
 
     [TestMethod]

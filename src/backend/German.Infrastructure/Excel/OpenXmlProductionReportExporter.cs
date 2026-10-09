@@ -291,7 +291,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             {
                 VerticalSplit = 4D,
                 TopLeftCell = "A5",
-                ActivePane = PaneValues.BottomRight,
+                ActivePane = PaneValues.BottomLeft,
                 State = PaneStateValues.Frozen
             }) { WorkbookViewId = 0U }),
             new Columns(Column(1, 14), Column(2, 14), Column(3, 26), Column(4, 14), Column(5, 14), Column(6, 14)),
@@ -510,8 +510,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 5D,
-                VerticalSplit = 4D,
+                HorizontalSplit = 4D,
+                VerticalSplit = 5D,
                 TopLeftCell = "E6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
@@ -642,8 +642,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 5D,
-                VerticalSplit = 3D,
+                HorizontalSplit = 3D,
+                VerticalSplit = 5D,
                 TopLeftCell = "D6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
@@ -802,8 +802,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new SheetProperties(new PageSetupProperties { FitToPage = true }),
             new SheetViews(new SheetView(new Pane
             {
-                HorizontalSplit = 5D,
-                VerticalSplit = 3D,
+                HorizontalSplit = 3D,
+                VerticalSplit = 5D,
                 TopLeftCell = "D6",
                 ActivePane = PaneValues.BottomRight,
                 State = PaneStateValues.Frozen
@@ -957,7 +957,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             {
                 VerticalSplit = 4D,
                 TopLeftCell = "A5",
-                ActivePane = PaneValues.BottomRight,
+                ActivePane = PaneValues.BottomLeft,
                 State = PaneStateValues.Frozen
             }) { WorkbookViewId = 0U }),
             new Columns(Column(1, 14), Column(2, 14), Column(3, 24), Column(4, 12), Column(5, 12), Column(6, 12), Column(7, 12), Column(8, 12), Column(9, 28)),
@@ -988,7 +988,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         return $"Kỳ: {report.FromDate.ToString(format, CultureInfo.InvariantCulture)} – {report.UntilDate.ToString(format, CultureInfo.InvariantCulture)}";
     }
 
-    private static SheetViews FrozenManagementViews() => new(new SheetView(new Pane { HorizontalSplit = 5D, VerticalSplit = 3D, TopLeftCell = "D6", ActivePane = PaneValues.BottomRight, State = PaneStateValues.Frozen }) { WorkbookViewId = 0U });
+    private static SheetViews FrozenManagementViews() => new(new SheetView(new Pane { HorizontalSplit = 3D, VerticalSplit = 5D, TopLeftCell = "D6", ActivePane = PaneValues.BottomRight, State = PaneStateValues.Frozen }) { WorkbookViewId = 0U });
     private static Columns ManagementColumns(int days, int totalStart) { var columns = new Columns(Column(1, 26), Column(2, 9), Column(3, 10)); for (var i = 0; i < days * 2; i++) columns.Append(Column((uint)(4 + i), 10)); columns.Append(Column((uint)totalStart, 12), Column((uint)totalStart + 1, 12), Column((uint)totalStart + 2, 12)); return columns; }
     private static Columns OverviewColumns() => new(Column(1, 18), Column(2, 22), Column(3, 14), Column(4, 22), Column(5, 22));
     private static Column Column(uint index, double width) => new() { Min = index, Max = index, Width = width, CustomWidth = true };
