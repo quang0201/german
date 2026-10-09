@@ -33,7 +33,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private const uint SaturdayHeaderStyle = 23U;
     private const uint SundayHeaderStyle = 24U;
     private const uint AttendanceTcLabelStyle = 25U;
-    private const uint BaseCellFormatCount = 26U;
+    private const uint MergedTextStyle = 26U;
+    private const uint MergedExternalTextStyle = 27U;
+    private const uint BaseCellFormatCount = 28U;
     private static readonly uint[] BorderedBaseStyles =
     [
         0U,
@@ -58,7 +60,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         AttendanceCa2LabelStyle,
         SaturdayHeaderStyle,
         SundayHeaderStyle,
-        AttendanceTcLabelStyle
+        AttendanceTcLabelStyle,
+        MergedTextStyle,
+        MergedExternalTextStyle
     ];
 
     public byte[] Export(ProductionReportData report)
@@ -474,13 +478,14 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 .ToDictionary(item => item.Key, item => (Hc: item.Sum(value => value.HcQuantity), Tc: item.Sum(value => value.TcQuantity)));
             var isExternal = entries.All(item => item.IsExternal);
             var textStyle = isExternal ? ExternalTextStyle : 0U;
+            var mergedTextStyle = isExternal ? MergedExternalTextStyle : MergedTextStyle;
             var numberStyle = isExternal ? ExternalNumberStyle : NumericStyle;
             var hcReferences = new List<string>();
             var tcReferences = new List<string>();
             var cells = new List<Cell>
             {
-                At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, textStyle)),
-                At($"B{row}", Text(isNewOrderCode ? first.ProductionOrderCode : string.Empty, textStyle)),
+                At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, mergedTextStyle)),
+                At($"B{row}", Text(isNewOrderCode ? first.ProductionOrderCode : string.Empty, mergedTextStyle)),
                 At($"C{row}", Text($"CĐ{first.OperationNumber}", textStyle)),
                 At($"D{row}", Text(first.Unit, textStyle))
             };
@@ -601,13 +606,13 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 var cells = new List<Cell>();
                 if (rowIndex == 0)
                 {
-                    cells.Add(At($"A{currentRow}", Text(employee.EmployeeCode)));
-                    cells.Add(At($"B{currentRow}", Text(employee.EmployeeName)));
+                    cells.Add(At($"A{currentRow}", Text(employee.EmployeeCode, MergedTextStyle)));
+                    cells.Add(At($"B{currentRow}", Text(employee.EmployeeName, MergedTextStyle)));
                 }
                 else
                 {
-                    cells.Add(At($"A{currentRow}", Blank(0U)));
-                    cells.Add(At($"B{currentRow}", Blank(0U)));
+                    cells.Add(At($"A{currentRow}", Blank(MergedTextStyle)));
+                    cells.Add(At($"B{currentRow}", Blank(MergedTextStyle)));
                 }
                 cells.Add(At($"C{currentRow}", Text(isTc ? "TC" : ShiftLabel(employeeDays, rowIndex + 1), AttendanceShiftLabelStyle(rowIndex + 1, isTc))));
                 for (var i = 0; i < days.Length; i++)
@@ -1124,7 +1129,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new CellFormat { FillId = 3U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
             new CellFormat { FontId = 1U, FillId = 12U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
             new CellFormat { FontId = 1U, FillId = 13U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
-            new CellFormat { FontId = 1U, FillId = 4U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } })
+            new CellFormat { FontId = 1U, FillId = 4U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
+            new CellFormat { ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } },
+            new CellFormat { FillId = 7U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } })
         { Count = BaseCellFormatCount };
         var gridColor = new Color { Rgb = "FFB7C9D6" };
         var groupColor = new Color { Rgb = "FF000000" };

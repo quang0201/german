@@ -205,6 +205,30 @@ public sealed class OpenXmlProductionReportExporterTests
     }
 
     [TestMethod]
+    public void Export_CentersTheMergedEmployeeAndOrderCodeCellsVertically()
+    {
+        using var document = OpenWorkbook(CreateReport());
+        var data = GetSheetData(document, "Báo cáo sản lượng");
+        var stylesheet = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!;
+        var formats = stylesheet.CellFormats!.Elements<CellFormat>().ToArray();
+        foreach (var reference in new[] { "A6", "B6" })
+        {
+            var row = data.Elements<Row>().Single(item => item.RowIndex!.Value == uint.Parse(reference[1..]));
+            var cell = GetCell(row, reference);
+            var format = formats[(int)cell.StyleIndex!.Value];
+            Assert.AreEqual(VerticalAlignmentValues.Center, format.Alignment?.Vertical?.Value, $"{reference} must be centred vertically inside its merged range.");
+        }
+
+        var attendance = GetSheetData(document, "Bảng công");
+        foreach (var reference in new[] { "A6", "B6" })
+        {
+            var row = attendance.Elements<Row>().Single(item => item.RowIndex!.Value == uint.Parse(reference[1..]));
+            var format = formats[(int)GetCell(row, reference).StyleIndex!.Value];
+            Assert.AreEqual(VerticalAlignmentValues.Center, format.Alignment?.Vertical?.Value, $"Attendance {reference} must be centred vertically inside its merged range.");
+        }
+    }
+
+    [TestMethod]
     public void Export_KeepsYearInDateLabelsWhenReportSpansYears()
     {
         var report = CreateReport() with
