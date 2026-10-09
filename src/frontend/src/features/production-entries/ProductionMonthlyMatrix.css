@@ -189,3 +189,6 @@
 @media (min-width: 1680px) {
   .erp-month-matrix-table th, .erp-month-matrix-table td { height:34px; }
 }
+
+/* Merged employee cell: name sits in the middle of its operation rows instead of leaving a gap below */
+.erp-month-matrix-table td.erp-month-employee { vertical-align:middle; padding-top:0 !important; }

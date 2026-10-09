@@ -80,3 +80,5 @@
   .erp-attendance-filter-field { min-width: 0; width: 100%; }
   .erp-attendance-filters { padding: 0; }
 }
+
+.erp-attendance-employee { vertical-align: middle; padding-top: 5px !important; }
