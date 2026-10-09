@@ -167,3 +167,11 @@
 .erp-month-matrix-table thead .erp-month-total-all { background:var(--color-grid-total-head) !important; color:var(--color-primary-strong); }
 .erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance { box-shadow:inset 2px 0 color-mix(in srgb, var(--color-error) 45%, transparent); }
 .erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-missing { box-shadow:inset 2px 0 color-mix(in srgb, var(--color-warning) 55%, transparent); }
+
+/* Phone: narrower pinned columns so several days stay visible while scrolling */
+@media (max-width: 640px) {
+  .erp-month-matrix-table { --erp-month-employee-column-width:10ch; --erp-month-operation-column-width:42px; --erp-month-day-column-width:68px; --erp-month-total-column-width:72px; }
+  .erp-month-employee { padding-left:6px !important; padding-right:6px !important; font-size:12px; }
+  .erp-month-operation { padding:0 4px !important; font-size:11px; }
+  .erp-month-value-cell button { padding:0 6px; font-size:13px; }
+}

@@ -68,3 +68,15 @@
   .erp-attendance-block-navigation { width: 100%; justify-content: space-between; }
 }
 .erp-attendance-dirty.is-synced { color: var(--color-success); }
+
+/* Phone: compact header and narrower pinned columns so the day inputs get the screen */
+@media (max-width: 640px) {
+  .erp-attendance-page .erp-page-description { display: none; }
+  .erp-attendance-sticky-employee { left: 0; width: 88px; min-width: 88px; max-width: 88px; }
+  .erp-attendance-sticky-shift { left: 88px; min-width: 46px; width: 46px; }
+  .erp-attendance-employee, .erp-attendance-shift-name { padding-left: 6px !important; padding-right: 4px !important; font-size: 12px; }
+  .erp-attendance-employee span { font-size: 11px; line-height: 1.25; }
+  .erp-attendance-cell, .erp-attendance-window-spacer { width: 56px; min-width: 56px; padding: 4px 3px; }
+  .erp-attendance-filter-field { min-width: 0; width: 100%; }
+  .erp-attendance-filters { padding: 0; }
+}
