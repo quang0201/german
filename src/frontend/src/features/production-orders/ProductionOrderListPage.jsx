@@ -14,6 +14,7 @@ import { ProductionExternalQuantityDialog } from "./ProductionExternalQuantityDi
 import { ProductionOrderDialog } from "./ProductionOrderDialog.jsx";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { groupProductionExternalHistory } from "./productionExternalHistory.js";
+import { ListToolbar } from "../../components/erp/ListToolbar.jsx";
 
 function emptyOrder() {
   return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", operations: [] };
@@ -26,6 +27,7 @@ export function ProductionOrderListPage({ params, pathname }) {
   const isListRoute = view === "list";
   const previousViewRef = useRef(view);
   const [rows, setRows] = useState([]);
+  const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyOrder);
   const [detail, setDetail] = useState(emptyOrder);
@@ -282,13 +284,15 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
+  const needle = query.trim().toLowerCase();
+  const visibleRows = needle ? rows.filter((row) => `${row.code} ${row.productName}`.toLowerCase().includes(needle)) : rows;
   const columns = [
     { key: "code", label: "Mã SX" },
     { key: "productName", label: "Sản phẩm" },
-    { key: "plannedQuantity", label: "Kế hoạch" },
+    { key: "plannedQuantity", label: "Kế hoạch", render: (row) => Number(row.plannedQuantity ?? 0).toLocaleString("vi-VN") },
     { key: "status", label: "Trạng thái", render: (row) => orderStatusLabel(row.status) },
     { key: "operations", label: "Công đoạn", render: (row) => row.operations?.length ?? 0 },
-    { key: "action", label: "Thao tác", render: () => <span className="erp-table-action">Xem / sửa</span> },
+    { key: "action", label: "Thao tác", render: () => <span className="erp-button erp-button-secondary erp-button-small">Xem / sửa</span> },
   ];
 
   return (
@@ -296,7 +300,8 @@ export function ProductionOrderListPage({ params, pathname }) {
       {!isCreateRoute && <PageHeader title={detailId ? "Chi tiết mã sản xuất" : "Mã sản xuất"} description="Quản lý Mã SX, công đoạn và giá cố định." actions={isListRoute ? <button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/orders/new")}><Icon name="plus" size={17} />Tạo Mã SX</button> : <button type="button" className="erp-button erp-button-secondary" onClick={() => navigate("/orders")}><Icon name="chevronLeft" size={17} />Quay lại danh sách</button>} />}
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
 
-      {isListRoute && <DataTable columns={columns} rows={rows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
+      {isListRoute && <ListToolbar query={query} onQueryChange={setQuery} shown={visibleRows.length} total={rows.length} noun="mã sản xuất" placeholder="Tìm theo mã hoặc sản phẩm..." />}
+      {isListRoute && <DataTable columns={columns} rows={visibleRows} loading={loading} error={error} emptyMessage="Chưa có mã sản xuất." rowKey="id" onRowClick={(row) => navigate(`/orders/${row.id}`)} />}
 
       {detailId && <>
         {loading && <div className="erp-table-state">Đang tải chi tiết mã sản xuất...</div>}

@@ -10,6 +10,6 @@ describe("ProductionExternalSourceConfigPage", () => {
     expect(html).toContain("Danh sách gia công ngoài");
     expect(html).toContain("Thêm nguồn gia công");
     expect(html).toContain("Tên nguồn");
-    expect(html).toContain("Tắt");
+    expect(html).toContain("Nguồn đã tắt");
   });
 });

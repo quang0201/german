@@ -769,3 +769,25 @@
 /* Production entry dialog header */
 .erp-production-entry-dialog-header { position: sticky; z-index: 2; top: -20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -20px -20px 12px; border-bottom: 1px solid var(--color-border); background: var(--color-surface); padding: 12px 20px; }
 .erp-production-entry-dialog-header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+
+/* Layout consistency: pages use the full content width like the matrix, report filters stay balanced */
+@media (min-width: 768px) {
+  .erp-content { width: 100%; max-width: none; margin: 0; }
+  .erp-report-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 12px; box-shadow: none; border-radius: var(--radius-sm); }
+  .erp-report-toolbar > * { flex: 0 1 200px; min-width: 0; }
+  .erp-report-toolbar > :first-child { flex: 1 1 320px; }
+  .erp-report-toolbar > .erp-report-toolbar-actions { flex: 0 0 auto; margin-left: auto; }
+  .erp-attendance-page .erp-attendance-filters { align-items: flex-end; }
+  .erp-attendance-page .erp-attendance-filters > :not(label) { margin-bottom: 8px; }
+}
+.erp-list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.erp-list-search { position: relative; display: flex; align-items: center; flex: 0 1 340px; min-width: 200px; }
+.erp-list-search > svg { position: absolute; left: 10px; color: var(--color-text-subtle); pointer-events: none; }
+.erp-list-search .erp-control { padding-left: 34px; }
+.erp-list-count { color: var(--color-text-muted); font-size: 13px; }
+.erp-list-count strong { color: var(--color-text); font-weight: 700; }
+
+@media (min-width: 768px) {
+  .erp-report-summary-card { gap: 12px; margin-top: 0; padding: 12px; border-radius: var(--radius-sm); }
+  .erp-attendance-matrix-table td > input.erp-attendance-cell { width: 72px; min-width: 72px; }
+}

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
-import { FormSection } from "../../components/erp/FormSection.jsx";
 import { Icon } from "../../components/erp/Icon.jsx";
 import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { api } from "../../lib/api.js";
@@ -59,9 +58,8 @@ export function ProductionExternalSourceConfigPage() {
     <div className="erp-feature-page">
       <PageHeader title="Danh sách gia công ngoài" description="Cấu hình nguồn để chọn nhanh khi nhập sản lượng nhận ngoài." actions={<button type="button" className="erp-button erp-button-primary" onClick={() => { setError(""); setDialog({ source: null }); }}><Icon name="plus" size={17} />Thêm nguồn gia công</button>} />
       {error && <Alert variant="error" title="Không thể hoàn tất thao tác.">{error}</Alert>}
-      <FormSection title="Nguồn gia công ngoài" description="Nguồn đã tắt không xuất hiện trong dropdown nhập mới; dữ liệu lịch sử vẫn được giữ nguyên.">
-        <div className="erp-field-wide erp-section-description">Trạng thái: Đang dùng / Tắt.</div>
-        <div className="erp-field-wide erp-table-wrap">
+      <p className="erp-section-description">Nguồn đã tắt không xuất hiện trong dropdown nhập mới; dữ liệu lịch sử vẫn được giữ nguyên.</p>
+        <div className="erp-table-wrap">
           <table className="erp-table">
             <thead><tr><th>Tên nguồn</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
             <tbody>
@@ -75,7 +73,7 @@ export function ProductionExternalSourceConfigPage() {
             </tbody>
           </table>
         </div>
-      </FormSection>
+      
       <ProductionExternalSourceDialog open={Boolean(dialog)} source={dialog?.source} loading={saving} error={error} onClose={() => !saving && setDialog(null)} onSubmit={submitSource} onChange={() => setError("")} />
     </div>
   );

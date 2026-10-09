@@ -179,3 +179,13 @@
 /* Fill the card: table spans the full width and the scroll frame is only as tall as its rows */
 .erp-month-matrix-scroll .erp-month-matrix-table { width:100%; min-width:max-content; margin-inline:0; }
 .erp-production-manager-page .erp-month-matrix-section .erp-month-matrix-scroll { flex:0 1 auto; }
+
+/* Header alignment follows the data: numbers and their headers share the right edge, names share the left edge */
+.erp-month-matrix-table thead th.erp-month-sticky-employee { text-align:left; padding-left:var(--space-cell, 10px); }
+.erp-month-matrix-table thead .erp-month-day-head button { justify-items:end; padding:0 10px; }
+.erp-month-matrix-table thead .erp-month-total { text-align:right; padding-right:10px; }
+
+/* Wide screens keep the same compact row rhythm instead of stretching rows with the viewport height */
+@media (min-width: 1680px) {
+  .erp-month-matrix-table th, .erp-month-matrix-table td { height:34px; }
+}
