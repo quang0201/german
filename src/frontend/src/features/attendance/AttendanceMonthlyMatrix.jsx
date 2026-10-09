@@ -62,7 +62,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
                 const isTc = rowIndex === maxSlots;
                 const slotNumber = rowIndex + 1;
                 return (
-                  <tr key={`${employee.employeeId}-${isTc ? "tc" : slotNumber}`} className={inactive ? "erp-attendance-inactive" : ""}>
+                  <tr key={`${employee.employeeId}-${isTc ? "tc" : slotNumber}`} className={[inactive ? "erp-attendance-inactive" : "", rowIndex === rowCount - 1 ? "erp-attendance-group-end" : ""].filter(Boolean).join(" ")}>
                     {rowIndex === 0 && <th className="erp-attendance-sticky-employee erp-attendance-employee" rowSpan={rowCount}>{employee.employeeCode}<span>{employee.fullName}</span>{inactive && <em>Đã tắt</em>}</th>}
                     <th className="erp-attendance-sticky-shift erp-attendance-shift-name">{isTc ? "TC" : `Ca ${slotNumber}`}</th>
                     {days.map((headerDay) => {

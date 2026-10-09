@@ -82,3 +82,26 @@
 }
 
 .erp-attendance-employee { vertical-align: middle; padding-top: 5px !important; }
+
+/* Desktop redesign: compact, fixed-width columns so a short week no longer stretches across the screen */
+@media (min-width: 641px) {
+  .erp-attendance-toolbar { justify-content: flex-start; gap: 16px 28px; }
+  .erp-attendance-summary { margin-left: auto; }
+  .erp-attendance-matrix-scroll { flex: 0 1 auto; align-self: flex-start; width: fit-content; max-width: 100%; min-height: 0; border-radius: 10px; }
+  .erp-attendance-matrix-table { width: auto; min-width: 0; }
+  .erp-attendance-sticky-employee { left: 0; width: 190px; min-width: 190px; max-width: 190px; }
+  .erp-attendance-sticky-shift { left: 190px; width: 56px; min-width: 56px; }
+  .erp-attendance-matrix-table th, .erp-attendance-matrix-table td { padding: 3px 6px; }
+  .erp-attendance-matrix-table thead th { height: 36px; font-size: 13px; }
+  .erp-attendance-matrix-table thead th:not(.erp-attendance-sticky-employee):not(.erp-attendance-sticky-shift):not(.erp-attendance-total) { min-width: 84px; }
+  .erp-attendance-matrix-table thead th.erp-attendance-sticky-employee { text-align: left; padding-left: 12px; }
+  .erp-attendance-employee { padding: 6px 6px 6px 12px !important; border-bottom: 1px solid var(--color-border-strong); }
+  .erp-attendance-employee span { margin-top: 1px; font-size: 13px; }
+  .erp-attendance-shift-name { font-size: 12px; font-weight: 700; color: var(--color-text-muted); text-align: center; }
+  .erp-attendance-cell { width: 64px; min-width: 64px; }
+  .erp-attendance-matrix-table td > input.erp-attendance-cell { height: 28px; min-height: 28px; padding: 0 6px; font-size: 13px; text-align: center; }
+  .erp-attendance-matrix-table tbody td { height: 36px; text-align: center; }
+  .erp-attendance-group-end > th, .erp-attendance-group-end > td { border-bottom: 1px solid var(--color-border-strong); }
+  .erp-attendance-matrix-table tbody td.erp-attendance-total { min-width: 72px; background: var(--color-grid-total); text-align: center; vertical-align: middle; font-weight: 700; border-bottom: 1px solid var(--color-border-strong); }
+  .erp-attendance-matrix-table thead th.erp-attendance-total { min-width: 72px; }
+}
