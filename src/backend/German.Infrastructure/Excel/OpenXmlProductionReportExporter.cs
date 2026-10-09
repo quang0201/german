@@ -384,6 +384,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         AddRow(data, 2, At("A2", Text(PeriodLabel(report), SectionStyle)));
         merges.Append(new MergeCell { Reference = $"A2:{Col(lastColumn)}2" });
         AddRow(data, 3);
+        var dividerColumns = new HashSet<string>(Enumerable.Range(0, days.Length).Select(i => Col(5 + i * metricsPerDay)).Append(Col(totalStart)));
         var fixedHeaderCells = new[]
         {
             At("A4", Text("Nhân viên", HeaderStyle)),
@@ -403,6 +404,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var start = 5 + i * metricsPerDay;
             var dateHeader = At($"{Col(start)}4", Text(ManagementDateLabel(days[i], IncludeYear(report)), DateHeaderStyle(days[i])));
             ApplyGridAndGroupBorder([dateHeader], GroupBorder.None);
+            ApplyLeftDividers([dateHeader], dividerColumns);
             AddCells(data, 4, dateHeader);
             merges.Append(new MergeCell { Reference = $"{Col(start)}4:{Col(start + metricsPerDay - 1)}4" });
             var dailyMetricHeaders = new[]
@@ -412,6 +414,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 At($"{Col(start + 2)}5", Text("Tổng", HeaderStyle))
             };
             ApplyGridAndGroupBorder(dailyMetricHeaders, GroupBorder.None);
+            ApplyLeftDividers(dailyMetricHeaders, dividerColumns);
             AddCells(data, 5, dailyMetricHeaders);
         }
         var totalHeaders = new[]
@@ -421,6 +424,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             At($"{Col(totalStart + 2)}4", Text("Tổng", HeaderStyle))
         };
         ApplyGridAndGroupBorder(totalHeaders, GroupBorder.None);
+        ApplyLeftDividers(totalHeaders, dividerColumns);
         AddCells(data, 4, totalHeaders);
         for (var column = totalStart; column <= totalStart + 2; column++)
         {
@@ -510,6 +514,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             ApplyGridAndGroupBorder(cells, isNewEmployee
                 ? isLastEmployeeRow ? GroupBorder.TopAndBottom : GroupBorder.Top
                 : isLastEmployeeRow ? GroupBorder.Bottom : GroupBorder.None);
+            ApplyLeftDividers(cells, dividerColumns);
             AddCells(data, row++, cells.ToArray());
         }
 
@@ -1075,6 +1080,31 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         return BaseCellFormatCount + borderIndex * (uint)BorderedBaseStyles.Length + (uint)styleIndex;
     }
 
+    private static Border DividerBorder(Color color, RightBorder right, TopBorder top, BottomBorder bottom) => new()
+    {
+        LeftBorder = new LeftBorder { Style = BorderStyleValues.Medium, Color = (Color)color.CloneNode(true) },
+        RightBorder = (RightBorder)right.CloneNode(true),
+        TopBorder = (TopBorder)top.CloneNode(true),
+        BottomBorder = (BottomBorder)bottom.CloneNode(true)
+    };
+
+    // Turns a bordered style into its twin with a heavier left edge, used to separate each day block and the totals.
+    private static void ApplyLeftDividers(IEnumerable<Cell> cells, ISet<string> dividerColumns)
+    {
+        var variantCount = (uint)BorderedBaseStyles.Length;
+        foreach (var cell in cells)
+        {
+            if (cell.CellReference?.Value is not { } reference || !dividerColumns.Contains(ColumnLetters(reference))) continue;
+            var style = cell.StyleIndex?.Value ?? 0U;
+            if (style >= BaseCellFormatCount && style < BaseCellFormatCount + 4U * variantCount)
+            {
+                cell.StyleIndex = style + 4U * variantCount;
+            }
+        }
+    }
+
+    private static string ColumnLetters(string reference) => new(reference.TakeWhile(char.IsLetter).ToArray());
+
     private static string Col(int value) { var result = string.Empty; while (value > 0) { value--; result = (char)('A' + value % 26) + result; value /= 26; } return result; }
     private static int ColumnNumber(string? reference) { if (string.IsNullOrEmpty(reference)) return int.MaxValue; var result = 0; foreach (var c in reference) { if (!char.IsLetter(c)) break; result = result * 26 + char.ToUpperInvariant(c) - 'A' + 1; } return result; }
 
@@ -1133,7 +1163,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new CellFormat { ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } },
             new CellFormat { FillId = 7U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } })
         { Count = BaseCellFormatCount };
-        var gridColor = new Color { Rgb = "FFB7C9D6" };
+        var gridColor = new Color { Rgb = "FF8DA2B4" };
+        var dividerColor = new Color { Rgb = "FF3F536B" };
         var groupColor = new Color { Rgb = "FF000000" };
         var gridLeft = new LeftBorder { Style = BorderStyleValues.Thin, Color = (Color)gridColor.CloneNode(true) };
         var gridRight = new RightBorder { Style = BorderStyleValues.Thin, Color = (Color)gridColor.CloneNode(true) };
@@ -1146,9 +1177,13 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new Border { LeftBorder = (LeftBorder)gridLeft.CloneNode(true), RightBorder = (RightBorder)gridRight.CloneNode(true), TopBorder = (TopBorder)thinTop.CloneNode(true), BottomBorder = (BottomBorder)thinBottom.CloneNode(true) },
             new Border { LeftBorder = (LeftBorder)gridLeft.CloneNode(true), RightBorder = (RightBorder)gridRight.CloneNode(true), TopBorder = (TopBorder)mediumTop.CloneNode(true), BottomBorder = (BottomBorder)thinBottom.CloneNode(true) },
             new Border { LeftBorder = (LeftBorder)gridLeft.CloneNode(true), RightBorder = (RightBorder)gridRight.CloneNode(true), TopBorder = (TopBorder)thinTop.CloneNode(true), BottomBorder = (BottomBorder)mediumBottom.CloneNode(true) },
-            new Border { LeftBorder = (LeftBorder)gridLeft.CloneNode(true), RightBorder = (RightBorder)gridRight.CloneNode(true), TopBorder = (TopBorder)mediumTop.CloneNode(true), BottomBorder = (BottomBorder)mediumBottom.CloneNode(true) }) { Count = 5U };
+            new Border { LeftBorder = (LeftBorder)gridLeft.CloneNode(true), RightBorder = (RightBorder)gridRight.CloneNode(true), TopBorder = (TopBorder)mediumTop.CloneNode(true), BottomBorder = (BottomBorder)mediumBottom.CloneNode(true) },
+            DividerBorder(dividerColor, gridRight, thinTop, thinBottom),
+            DividerBorder(dividerColor, gridRight, mediumTop, thinBottom),
+            DividerBorder(dividerColor, gridRight, thinTop, mediumBottom),
+            DividerBorder(dividerColor, gridRight, mediumTop, mediumBottom)) { Count = 9U };
         var baseFormats = formatsForCells.Elements<CellFormat>().ToArray();
-        foreach (var borderId in new[] { 1U, 2U, 3U, 4U })
+        foreach (var borderId in new[] { 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U })
         {
             foreach (var baseStyle in BorderedBaseStyles)
             {
@@ -1158,7 +1193,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 formatsForCells.Append(borderedFormat);
             }
         }
-        formatsForCells.Count = BaseCellFormatCount + (uint)BorderedBaseStyles.Length * 4U;
+        formatsForCells.Count = BaseCellFormatCount + (uint)BorderedBaseStyles.Length * 8U;
         return new Stylesheet(formats, fonts, fills, borders, new CellStyleFormats(new CellFormat()) { Count = 1U }, formatsForCells);
     }
 }

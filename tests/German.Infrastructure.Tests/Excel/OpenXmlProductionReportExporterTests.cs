@@ -482,7 +482,7 @@ public sealed class OpenXmlProductionReportExporterTests
 
         var productionRows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
         AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 4U), "A4"));
-        AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 5U), "E5"));
+        AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 5U), "F5"));
         AssertAllThinBorders(document, GetCell(productionRows.Single(row => row.RowIndex!.Value == 7U), "C7"));
 
         var attendanceRows = GetSheetData(document, "Bảng công").Elements<Row>().ToList();
@@ -558,6 +558,30 @@ public sealed class OpenXmlProductionReportExporterTests
         var formats = document.WorkbookPart!.WorkbookStylesPart!.Stylesheet!.CellFormats!;
         var format = formats.Elements<CellFormat>().ElementAt((int)cell.StyleIndex!.Value);
         return document.WorkbookPart.WorkbookStylesPart.Stylesheet.Borders!.Elements<Border>().ElementAt((int)(format.BorderId?.Value ?? 0U));
+    }
+
+    [TestMethod]
+    public void Export_SeparatesEachDayBlockAndTheTotalsWithAHeavierLeftEdge()
+    {
+        using var document = OpenWorkbook(CreateReport());
+        var rows = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
+        Row RowAt(uint index) => rows.Single(row => row.RowIndex!.Value == index);
+
+        // Day blocks start at E, H, K, N (3 columns each), the totals start at Q.
+        foreach (var reference in new[] { "E4", "E5", "E6", "H4", "H5", "H6", "K6", "N6", "Q4", "Q6" })
+        {
+            var border = GetBorder(document, GetCell(RowAt(uint.Parse(reference[1..])), reference));
+            Assert.AreEqual(BorderStyleValues.Medium, border.LeftBorder?.Style?.Value, $"{reference} should start a block with a heavy left edge");
+        }
+
+        foreach (var reference in new[] { "F5", "G5", "F6", "G6", "I6", "R6" })
+        {
+            var border = GetBorder(document, GetCell(RowAt(uint.Parse(reference[1..])), reference));
+            Assert.AreEqual(BorderStyleValues.Thin, border.LeftBorder?.Style?.Value, $"{reference} stays a thin grid line");
+        }
+
+        var errors = new OpenXmlValidator().Validate(document).ToList();
+        Assert.AreEqual(0, errors.Count, string.Join(Environment.NewLine, errors.Select(error => error.Description)));
     }
 
     private static void AssertAllThinBorders(SpreadsheetDocument document, Cell cell)
