@@ -128,6 +128,7 @@ public static class ReportEndpoints
         Guid? operationId,
         string? search,
         bool? excludeSundays,
+        bool? mergeVariants,
         ProductionReportService service,
         IProductionReportExporter exporter,
         HttpContext httpContext,
@@ -141,7 +142,8 @@ public static class ReportEndpoints
                 orderId,
                 operationId,
                 search,
-                excludeSundays ?? false),
+                excludeSundays ?? false,
+                mergeVariants ?? false),
             cancellationToken);
 
         if (!result.IsSuccess)

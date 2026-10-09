@@ -113,6 +113,14 @@ export function ProductionExportDialog({
             />
             <span>Bỏ Chủ nhật</span>
           </label>
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={Boolean(draft.mergeVariants)}
+              onChange={(event) => setDraft((current) => ({ ...current, mergeVariants: event.target.checked }))}
+            />
+            <span>Gộp các mã cùng số gốc<small className="erp-export-hint"> — ví dụ “4004 xanh”, “4004 đen”, “TÚI 4004 đỏ” thành “4004”; cộng sản lượng theo từng công đoạn.</small></span>
+          </label>
           {rangeError && <p className="erp-inline-message erp-inline-error" role="alert">{rangeError}</p>}
         </div>
         <div className="erp-dialog-actions">

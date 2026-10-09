@@ -58,6 +58,7 @@ export function createProductionExportDraft({
     anchorDate: initialAnchorDate,
     ...range,
     excludeSundays: true,
+    mergeVariants: false,
   };
 }
 
@@ -66,6 +67,7 @@ export function createProductionExportPayload(draft) {
     fromDate: draft.fromDate,
     untilDate: draft.untilDate,
     excludeSundays: Boolean(draft.excludeSundays),
+    mergeVariants: Boolean(draft.mergeVariants),
   };
 }
 
