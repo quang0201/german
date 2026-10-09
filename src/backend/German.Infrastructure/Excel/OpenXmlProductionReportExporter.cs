@@ -433,8 +433,10 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             .ToArray();
         var row = 6U;
         var employeeStartRow = 0U;
+        var codeStartRow = 0U;
         string? currentEmployeeCode = null;
         string? currentEmployeeName = null;
+        string? currentOrderCode = null;
         for (var groupIndex = 0; groupIndex < groups.Length; groupIndex++)
         {
             var group = groups[groupIndex];
@@ -456,6 +458,17 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 currentEmployeeCode = first.EmployeeCode;
                 currentEmployeeName = first.EmployeeName;
             }
+            var isNewOrderCode = isNewEmployee || !string.Equals(currentOrderCode, first.ProductionOrderCode, StringComparison.Ordinal);
+            if (isNewOrderCode)
+            {
+                if (codeStartRow > 0U && codeStartRow < row - 1U)
+                {
+                    merges.Append(new MergeCell { Reference = $"B{codeStartRow}:B{row - 1U}" });
+                }
+
+                codeStartRow = row;
+                currentOrderCode = first.ProductionOrderCode;
+            }
             var byDay = entries
                 .GroupBy(item => item.WorkDate)
                 .ToDictionary(item => item.Key, item => (Hc: item.Sum(value => value.HcQuantity), Tc: item.Sum(value => value.TcQuantity)));
@@ -467,7 +480,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var cells = new List<Cell>
             {
                 At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, textStyle)),
-                At($"B{row}", Text(first.ProductionOrderCode, textStyle)),
+                At($"B{row}", Text(isNewOrderCode ? first.ProductionOrderCode : string.Empty, textStyle)),
                 At($"C{row}", Text($"CĐ{first.OperationNumber}", textStyle)),
                 At($"D{row}", Text(first.Unit, textStyle))
             };
@@ -498,6 +511,11 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         if (employeeStartRow > 0U && employeeStartRow < row - 1U)
         {
             merges.Append(new MergeCell { Reference = $"A{employeeStartRow}:A{row - 1U}" });
+        }
+
+        if (codeStartRow > 0U && codeStartRow < row - 1U)
+        {
+            merges.Append(new MergeCell { Reference = $"B{codeStartRow}:B{row - 1U}" });
         }
 
         if (groups.Length == 0)

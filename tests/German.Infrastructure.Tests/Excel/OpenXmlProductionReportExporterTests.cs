@@ -162,6 +162,49 @@ public sealed class OpenXmlProductionReportExporterTests
     }
 
     [TestMethod]
+    public void Export_MergesTheOrderCodeCellAcrossAnEmployeesOperationsLikeTheEmployeeName()
+    {
+        var day = new DateOnly(2026, 8, 12);
+        ProductionReportRow Row(string employeeCode, string employeeName, string code, int operation) => new(
+            day, employeeCode, employeeName, code, "Túi 4004", operation, $"CĐ{operation}", "cái", 10m, 1m, 11m, null, ProductionEntryMode.Direct, null);
+        var report = CreateReport() with
+        {
+            Rows = new[]
+            {
+                Row("E001", "Bùi Huyền Dung", "4004 xanh", 1),
+                Row("E001", "Bùi Huyền Dung", "4004 xanh", 2),
+                Row("E001", "Bùi Huyền Dung", "4004 xanh", 5),
+                Row("E001", "Bùi Huyền Dung", "4004 đen", 1),
+                Row("E001", "Bùi Huyền Dung", "4004 đen", 2),
+                Row("E002", "Bạch Thị Đào", "4004 xanh", 1),
+                Row("E002", "Bạch Thị Đào", "4004 xanh", 2)
+            }
+        };
+
+        using var document = OpenWorkbook(report);
+        var sheet = GetWorksheetPart(document, "Báo cáo sản lượng");
+        var merges = sheet.Worksheet!.GetFirstChild<MergeCells>()!.Elements<MergeCell>().Select(merge => merge.Reference!.Value!).ToArray();
+        CollectionAssert.IsSubsetOf(new[] { "A6:A10", "B6:B8", "B9:B10", "A11:A12", "B11:B12" }, merges);
+        CollectionAssert.DoesNotContain(merges, "B6:B10", "Different codes of the same employee must stay separate cells.");
+        CollectionAssert.DoesNotContain(merges, "B6:B12", "A code cell must never reach into the next employee.");
+
+        var data = GetSheetData(document, "Báo cáo sản lượng");
+        var expected = new Dictionary<string, string>
+        {
+            ["B6"] = "4004 xanh", ["B7"] = string.Empty, ["B8"] = string.Empty,
+            ["B9"] = "4004 đen", ["B10"] = string.Empty,
+            ["B11"] = "4004 xanh", ["B12"] = string.Empty
+        };
+        foreach (var (reference, text) in expected)
+        {
+            Assert.AreEqual(text, GetCell(data.Elements<Row>().Single(row => row.RowIndex!.Value == uint.Parse(reference[1..])), reference).InnerText, reference);
+        }
+
+        var errors = new OpenXmlValidator().Validate(document).ToList();
+        Assert.AreEqual(0, errors.Count, string.Join(Environment.NewLine, errors.Select(error => error.Description)));
+    }
+
+    [TestMethod]
     public void Export_KeepsYearInDateLabelsWhenReportSpansYears()
     {
         var report = CreateReport() with
