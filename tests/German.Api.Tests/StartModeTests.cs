@@ -19,6 +19,8 @@ public sealed class StartModeTests
     [DataRow("MIGRATIONS", StartMode.Migrations)]
     [DataRow("seed", StartMode.Seed)]
     [DataRow("SEED", StartMode.Seed)]
+    [DataRow("backfill-products", StartMode.BackfillProducts)]
+    [DataRow("BACKFILL-PRODUCTS", StartMode.BackfillProducts)]
     public void Parse_KnownMode_ReturnsExpectedMode(string value, StartMode expected)
     {
         Assert.AreEqual(expected, StartModeParser.Parse([value]));

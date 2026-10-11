@@ -4,7 +4,8 @@ public enum StartMode
 {
     App,
     Migrations,
-    Seed
+    Seed,
+    BackfillProducts
 }
 
 public static class StartModeParser
@@ -21,8 +22,9 @@ public static class StartModeParser
             "app" => StartMode.App,
             "migrations" => StartMode.Migrations,
             "seed" => StartMode.Seed,
+            "backfill-products" => StartMode.BackfillProducts,
             _ => throw new InvalidOperationException(
-                $"Unknown start mode '{args[0]}'. Expected one of: app, migrations, seed.")
+                $"Unknown start mode '{args[0]}'. Expected one of: app, migrations, seed, backfill-products.")
         };
     }
 

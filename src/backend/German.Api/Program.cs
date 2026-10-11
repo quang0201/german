@@ -45,6 +45,7 @@ builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<ShiftTemplateService>();
 builder.Services.AddScoped<ProductionOrderService>();
 builder.Services.AddScoped<German.Application.Products.ProductService>();
+builder.Services.AddScoped<German.Application.Products.ProductBackfillService>();
 builder.Services.AddScoped<LookupService>();
 builder.Services.AddScoped<ProductionReportService>();
 builder.Services.AddScoped<ProductionExternalQuantityService>();
@@ -145,6 +146,20 @@ switch (startMode)
             .Get<BootstrapAdminOptions>() ?? new BootstrapAdminOptions();
         var bootstrapSeeder = scope.ServiceProvider.GetRequiredService<BootstrapAdminSeeder>();
         await bootstrapSeeder.SeedAsync(bootstrapOptions, CancellationToken.None);
+        return;
+    }
+    case StartMode.BackfillProducts:
+    {
+        using var scope = app.Services.CreateScope();
+        var backfill = scope.ServiceProvider.GetRequiredService<German.Application.Products.ProductBackfillService>();
+        var plan = await backfill.PlanAsync(CancellationToken.None);
+        var apply = args.Contains("--apply", StringComparer.OrdinalIgnoreCase);
+        Console.WriteLine(BackfillReport.Format(plan, apply));
+        if (apply)
+        {
+            var linked = await backfill.ApplyAsync(plan, CancellationToken.None);
+            Console.WriteLine($"Đã ghi: gắn {linked} mã sản xuất vào sản phẩm.");
+        }
         return;
     }
     case StartMode.App:

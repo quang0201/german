@@ -27,6 +27,7 @@ Commands:
   setup    Create or replace .env interactively
   migrate  Build the image and run EF Core migrations, then exit
   seed     Build the image and run bootstrap seed only, then exit
+  backfill Preview grouping legacy production codes into products (add --apply to write)
   deploy   Build/recreate the app and wait until it is healthy
   update   Fast-forward dev from origin/dev, migrate, deploy, and health-check
   status   Show german-app container status
@@ -346,6 +347,14 @@ migrate_command() {
     run_migrations
 }
 
+backfill_command() {
+    require_env_file || return 1
+    require_docker
+    build_image
+    log "Backfilling products (${1:-dry run})..."
+    compose run --rm --no-deps "$SERVICE_NAME" backfill-products ${1:+"$1"}
+}
+
 seed_command() {
     require_env_file || return 1
     require_docker
@@ -418,6 +427,9 @@ main() {
             ;;
         seed)
             seed_command
+            ;;
+        backfill)
+            backfill_command "${2:-}"
             ;;
         deploy)
             deploy_command
