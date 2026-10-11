@@ -6,6 +6,7 @@ public sealed class ProductionOrder : Entity
 {
     public string Code { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
+    public Guid? ProductId { get; set; }
     public decimal PlannedQuantity { get; set; }
     public ProductionOrderStatus Status { get; set; } = ProductionOrderStatus.Draft;
     public DateOnly? StartDate { get; set; }

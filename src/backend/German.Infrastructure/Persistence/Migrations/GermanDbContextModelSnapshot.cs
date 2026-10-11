@@ -293,6 +293,79 @@ namespace German.Infrastructure.Persistence.Migrations
                     b.ToTable("Employees");
                 });
 
+            modelBuilder.Entity("German.Domain.Production.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("German.Domain.Production.ProductOperationTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("FixedPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("OperationNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "OperationNumber")
+                        .IsUnique();
+
+                    b.ToTable("ProductOperationTemplates");
+                });
+
             modelBuilder.Entity("German.Domain.Production.ProductionEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -563,6 +636,9 @@ namespace German.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(250)
@@ -581,6 +657,8 @@ namespace German.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("ProductId");
 
                     b.ToTable("ProductionOrders");
                 });
@@ -720,6 +798,15 @@ namespace German.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("German.Domain.Production.ProductOperationTemplate", b =>
+                {
+                    b.HasOne("German.Domain.Production.Product", null)
+                        .WithMany("Operations")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("German.Domain.Production.ProductionEntry", b =>
                 {
                     b.HasOne("German.Domain.Auth.UserAccount", null)
@@ -792,6 +879,14 @@ namespace German.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("German.Domain.Production.ProductionOrder", b =>
+                {
+                    b.HasOne("German.Domain.Production.Product", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("German.Domain.Shifts.EmployeeShiftAssignment", b =>
                 {
                     b.HasOne("German.Domain.Employees.Employee", null)
@@ -819,6 +914,11 @@ namespace German.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("German.Domain.Attendance.AttendanceDay", b =>
                 {
                     b.Navigation("Shifts");
+                });
+
+            modelBuilder.Entity("German.Domain.Production.Product", b =>
+                {
+                    b.Navigation("Operations");
                 });
 
             modelBuilder.Entity("German.Domain.Production.ProductionOrder", b =>

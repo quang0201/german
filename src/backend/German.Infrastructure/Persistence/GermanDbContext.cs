@@ -21,6 +21,8 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
     public DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments => Set<EmployeeShiftAssignment>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
     public DbSet<ProductionOperation> ProductionOperations => Set<ProductionOperation>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductOperationTemplate> ProductOperationTemplates => Set<ProductOperationTemplate>();
     public DbSet<ProductionEntry> ProductionEntries => Set<ProductionEntry>();
     public DbSet<ProductionExternalQuantity> ProductionExternalQuantities => Set<ProductionExternalQuantity>();
     public DbSet<ProductionExternalSource> ProductionExternalSources => Set<ProductionExternalSource>();
@@ -127,8 +129,32 @@ public sealed class GermanDbContext(DbContextOptions<GermanDbContext> options)
             builder.HasIndex(x => new { x.AttendanceDayId, x.SlotNumber }).IsUnique();
         });
 
+        modelBuilder.Entity<Product>(builder =>
+        {
+            builder.Property(x => x.Code).HasMaxLength(100).IsRequired();
+            builder.Property(x => x.Name).HasMaxLength(250).IsRequired();
+            builder.HasIndex(x => x.Code).IsUnique();
+            builder.HasMany(x => x.Operations)
+                .WithOne()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductOperationTemplate>(builder =>
+        {
+            builder.Property(x => x.Name).HasMaxLength(300).IsRequired();
+            builder.Property(x => x.Unit).HasMaxLength(50).IsRequired();
+            builder.Property(x => x.FixedPrice).HasPrecision(18, 2);
+            builder.HasIndex(x => new { x.ProductId, x.OperationNumber }).IsUnique();
+        });
+
         modelBuilder.Entity<ProductionOrder>(builder =>
         {
+            builder.HasOne<Product>()
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.SetNull);
+            builder.HasIndex(x => x.ProductId);
             builder.Property(x => x.Code).HasMaxLength(100).IsRequired();
             builder.Property(x => x.ProductName).HasMaxLength(250).IsRequired();
             builder.Property(x => x.PlannedQuantity).HasPrecision(18, 2);

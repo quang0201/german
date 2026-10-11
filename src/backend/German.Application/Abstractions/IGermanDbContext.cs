@@ -17,6 +17,8 @@ public interface IGermanDbContext
     DbSet<ShiftTemplate> ShiftTemplates { get; }
     DbSet<ShiftPeriod> ShiftPeriods { get; }
     DbSet<EmployeeShiftAssignment> EmployeeShiftAssignments { get; }
+    DbSet<Product> Products { get; }
+    DbSet<ProductOperationTemplate> ProductOperationTemplates { get; }
     DbSet<ProductionOrder> ProductionOrders { get; }
     DbSet<ProductionOperation> ProductionOperations { get; }
     DbSet<ProductionEntry> ProductionEntries { get; }
