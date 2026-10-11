@@ -118,4 +118,37 @@ describe("ProductionOperationSummaryChart", () => {
     expect(dailyHtml).toContain("27/08/2026");
     expect(dailyHtml).toContain("Chi tiết theo ngày");
   });
+
+  test("shows a different-name hint and a per-order breakdown for merged operations", () => {
+    const operation = {
+      operationNumber: 2,
+      name: "May",
+      extraNames: ["May thân"],
+      unit: "cái",
+      hcQuantity: 80,
+      tcQuantity: 5,
+      totalQuantity: 85,
+      externalQuantity: 5,
+      combinedTotalQuantity: 90,
+      contributors: [],
+      byOrder: [
+        { orderId: "a", orderCode: "4004 xanh", hcQuantity: 50, tcQuantity: 0, totalQuantity: 50, externalQuantity: 5, combinedTotalQuantity: 55 },
+        { orderId: "b", orderCode: "4004 đen", hcQuantity: 30, tcQuantity: 5, totalQuantity: 35, externalQuantity: 0, combinedTotalQuantity: 35 },
+      ],
+    };
+    const row = renderToString(React.createElement(ProductionOperationSummaryChart, { summary: { orderCode: "4004 xanh + 4004 đen", productName: "2 mã sản xuất", operationCount: 1, operations: [operation] } }));
+    const details = renderToString(React.createElement(ProductionOperationDetails, { operation }));
+
+    expect(row).toContain("May (+ tên khác)");
+    expect(row).toContain("4004 xanh + 4004 đen");
+    expect(details).toContain("Theo mã sản xuất");
+    expect(details).toContain("4004 xanh");
+    expect(details).toContain("4004 đen");
+  });
+
+  test("a single order has no per-order breakdown", () => {
+    const operation = { operationNumber: 1, name: "Cắt", extraNames: [], unit: "cái", hcQuantity: 1, tcQuantity: 0, totalQuantity: 1, contributors: [], byOrder: [{ orderId: "a", orderCode: "A", hcQuantity: 1, tcQuantity: 0, totalQuantity: 1, externalQuantity: 0, combinedTotalQuantity: 1 }] };
+
+    expect(renderToString(React.createElement(ProductionOperationDetails, { operation }))).not.toContain("Theo mã sản xuất");
+  });
 });

@@ -1,4 +1,6 @@
 import React from "react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import { ToastProvider } from "../../components/erp/ToastProvider.jsx";
@@ -100,5 +102,18 @@ describe("ReportPage", () => {
     expect(chartHtml).toContain("cái");
     expect(chartHtml).toContain("50");
     expect(chartHtml).toContain("thùng");
+  });
+
+  test("renders the multi order picker and explains why Excel export needs a single order", () => {
+    const html = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
+    const source = readFileSync(resolve(import.meta.dir, "ReportPage.jsx"), "utf8");
+
+    expect(html).toContain('aria-label="Mã SX"');
+    expect(source).toContain("<OrderMultiSelect");
+    expect(source).toContain("mergeOperationSummaries(");
+    expect(source).toContain("parseOrderParam(initialQuery.order)");
+    expect(source).toContain("order: buildOrderParam(orderIds)");
+    expect(source).toContain("orderIds.length > 1");
+    expect(source).toContain("Chọn một Mã SX để xuất Excel");
   });
 });

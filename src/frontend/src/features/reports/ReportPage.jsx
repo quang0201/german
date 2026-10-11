@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert } from "../../components/erp/Alert.jsx";
 import { Field } from "../../components/erp/Field.jsx";
 import { Icon } from "../../components/erp/Icon.jsx";
@@ -9,7 +9,9 @@ import { queryChoice, queryDate, readQuery, useQuerySync } from "../../lib/query
 import { PeriodSelector } from "../production-entries/PeriodSelector.jsx";
 import { productionExportFileName } from "../production-entries/productionExport.js";
 import { derivePeriodRange, localIsoDate, shiftPeriod } from "../production-entries/productionPeriod.js";
+import { OrderMultiSelect } from "./OrderMultiSelect.jsx";
 import { ProductionOperationSummaryChart } from "./ProductionOperationSummaryChart.jsx";
+import { buildOrderParam, mergeOperationSummaries, parseOrderParam } from "./productionOperationMerge.js";
 
 export function currentReportMonthRange(today = new Date()) {
   const first = new Date(today.getFullYear(), today.getMonth(), 1, 12);
@@ -54,10 +56,10 @@ export function ReportPage() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [orders, setOrders] = useState([]);
-  const [orderId, setOrderId] = useState(initialQuery.order);
+  const [orderIds, setOrderIds] = useState(() => parseOrderParam(initialQuery.order));
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [orderError, setOrderError] = useState("");
-  const [summary, setSummary] = useState(null);
+  const [summaryResults, setSummaryResults] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
@@ -68,11 +70,11 @@ export function ReportPage() {
       date: appliedPeriod.anchorDate,
       from: appliedPeriod.periodMode === "custom" ? appliedPeriod.customFromDate : "",
       until: appliedPeriod.periodMode === "custom" ? appliedPeriod.customUntilDate : "",
-      order: orderId,
+      order: buildOrderParam(orderIds),
     },
     { mode: "month", date: today },
   );
-  const selectedOrder = orders.find((item) => String(item.id) === String(orderId));
+  const summary = useMemo(() => (summaryResults ? mergeOperationSummaries(summaryResults, orders) : null), [summaryResults, orders]);
   const customEditorVisible = isCustomEditing || appliedPeriod.periodMode === "custom";
   const customError = customEditorVisible ? reportRangeError(customDraft.fromDate, customDraft.untilDate) : "";
 
@@ -122,7 +124,12 @@ export function ReportPage() {
       .then((items) => {
         if (!active) return;
         setOrders(items);
-        setOrderId((current) => current || (items.find((order) => order.status === "InProduction") ?? items[0])?.id || "");
+        setOrderIds((current) => {
+          const known = current.filter((id) => items.some((order) => order.id === id));
+          if (known.length > 0) return known;
+          const fallback = (items.find((order) => order.status === "InProduction") ?? items[0])?.id;
+          return fallback ? [fallback] : [];
+        });
       })
       .catch((requestError) => {
         if (active) setOrderError(requestError.message || "Không thể tải danh sách Mã SX.");
@@ -134,14 +141,14 @@ export function ReportPage() {
   }, [refreshToken]);
 
   useEffect(() => {
-    if (!orderId || !fromDate || !untilDate) {
-      setSummary(null);
+    if (orderIds.length === 0 || !fromDate || !untilDate) {
+      setSummaryResults(null);
       setSummaryError("");
       setSummaryLoading(false);
       return undefined;
     }
     if (fromDate > untilDate) {
-      setSummary(null);
+      setSummaryResults(null);
       setSummaryError("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
       setSummaryLoading(false);
       return undefined;
@@ -150,13 +157,14 @@ export function ReportPage() {
     let active = true;
     setSummaryLoading(true);
     setSummaryError("");
-    api.get(buildProductionReportSummaryUrl(orderId, fromDate, untilDate, Date.now().toString()))
-      .then((result) => {
-        if (active) setSummary(result);
+    const refresh = Date.now().toString();
+    Promise.all(orderIds.map((id) => api.get(buildProductionReportSummaryUrl(id, fromDate, untilDate, refresh))))
+      .then((results) => {
+        if (active) setSummaryResults(results);
       })
       .catch((requestError) => {
         if (active) {
-          setSummary(null);
+          setSummaryResults(null);
           setSummaryError(requestError.message || "Không thể tải tổng hợp sản lượng.");
         }
       })
@@ -164,7 +172,7 @@ export function ReportPage() {
         if (active) setSummaryLoading(false);
       });
     return () => { active = false; };
-  }, [orderId, fromDate, untilDate, refreshToken]);
+  }, [orderIds.join(","), fromDate, untilDate, refreshToken]);
 
   function refreshData() {
     setError("");
@@ -181,9 +189,13 @@ export function ReportPage() {
       setError("Chức năng xuất báo cáo chưa sẵn sàng. Vui lòng tải lại trang.");
       return;
     }
+    if (orderIds.length > 1) {
+      setError("Chọn một Mã SX để xuất Excel.");
+      return;
+    }
     setExporting(true);
     try {
-      await api.download(buildProductionReportExportUrl(fromDate, untilDate, orderId), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
+      await api.download(buildProductionReportExportUrl(fromDate, untilDate, orderIds[0] ?? ""), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
       toast.success("Đã tải báo cáo sản lượng.");
     } catch (requestError) {
       setError(requestError.message || "Không thể xuất báo cáo.");
@@ -214,13 +226,7 @@ export function ReportPage() {
             <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(customError)}>Áp dụng</button>
           </div> : null}
         />
-        <label className="erp-pill erp-pill-field">
-          <span className="erp-pill-label">Mã SX</span>
-          <select className="erp-pill-select" value={orderId} onChange={(event) => setOrderId(event.target.value)} disabled={ordersLoading} aria-label="Mã SX">
-            <option value="">{ordersLoading ? "Đang tải Mã SX..." : "Chọn Mã SX"}</option>
-            {orders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}
-          </select>
-        </label>
+        <OrderMultiSelect orders={orders} selectedIds={orderIds} onChange={setOrderIds} loading={ordersLoading} />
         <span className="erp-report-bar-spacer" />
         <button
           className={`erp-square-button erp-report-refresh-button${refreshing ? " is-refreshing" : ""}`}
@@ -233,13 +239,13 @@ export function ReportPage() {
         >
           <Icon name="refresh" size={18} />
         </button>
-        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
+        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting || orderIds.length > 1} title={orderIds.length > 1 ? "Chọn một Mã SX để xuất Excel" : undefined}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
       </div>
       {summaryError && <Alert variant="error" title="Không thể tải báo cáo công đoạn.">{summaryError}</Alert>}
       {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp sản lượng...</div>}
-      {!summaryLoading && !summaryError && !orderId && <div className="erp-report-state">Chọn Mã SX và khoảng ngày để xem sản lượng từng công đoạn.</div>}
-      {!summaryLoading && !summaryError && orderId && summary && summary.operations.length === 0 && <div className="erp-report-state">Mã SX này chưa có công đoạn.</div>}
-      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionOperationSummaryChart summary={summary} plannedQuantity={selectedOrder?.plannedQuantity} />}
+      {!summaryLoading && !summaryError && orderIds.length === 0 && <div className="erp-report-state">Chọn Mã SX và khoảng ngày để xem sản lượng từng công đoạn.</div>}
+      {!summaryLoading && !summaryError && orderIds.length > 0 && summary && summary.operations.length === 0 && <div className="erp-report-state">Mã SX này chưa có công đoạn.</div>}
+      {!summaryLoading && !summaryError && summary && summary.operations.length > 0 && <ProductionOperationSummaryChart summary={summary} plannedQuantity={summary.plannedQuantity} />}
     </div>
   );
 }

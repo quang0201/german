@@ -819,10 +819,22 @@
 .erp-period-custom-fields label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; }
 .erp-period-custom-actions { grid-column: 1 / -1; display: grid; gap: 8px; margin: 0; }
 .erp-period-custom-actions .erp-inline-message { margin: 0; }
+.erp-order-picker { position: relative; }
+.erp-order-popover { width: 380px; max-height: min(60vh, 420px); overflow: auto; gap: 8px; }
+.erp-order-popover-hint { margin: 0; color: var(--color-text-subtle); font-size: 12px; }
+.erp-order-group { display: grid; gap: 2px; margin: 0; padding: 6px 0 0; border: 0; border-top: 1px solid var(--color-border); }
+.erp-order-group legend { padding: 0; float: left; width: 100%; }
+.erp-order-group legend + * { clear: both; }
+.erp-order-group legend label, .erp-order-option { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+.erp-order-option { padding-left: 26px; color: var(--color-text-muted); }
+.erp-order-option:hover, .erp-order-group legend label:hover { background: var(--color-surface-soft); }
+.erp-order-option small { margin-left: auto; overflow: hidden; color: var(--color-text-subtle); text-overflow: ellipsis; white-space: nowrap; }
+.erp-order-option input, .erp-order-group legend input { accent-color: var(--color-primary); }
+.erp-report-operation-by-order { display: grid; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); }
 .erp-report-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .erp-report-bar-spacer { flex: 1 1 0; }
 @media (max-width: 640px) {
   .erp-report-bar-spacer { display: none; }
   .erp-pill-select { max-width: 52vw; }
-  .erp-period-popover { position: fixed; top: auto; right: 16px; bottom: 16px; left: 16px; width: auto; }
+  .erp-period-popover, .erp-order-popover { position: fixed; top: auto; right: 16px; bottom: 16px; left: 16px; width: auto; }
 }

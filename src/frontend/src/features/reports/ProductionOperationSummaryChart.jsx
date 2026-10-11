@@ -70,7 +70,7 @@ export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity
             onClick={onToggle}
           >
             <strong>CĐ{operation.operationNumber}</strong>
-            <span title={operation.name}>{operation.name}</span>
+            <span title={[operation.name, ...(operation.extraNames ?? [])].join(" / ")}>{`${operation.name}${operation.extraNames?.length > 0 ? " (+ tên khác)" : ""}`}</span>
             <small>{expanded ? "Ẩn chi tiết" : "Xem chi tiết"}</small>
           </button>
       </div>
@@ -114,6 +114,22 @@ export function ProductionOperationDetails({ operation }) {
         <span>TC</span>
         <span>Tổng</span>
       </div>
+      {operation?.byOrder?.length > 1 && <div className="erp-report-operation-by-order" role="group" aria-label="Theo mã sản xuất">
+        <div className="erp-report-operation-details-header">
+          <strong>Theo mã sản xuất</strong>
+          <span>HC</span>
+          <span>TC</span>
+          <span>Tổng</span>
+        </div>
+        {operation.byOrder.map((item) => (
+          <div className="erp-report-operation-details-row" role="row" key={item.orderId}>
+            <div><strong>{item.orderCode}</strong></div>
+            <span>{quantity(item.hcQuantity)}</span>
+            <span>{quantity(item.tcQuantity)}</span>
+            <span><strong>{quantity(item.combinedTotalQuantity)}</strong> {unit}</span>
+          </div>
+        ))}
+      </div>}
       {contributors.length === 0 && <p className="erp-report-operation-details-empty">Chưa có dữ liệu từng người.</p>}
       {contributors.map((item, index) => {
         const key = contributorKey(item, index);
