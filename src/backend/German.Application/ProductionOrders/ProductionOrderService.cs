@@ -19,7 +19,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             .Where(x => x.ProductionOrderId == id)
             .OrderBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
-        return AppResult<ProductionOrderDto>.Success(ToDto(order, operations));
+        return AppResult<ProductionOrderDto>.Success(ToDto(order, operations, await ProductCodeAsync(order.ProductId, cancellationToken)));
     }
 
     public async Task<IReadOnlyList<ProductionOrderDto>> ListAsync(CancellationToken cancellationToken)
@@ -30,7 +30,9 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             .Where(x => orderIds.Contains(x.ProductionOrderId))
             .OrderBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
-        return orders.Select(order => ToDto(order, operations.Where(x => x.ProductionOrderId == order.Id))).ToList();
+        var productCodes = await db.Products.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.Code, cancellationToken);
+        return orders.Select(order => ToDto(order, operations.Where(x => x.ProductionOrderId == order.Id),
+            order.ProductId.HasValue && productCodes.TryGetValue(order.ProductId.Value, out var code) ? code : null)).ToList();
     }
 
     public async Task<AppResult<ProductionOrderDto>> CreateAsync(CreateProductionOrderCommand command, CancellationToken cancellationToken)
@@ -52,6 +54,16 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             return AppResult<ProductionOrderDto>.Failure("production_order.invalid_operations", "Chỉ chọn clone hoặc nhập danh sách công đoạn mới.");
         }
 
+        Product? product = null;
+        if (command.ProductId.HasValue)
+        {
+            product = await db.Products.AsNoTracking().Include(x => x.Operations).FirstOrDefaultAsync(x => x.Id == command.ProductId.Value, cancellationToken);
+            if (product is null)
+            {
+                return AppResult<ProductionOrderDto>.Failure("product.not_found", "Không tìm thấy sản phẩm.");
+            }
+        }
+
         List<ProductionOperation> sourceOperations = [];
         if (command.CloneFromOrderId.HasValue)
         {
@@ -68,7 +80,12 @@ public sealed class ProductionOrderService(IGermanDbContext db)
 
         var operationInputs = command.CloneFromOrderId.HasValue
             ? sourceOperations.Select(x => new ProductionOperationInput(x.OperationNumber, x.Name, x.Unit, x.SortOrder, x.IsActive, x.FixedPrice)).ToList()
-            : command.Operations?.ToList() ?? [];
+            : command.Operations is { Count: > 0 }
+                ? command.Operations.ToList()
+                : product is null
+                    ? []
+                    : product.Operations.Where(x => x.IsActive).OrderBy(x => x.SortOrder)
+                        .Select(x => new ProductionOperationInput(x.OperationNumber, x.Name, x.Unit, x.SortOrder, x.IsActive, x.FixedPrice)).ToList();
 
         var operationValidation = ValidateOperations(operationInputs);
         if (!operationValidation.IsSuccess)
@@ -80,6 +97,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         {
             Code = command.Code.Trim(),
             ProductName = command.ProductName.Trim(),
+            ProductId = product?.Id,
             PlannedQuantity = command.PlannedQuantity,
             Status = command.Status,
             StartDate = command.StartDate,
@@ -101,7 +119,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
 
         db.ProductionOrders.Add(order);
         await db.SaveChangesAsync(cancellationToken);
-        return AppResult<ProductionOrderDto>.Success(ToDto(order, order.Operations));
+        return AppResult<ProductionOrderDto>.Success(ToDto(order, order.Operations, product?.Code));
     }
 
     public async Task<AppResult<ProductionOrderDto>> UpdateAsync(Guid id, UpdateProductionOrderCommand command, CancellationToken cancellationToken)
@@ -124,6 +142,20 @@ public sealed class ProductionOrderService(IGermanDbContext db)
             return AppResult<ProductionOrderDto>.Failure("production_order.duplicate_code", "Mã sản xuất đã tồn tại.");
         }
 
+        if (command.ProductId.HasValue && !await db.Products.AnyAsync(x => x.Id == command.ProductId.Value, cancellationToken))
+        {
+            return AppResult<ProductionOrderDto>.Failure("product.not_found", "Không tìm thấy sản phẩm.");
+        }
+
+        if (command.ProductId.HasValue)
+        {
+            order.ProductId = command.ProductId;
+        }
+        else if (command.ClearProduct)
+        {
+            order.ProductId = null;
+        }
+
         order.Code = command.Code.Trim();
         order.ProductName = command.ProductName.Trim();
         order.PlannedQuantity = command.PlannedQuantity;
@@ -134,7 +166,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         await db.SaveChangesAsync(cancellationToken);
 
         var operations = await db.ProductionOperations.AsNoTracking().Where(x => x.ProductionOrderId == id).ToListAsync(cancellationToken);
-        return AppResult<ProductionOrderDto>.Success(ToDto(order, operations));
+        return AppResult<ProductionOrderDto>.Success(ToDto(order, operations, await ProductCodeAsync(order.ProductId, cancellationToken)));
     }
 
     public async Task<AppResult<ProductionOperationDto>> AddOperationAsync(Guid orderId, ProductionOperationInput input, CancellationToken cancellationToken)
@@ -242,7 +274,7 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         return AppResult.Success();
     }
 
-    private static AppResult ValidateOperations(IReadOnlyList<ProductionOperationInput> operations)
+    internal static AppResult ValidateOperations(IReadOnlyList<ProductionOperationInput> operations)
     {
         if (operations.GroupBy(x => x.OperationNumber).Any(group => group.Count() > 1))
         {
@@ -257,9 +289,14 @@ public sealed class ProductionOrderService(IGermanDbContext db)
         return AppResult.Success();
     }
 
-    private static ProductionOrderDto ToDto(ProductionOrder order, IEnumerable<ProductionOperation> source) =>
+    private async Task<string?> ProductCodeAsync(Guid? productId, CancellationToken cancellationToken) =>
+        productId.HasValue
+            ? await db.Products.AsNoTracking().Where(x => x.Id == productId.Value).Select(x => x.Code).FirstOrDefaultAsync(cancellationToken)
+            : null;
+
+    private static ProductionOrderDto ToDto(ProductionOrder order, IEnumerable<ProductionOperation> source, string? productCode) =>
         new(order.Id, order.Code, order.ProductName, order.PlannedQuantity, order.Status, order.StartDate, order.EndDate,
-            source.OrderBy(x => x.SortOrder).Select(ToDto).ToList());
+            source.OrderBy(x => x.SortOrder).Select(ToDto).ToList(), order.ProductId, productCode);
 
     private static ProductionOperationDto ToDto(ProductionOperation operation) =>
         new(operation.Id, operation.OperationNumber, operation.Name, operation.Unit, operation.FixedPrice, operation.SortOrder, operation.IsActive);

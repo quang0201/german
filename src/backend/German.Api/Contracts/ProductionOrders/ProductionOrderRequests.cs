@@ -11,11 +11,14 @@ public sealed record CreateProductionOrderRequest(
     DateOnly? StartDate = null,
     DateOnly? EndDate = null,
     Guid? CloneFromOrderId = null,
-    IReadOnlyList<ProductionOperationRequest>? Operations = null);
+    IReadOnlyList<ProductionOperationRequest>? Operations = null,
+    Guid? ProductId = null);
 public sealed record UpdateProductionOrderRequest(
     string Code,
     string ProductName,
     decimal PlannedQuantity,
     ProductionOrderStatus Status,
     DateOnly? StartDate = null,
-    DateOnly? EndDate = null);
+    DateOnly? EndDate = null,
+    Guid? ProductId = null,
+    bool ClearProduct = false);

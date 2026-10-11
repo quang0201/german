@@ -11,14 +11,17 @@ public sealed record CreateProductionOrderCommand(
     DateOnly? StartDate,
     DateOnly? EndDate,
     Guid? CloneFromOrderId,
-    IReadOnlyList<ProductionOperationInput>? Operations);
+    IReadOnlyList<ProductionOperationInput>? Operations,
+    Guid? ProductId = null);
 public sealed record UpdateProductionOrderCommand(
     string Code,
     string ProductName,
     decimal PlannedQuantity,
     ProductionOrderStatus Status,
     DateOnly? StartDate,
-    DateOnly? EndDate);
+    DateOnly? EndDate,
+    Guid? ProductId = null,
+    bool ClearProduct = false);
 public sealed record ProductionOperationDto(Guid Id, int OperationNumber, string Name, string Unit, decimal? FixedPrice, int SortOrder, bool IsActive);
 public sealed record ProductionOrderDto(
     Guid Id,
@@ -28,4 +31,6 @@ public sealed record ProductionOrderDto(
     ProductionOrderStatus Status,
     DateOnly? StartDate,
     DateOnly? EndDate,
-    IReadOnlyList<ProductionOperationDto> Operations);
+    IReadOnlyList<ProductionOperationDto> Operations,
+    Guid? ProductId = null,
+    string? ProductCode = null);

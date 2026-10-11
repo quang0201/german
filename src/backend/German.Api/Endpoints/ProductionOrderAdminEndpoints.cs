@@ -26,14 +26,15 @@ public static class ProductionOrderAdminEndpoints
                 request.StartDate,
                 request.EndDate,
                 request.CloneFromOrderId,
-                request.Operations?.Select(ToInput).ToList());
+                request.Operations?.Select(ToInput).ToList(),
+                request.ProductId);
             var result = await service.CreateAsync(command, ct);
             if (result.IsSuccess) cache.InvalidateActiveProductionOrders();
             return result.IsSuccess ? Results.Created($"/api/production-orders/{result.Value!.Id}", result.Value) : ApiResultMapper.Error(result.Error!);
         });
         group.MapPut("/{id:guid}", async (Guid id, UpdateProductionOrderRequest request, ProductionOrderService service, LookupCache cache, CancellationToken ct) =>
         {
-            var command = new UpdateProductionOrderCommand(request.Code, request.ProductName, request.PlannedQuantity, request.Status, request.StartDate, request.EndDate);
+            var command = new UpdateProductionOrderCommand(request.Code, request.ProductName, request.PlannedQuantity, request.Status, request.StartDate, request.EndDate, request.ProductId, request.ClearProduct);
             var result = await service.UpdateAsync(id, command, ct);
             if (result.IsSuccess)
             {
