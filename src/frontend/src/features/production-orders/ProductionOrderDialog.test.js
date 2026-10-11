@@ -29,4 +29,17 @@ describe("ProductionOrderDialog", () => {
     expect(html).toContain("Lưu thay đổi");
     expect(html).not.toContain("+ Thêm công đoạn");
   });
+
+  test("offers a product template select that only copies operations when creating", () => {
+    const products = [{ id: "p1", code: "4004", name: "Túi 4004", isActive: true }, { id: "p2", code: "OLD", name: "Cũ", isActive: false }];
+    const create = renderToStaticMarkup(<ProductionOrderDialog mode="create" open draft={{ ...draft, productId: "p1" }} products={products} onClose={() => {}} onSubmit={() => {}} />);
+    const edit = renderToStaticMarkup(<ProductionOrderDialog mode="edit" open draft={{ ...draft, productId: "p1" }} products={products} onClose={() => {}} onSubmit={() => {}} />);
+
+    expect(create).toContain("Khuôn mẫu sản phẩm");
+    expect(create).toContain("4004 · Túi 4004");
+    expect(create).not.toContain("OLD · Cũ");
+    expect(create).toContain("Công đoạn được sao chép từ sản phẩm");
+    expect(edit).toContain("Khuôn mẫu sản phẩm");
+    expect(edit).toContain("Chỉ gắn liên kết, không đổi công đoạn");
+  });
 });

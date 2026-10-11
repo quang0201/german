@@ -10,6 +10,7 @@ export function buildProductionOrderPayload(form) {
     status: form.status,
     startDate: form.startDate || null,
     endDate: form.endDate || null,
+    ...(form.productId ? { productId: form.productId } : {}),
     operations: (form.operations ?? []).map((operation, index) => ({
       operationNumber: Number(operation.operationNumber),
       name: operation.name.trim(),
@@ -29,6 +30,19 @@ export function productionOrderDetailForm(order) {
     status: order.status ?? "Draft",
     startDate: order.startDate ?? "",
     endDate: order.endDate ?? "",
+    productId: order.productId ?? "",
+  };
+}
+
+export function buildProductionOrderUpdatePayload(draft, original) {
+  return {
+    code: draft.code,
+    productName: draft.productName,
+    plannedQuantity: Number(draft.plannedQuantity),
+    status: draft.status,
+    startDate: draft.startDate || null,
+    endDate: draft.endDate || null,
+    ...(draft.productId ? { productId: draft.productId } : original?.productId ? { clearProduct: true } : {}),
   };
 }
 

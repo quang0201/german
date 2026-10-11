@@ -5,7 +5,7 @@ import { routes } from "./routes.js";
 
 const navigationGroups = [
   { label: "Báo cáo", paths: ["/reports", "/reports/monthly"] },
-  { label: "Danh mục", paths: ["/employees", "/orders", "/settings/external-sources", "/shifts"] },
+  { label: "Danh mục", paths: ["/employees", "/orders", "/products", "/settings/external-sources", "/shifts"] },
   { label: "Vận hành", paths: ["/attendance", "/production"] },
   { label: "Quản trị", paths: ["/admin/accounts", "/admin/audit"] },
 ];
@@ -23,6 +23,7 @@ const icons = {
   "/production": "production",
   "/employees": "employees",
   "/orders": "orders",
+  "/products": "orders",
   "/settings/external-sources": "orders",
   "/shifts": "shifts",
   "/reports": "reports",

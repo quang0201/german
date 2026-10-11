@@ -7,7 +7,7 @@ import { orderStatusLabel } from "../../lib/i18n.js";
 
 const STATUSES = ["Draft", "InProduction", "Completed", "Cancelled"];
 
-export function ProductionOrderDialog({ open = false, mode = "create", draft = {}, loading = false, error = "", onClose, onSubmit, onChange, onAddOperation, onEditOperation, onRemoveOperation }) {
+export function ProductionOrderDialog({ open = false, mode = "create", draft = {}, products = [], loading = false, error = "", onClose, onSubmit, onChange, onSelectProduct, onAddOperation, onEditOperation, onRemoveOperation }) {
   useEscapeKey(open, onClose, loading);
   if (!open) return null;
 
@@ -29,6 +29,12 @@ export function ProductionOrderDialog({ open = false, mode = "create", draft = {
         {error && <Alert variant="error" title="Không thể lưu mã sản xuất.">{error}</Alert>}
         <form onSubmit={submit}>
           <div className="erp-production-order-dialog-fields">
+            <Field label="Khuôn mẫu sản phẩm" hint={editing ? "Chỉ gắn liên kết, không đổi công đoạn của mã này." : "Công đoạn được sao chép từ sản phẩm, vẫn sửa được trước khi tạo."}>
+              <select className="erp-control" value={draft.productId ?? ""} onChange={(event) => (onSelectProduct ? onSelectProduct(event.target.value) : update("productId", event.target.value))}>
+                <option value="">Không chọn</option>
+                {products.filter((product) => product.isActive || product.id === draft.productId).map((product) => <option key={product.id} value={product.id}>{product.code} · {product.name}</option>)}
+              </select>
+            </Field>
             <Field label="Mã SX" required><input className="erp-control" required value={draft.code ?? ""} onChange={(event) => update("code", event.target.value)} /></Field>
             <Field label="Sản phẩm" required><input className="erp-control" required value={draft.productName ?? ""} onChange={(event) => update("productName", event.target.value)} /></Field>
             <Field label="Số lượng kế hoạch" required><input className="erp-control" required min="0" step="0.01" type="number" value={draft.plannedQuantity ?? ""} onChange={(event) => update("plannedQuantity", event.target.value)} /></Field>

@@ -26,6 +26,13 @@ describe("ERP route metadata", () => {
     ]);
   });
 
+  test("exposes the product catalog only to Manager and Admin", () => {
+    const route = routes.find((item) => item.path === "/products");
+    expect(route?.roles).toEqual(["Manager", "Admin"]);
+    expect(route?.navLabel).toBe("Sản phẩm");
+    expect(matchRoute("/products", routes)?.route.path).toBe("/products");
+  });
+
   test("exposes attendance only to Manager and Admin", () => {
     const route = routes.find((item) => item.path === "/attendance");
     expect(route?.roles).toEqual(["Manager", "Admin"]);

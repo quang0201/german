@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { buildProductionOrderPayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, buildProductionOrderUpdatePayload, formatFixedPrice, productionOrderDetailForm, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
 
 const orderPageSource = readFileSync(resolve(import.meta.dir, "ProductionOrderListPage.jsx"), "utf8");
 
@@ -73,6 +73,15 @@ describe("production order form", () => {
     expect(orderPageSource).toContain("<ConfirmDialog");
   });
 
+  test("wires the product template into the order page", () => {
+    expect(orderPageSource).toContain('api.get("/api/products")');
+    expect(orderPageSource).toContain("products={products}");
+    expect(orderPageSource).toContain("onSelectProduct");
+    expect(orderPageSource).toContain("buildProductionOrderUpdatePayload(orderDraft, selected)");
+    expect(orderPageSource).toContain("templateMismatch(selected, selectedProduct)");
+    expect(orderPageSource).toContain("Gán sản phẩm");
+  });
+
   test("uses popup forms for order create and update", () => {
     expect(orderPageSource).toContain("<ProductionOrderDialog");
     expect(orderPageSource).toContain('mode="create"');
@@ -81,5 +90,29 @@ describe("production order form", () => {
     expect(orderPageSource).not.toContain('id="production-order-detail"');
     expect(orderPageSource).toContain("!isCreateRoute && <PageHeader");
     expect(orderPageSource).not.toContain("Biểu mẫu tạo mã sản xuất đang mở trong popup.");
+  });
+});
+
+describe("production order product link", () => {
+  test("create payload carries the chosen product only when there is one", () => {
+    const base = { code: "4004 xanh", productName: "Túi", plannedQuantity: "10", status: "Draft", startDate: "", endDate: "", operations: [] };
+
+    expect(buildProductionOrderPayload({ ...base, productId: "p1" }).productId).toBe("p1");
+    expect("productId" in buildProductionOrderPayload({ ...base, productId: "" })).toBe(false);
+  });
+
+  test("detail form keeps the current product id", () => {
+    expect(productionOrderDetailForm({ code: "A", productName: "B", productId: "p1" }).productId).toBe("p1");
+    expect(productionOrderDetailForm({ code: "A", productName: "B" }).productId).toBe("");
+  });
+
+  test("update payload assigns, keeps or clears the product explicitly", () => {
+    const draft = { code: "4004 xanh", productName: "Túi", plannedQuantity: "10", status: "Draft", startDate: "", endDate: "", productId: "p1" };
+
+    expect(buildProductionOrderUpdatePayload(draft, { productId: null })).toMatchObject({ productId: "p1", plannedQuantity: 10, startDate: null });
+    expect(buildProductionOrderUpdatePayload({ ...draft, productId: "" }, { productId: "p1" }).clearProduct).toBe(true);
+    const untouched = buildProductionOrderUpdatePayload({ ...draft, productId: "" }, { productId: null });
+    expect(untouched.clearProduct).toBeUndefined();
+    expect(untouched.productId).toBeUndefined();
   });
 });

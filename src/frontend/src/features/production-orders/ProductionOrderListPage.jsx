@@ -7,7 +7,7 @@ import { PageHeader } from "../../components/erp/PageHeader.jsx";
 import { navigate } from "../../app/navigation.js";
 import { api } from "../../lib/api.js";
 import { orderStatusLabel } from "../../lib/i18n.js";
-import { buildProductionOrderPayload, formatFixedPrice, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
+import { buildProductionOrderPayload, buildProductionOrderUpdatePayload, formatFixedPrice, resolveProductionOrderDetailDraft, resolveProductionOrderView, shouldLoadProductionOrderList, shouldResetProductionOrderCreateDraft } from "./productionOrderForm.js";
 import { emptyProductionOperation, productionOperationForm, productionOperationPayload } from "./productionOperationDialog.js";
 import { ProductionOperationDialog } from "./ProductionOperationDialog.jsx";
 import { ProductionExternalQuantityDialog } from "./ProductionExternalQuantityDialog.jsx";
@@ -15,9 +15,10 @@ import { ProductionOrderDialog } from "./ProductionOrderDialog.jsx";
 import { ConfirmDialog } from "../../components/erp/ConfirmDialog.jsx";
 import { groupProductionExternalHistory } from "./productionExternalHistory.js";
 import { ListToolbar } from "../../components/erp/ListToolbar.jsx";
+import { applyProductToDraft, templateMismatch } from "../products/productForm.js";
 
 function emptyOrder() {
-  return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", operations: [] };
+  return { code: "", productName: "", plannedQuantity: "", status: "Draft", startDate: "", endDate: "", productId: "", operations: [] };
 }
 
 export function ProductionOrderListPage({ params, pathname }) {
@@ -45,6 +46,7 @@ export function ProductionOrderListPage({ params, pathname }) {
   const [externalDeleteItem, setExternalDeleteItem] = useState(null);
   const [externalSourceGroups, setExternalSourceGroups] = useState([]);
   const [externalSources, setExternalSources] = useState([]);
+  const [products, setProducts] = useState([]);
   const externalHistoryGroups = groupProductionExternalHistory(externalQuantities, selected?.operations ?? []);
 
   async function loadExternalQuantities(orderId = selected?.id) {
@@ -100,6 +102,12 @@ export function ProductionOrderListPage({ params, pathname }) {
     api.get("/api/production-external-sources")
       .then(setExternalSources)
       .catch(() => setExternalSources([]));
+  }, []);
+
+  useEffect(() => {
+    api.get("/api/products")
+      .then(setProducts)
+      .catch(() => setProducts([]));
   }, []);
 
   useEffect(() => {
@@ -191,7 +199,7 @@ export function ProductionOrderListPage({ params, pathname }) {
     setSaving(true);
     setError("");
     try {
-      await api.put(`/api/production-orders/${selected.id}`, { ...orderDraft, plannedQuantity: Number(orderDraft.plannedQuantity), startDate: orderDraft.startDate || null, endDate: orderDraft.endDate || null });
+      await api.put(`/api/production-orders/${selected.id}`, buildProductionOrderUpdatePayload(orderDraft, selected));
       api.invalidateCache("/api/production-orders");
       setEditingOrder(false);
       await load();
@@ -284,6 +292,14 @@ export function ProductionOrderListPage({ params, pathname }) {
     }
   }
 
+  const selectedProduct = products.find((product) => product.id === selected?.productId) ?? null;
+  const mismatch = templateMismatch(selected, selectedProduct);
+  const selectProduct = (copyOperations, setDraft) => (productId) => {
+    const product = products.find((item) => item.id === productId) ?? null;
+    setDraft((current) => applyProductToDraft(current, product, { copyOperations }));
+    setError("");
+  };
+
   const needle = query.trim().toLowerCase();
   const visibleRows = needle ? rows.filter((row) => `${row.code} ${row.productName}`.toLowerCase().includes(needle)) : rows;
   const columns = [
@@ -308,6 +324,8 @@ export function ProductionOrderListPage({ params, pathname }) {
         {!loading && !selected && <div className="erp-table-state">Không tìm thấy mã sản xuất.</div>}
         {selected && <>
           <FormSection title={`${selected.code} — ${selected.productName}`} description="Thông tin chung của Mã SX.">
+            <div className="erp-field-wide"><span className="erp-section-description">Sản phẩm: {selected.productCode ? <strong>{selected.productCode}{selectedProduct ? ` · ${selectedProduct.name}` : ""}</strong> : "chưa gắn"}</span> <button type="button" className="erp-button erp-button-link" onClick={() => { setEditingOrder(true); setError(""); }}>{selected.productId ? "Đổi sản phẩm" : "Gán sản phẩm"}</button></div>
+            {mismatch?.isDifferent && <div className="erp-field-wide"><Alert variant="info" title="Công đoạn khác khuôn mẫu sản phẩm.">{[mismatch.missing.length ? `Thiếu CĐ${mismatch.missing.join(", CĐ")}` : "", mismatch.extra.length ? `Thêm CĐ${mismatch.extra.join(", CĐ")}` : "", ...mismatch.renamed.map((item) => `CĐ${item.operationNumber} tên "${item.orderName}" (mẫu: "${item.templateName}")`)].filter(Boolean).join(" · ")}. Chỉ để tham khảo, không chặn thao tác.</Alert></div>}
             <div className="erp-field-wide erp-form-actions"><button type="button" className="erp-button erp-button-primary" onClick={() => { setEditingOrder(true); setError(""); }}>Sửa thông tin Mã SX</button></div>
           </FormSection>
           <FormSection title="Công đoạn" description="Tắt để giữ lịch sử. Có thể ghi nhận riêng sản lượng nhận từ bên ngoài.">
@@ -352,6 +370,8 @@ export function ProductionOrderListPage({ params, pathname }) {
         mode="create"
         open={isCreateRoute}
         draft={form}
+        products={products}
+        onSelectProduct={selectProduct(true, setForm)}
         loading={saving}
         error={error}
         onClose={() => navigate("/orders")}
@@ -365,6 +385,8 @@ export function ProductionOrderListPage({ params, pathname }) {
         mode="edit"
         open={Boolean(editingOrder && selected)}
         draft={detail}
+        products={products}
+        onSelectProduct={selectProduct(false, setDetail)}
         loading={saving}
         error={error}
         onClose={() => setEditingOrder(false)}
