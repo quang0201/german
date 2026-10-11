@@ -127,6 +127,11 @@ builder.Services.AddMcpServer()
     .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
     .WithTools<ProductionMcpTools>();
 
+if (startMode == StartMode.BackfillProducts)
+{
+    builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+}
+
 var app = builder.Build();
 
 switch (startMode)

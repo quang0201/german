@@ -85,8 +85,7 @@ public sealed class ProductBackfillService(IGermanDbContext db)
 
             var members = winner!.ToList();
             var first = members[0];
-            var name = existingProduct?.Name
-                ?? members.Select(x => x.Order.ProductName.Trim()).OrderBy(x => x.Length).ThenBy(x => x, StringComparer.OrdinalIgnoreCase).First();
+            var name = existingProduct?.Name ?? CommonName(members.Select(x => x.Order.ProductName.Trim()).ToList());
             var templates = first.Operations
                 .Select(x => new ProductionOperationInput(x.OperationNumber, x.Name, x.Unit, x.SortOrder, x.IsActive, x.FixedPrice))
                 .ToList();
@@ -147,6 +146,26 @@ public sealed class ProductBackfillService(IGermanDbContext db)
         }
 
         return linked;
+    }
+
+    /// <summary>Longest common whole-word prefix of the names ("Túi 4004 xanh", "Túi 4004 đen" -> "Túi 4004"); the shortest name when they share none.</summary>
+    private static string CommonName(IReadOnlyList<string> names)
+    {
+        var words = names.Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
+        var prefix = new List<string>();
+        for (var i = 0; i < words.Min(x => x.Length); i++)
+        {
+            if (words.Any(x => !string.Equals(x[i], words[0][i], StringComparison.OrdinalIgnoreCase)))
+            {
+                break;
+            }
+
+            prefix.Add(words[0][i]);
+        }
+
+        return prefix.Count > 0
+            ? string.Join(' ', prefix)
+            : names.OrderBy(x => x.Length).ThenBy(x => x, StringComparer.OrdinalIgnoreCase).First();
     }
 
     private static string Signature(IEnumerable<(int Number, string Name, string Unit)> operations) =>

@@ -33,7 +33,7 @@ public sealed class ProductBackfillServiceTests
         var product = plan.Products.Single();
         Assert.AreEqual("4004", product.Code);
         CollectionAssert.AreEquivalent(new[] { "4004 xanh", "4004 đen" }, product.Orders.Select(x => x.Code).ToArray());
-        Assert.AreEqual("Túi 4004", product.Name, "Name is the shortest product name of the group.");
+        Assert.AreEqual("Túi 4004", product.Name, "Name is the longest common word prefix of the group.");
         CollectionAssert.AreEqual(new[] { 1, 2, 5 }, product.Operations.Select(x => x.OperationNumber).ToArray());
         var skipped = plan.Skipped.Single(x => x.Code == "TÚI 4004 đỏ");
         StringAssert.Contains(skipped.Reason, "khác");
@@ -57,6 +57,19 @@ public sealed class ProductBackfillServiceTests
         Assert.AreEqual(3, await db.ProductOperationTemplates.CountAsync());
         Assert.AreEqual(2, await db.ProductionOrders.CountAsync(x => x.ProductId != null));
         Assert.IsNull((await db.ProductionOrders.SingleAsync(x => x.Code == "TÚI 4004 đỏ")).ProductId);
+    }
+
+    [TestMethod]
+    public async Task Plan_NameFallsBackToShortestWhenNamesShareNoPrefix()
+    {
+        await using var db = CreateDb();
+        AddOrder(db, "4004 a", "Túi lớn", (1, "Cắt", null));
+        AddOrder(db, "4004 b", "Balo", (1, "Cắt", null));
+        await db.SaveChangesAsync();
+
+        var plan = await new ProductBackfillService(db).PlanAsync(CancellationToken.None);
+
+        Assert.AreEqual("Balo", plan.Products.Single().Name);
     }
 
     [TestMethod]
@@ -117,7 +130,7 @@ public sealed class ProductBackfillServiceTests
     private static async Task SeedSampleAsync(GermanDbContext db)
     {
         AddOrder(db, "4004 xanh", "Túi 4004 xanh", (1, "Cắt vải", 1200m), (2, "May thân", null), (5, "Lắp ráp", null));
-        AddOrder(db, "4004 đen", "Túi 4004", (1, "Cắt vải", 1300m), (2, "May thân", null), (5, "Lắp ráp", null));
+        AddOrder(db, "4004 đen", "Túi 4004 đen", (1, "Cắt vải", 1300m), (2, "May thân", null), (5, "Lắp ráp", null));
         AddOrder(db, "TÚI 4004 đỏ", "Túi 4004 đỏ", (8, "Đóng gói", null), (9, "Kiểm", null));
         AddOrder(db, "0417", "Túi 0417", (11, "May", null));
         await db.SaveChangesAsync();
