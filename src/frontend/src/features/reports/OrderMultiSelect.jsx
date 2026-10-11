@@ -10,10 +10,10 @@ function triggerText(orders, selectedIds, loading) {
   return `${label} +${selectedIds.length - 1}`;
 }
 
-export function OrderMultiSelect({ orders = [], selectedIds = [], onChange, loading = false, initialOpen = false }) {
+export function OrderMultiSelect({ orders = [], productNames = {}, selectedIds = [], onChange, loading = false, initialOpen = false }) {
   const [open, setOpen] = useState(initialOpen);
   const rootRef = useRef(null);
-  const groups = groupOrdersByProduct(orders);
+  const groups = groupOrdersByProduct(orders, productNames);
   const atLimit = selectedIds.length >= MAX_REPORT_ORDERS;
 
   useEscapeKey(open, () => setOpen(false));

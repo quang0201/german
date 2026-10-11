@@ -97,6 +97,41 @@ describe("mergeOperationSummaries", () => {
   });
 });
 
+describe("template names and units", () => {
+  const two = [
+    summary("a", "4004 xanh", [operation(2, "May", [10, 0])]),
+    summary("b", "4004 đen", [operation(2, "May thân", [5, 0])]),
+  ];
+
+  test("uses the product template name when every order shares that product", () => {
+    const template = { operations: [{ operationNumber: 2, name: "May thân chuẩn", isActive: true }] };
+    const result = mergeOperationSummaries(two, [], template);
+
+    expect(result.operations[0].name).toBe("May thân chuẩn");
+    expect(result.operations[0].extraNames).toEqual([]);
+  });
+
+  test("falls back to the first name when the template lacks the operation", () => {
+    expect(mergeOperationSummaries(two, [], { operations: [] }).operations[0].name).toBe("May");
+  });
+
+  test("flags operations whose unit differs between orders", () => {
+    const result = mergeOperationSummaries([
+      summary("a", "A", [operation(1, "Cắt", [1, 0])]),
+      summary("b", "B", [{ ...operation(1, "Cắt", [1, 0]), unit: "đôi" }]),
+    ]);
+
+    expect(result.operations[0].unit).toBe("cái");
+    expect(result.operations[0].extraUnits).toEqual(["đôi"]);
+  });
+
+  test("groups are labelled with the product name when known", () => {
+    const groups = groupOrdersByProduct([{ id: "1", code: "4004 a", productCode: "4004" }], { 4004: "Túi 4004" });
+
+    expect(groups[0].label).toBe("4004 · Túi 4004 (1 mã)");
+  });
+});
+
 describe("order URL parameter", () => {
   test("parses one or many ids, trims, drops empties and duplicates", () => {
     expect(parseOrderParam("a")).toEqual(["a"]);

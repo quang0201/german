@@ -70,7 +70,7 @@ export function ProductionOperationRow({ operation, maxQuantity, plannedQuantity
             onClick={onToggle}
           >
             <strong>CĐ{operation.operationNumber}</strong>
-            <span title={[operation.name, ...(operation.extraNames ?? [])].join(" / ")}>{`${operation.name}${operation.extraNames?.length > 0 ? " (+ tên khác)" : ""}`}</span>
+            <span title={[operation.name, ...(operation.extraNames ?? [])].join(" / ")}>{`${operation.name}${operation.extraNames?.length > 0 ? " (+ tên khác)" : ""}${operation.extraUnits?.length > 0 ? " (+ ĐVT khác)" : ""}`}</span>
             <small>{expanded ? "Ẩn chi tiết" : "Xem chi tiết"}</small>
           </button>
       </div>

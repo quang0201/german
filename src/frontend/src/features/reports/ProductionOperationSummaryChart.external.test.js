@@ -151,4 +151,10 @@ describe("ProductionOperationSummaryChart", () => {
 
     expect(renderToString(React.createElement(ProductionOperationDetails, { operation }))).not.toContain("Theo mã sản xuất");
   });
+
+  test("hints when merged orders use different units", () => {
+    const operation = { operationNumber: 1, name: "Cắt", extraNames: [], extraUnits: ["đôi"], unit: "cái", hcQuantity: 2, tcQuantity: 0, totalQuantity: 2, contributors: [] };
+
+    expect(renderToString(React.createElement(ProductionOperationSummaryChart, { summary: { orderCode: "A + B", productName: "2", operationCount: 1, operations: [operation] } }))).toContain("(+ ĐVT khác)");
+  });
 });

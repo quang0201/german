@@ -56,6 +56,7 @@ export function ReportPage() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
   const [orderIds, setOrderIds] = useState(() => parseOrderParam(initialQuery.order));
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [orderError, setOrderError] = useState("");
@@ -74,7 +75,13 @@ export function ReportPage() {
     },
     { mode: "month", date: today },
   );
-  const summary = useMemo(() => (summaryResults ? mergeOperationSummaries(summaryResults, orders) : null), [summaryResults, orders]);
+  const productNames = useMemo(() => Object.fromEntries(products.map((product) => [product.code, product.name])), [products]);
+  const summary = useMemo(() => {
+    if (!summaryResults) return null;
+    const codes = new Set(orderIds.map((id) => orders.find((order) => order.id === id)?.productCode ?? ""));
+    const sharedCode = codes.size === 1 ? [...codes][0] : "";
+    return mergeOperationSummaries(summaryResults, orders, sharedCode ? products.find((product) => product.code === sharedCode) : null);
+  }, [summaryResults, orders, orderIds, products]);
   const customEditorVisible = isCustomEditing || appliedPeriod.periodMode === "custom";
   const customError = customEditorVisible ? reportRangeError(customDraft.fromDate, customDraft.untilDate) : "";
 
@@ -115,6 +122,10 @@ export function ReportPage() {
     setFromDate(customDraft.fromDate);
     setUntilDate(customDraft.untilDate);
   }
+
+  useEffect(() => {
+    api.get("/api/products").then(setProducts).catch(() => setProducts([]));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -226,7 +237,7 @@ export function ReportPage() {
             <button type="button" className="erp-button erp-button-primary" onClick={submitCustomPeriod} disabled={Boolean(customError)}>Áp dụng</button>
           </div> : null}
         />
-        <OrderMultiSelect orders={orders} selectedIds={orderIds} onChange={setOrderIds} loading={ordersLoading} />
+        <OrderMultiSelect orders={orders} productNames={productNames} selectedIds={orderIds} onChange={setOrderIds} loading={ordersLoading} />
         <span className="erp-report-bar-spacer" />
         <button
           className={`erp-square-button erp-report-refresh-button${refreshing ? " is-refreshing" : ""}`}

@@ -10,7 +10,7 @@ export function buildOrderParam(ids) {
 }
 
 /** Orders grouped by product for the picker; orders without a product go last under key "". */
-export function groupOrdersByProduct(orders) {
+export function groupOrdersByProduct(orders, productNames = {}) {
   const groups = new Map();
   for (const order of orders ?? []) {
     const key = order.productCode ?? "";
@@ -22,7 +22,7 @@ export function groupOrdersByProduct(orders) {
     .sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b, "vi", { numeric: true })))
     .map(([key, items]) => {
       const sorted = [...items].sort((a, b) => String(a.code).localeCompare(String(b.code), "vi", { numeric: true }));
-      return { key, label: `${key || "Chưa gắn sản phẩm"} (${sorted.length} mã)`, orderIds: sorted.map((order) => order.id), orders: sorted };
+      return { key, label: `${key ? (productNames[key] ? `${key} · ${productNames[key]}` : key) : "Chưa gắn sản phẩm"} (${sorted.length} mã)`, orderIds: sorted.map((order) => order.id), orders: sorted };
     });
 }
 
@@ -62,7 +62,7 @@ function mergeDaily(days) {
  * Sums the per-order operation summaries by operation number. The result has the shape of a single summary
  * (so the existing chart renders it) plus per-operation `byOrder` and `extraNames`.
  */
-export function mergeOperationSummaries(summaries, orders = []) {
+export function mergeOperationSummaries(summaries, orders = [], template = null) {
   const list = summaries ?? [];
   const byNumber = new Map();
 
@@ -76,6 +76,7 @@ export function mergeOperationSummaries(summaries, orders = []) {
           name: operation.name,
           extraNames: [],
           unit: operation.unit,
+          extraUnits: [],
           hcQuantity: 0,
           tcQuantity: 0,
           totalQuantity: 0,
@@ -88,6 +89,7 @@ export function mergeOperationSummaries(summaries, orders = []) {
       }
 
       if (operation.name !== row.name && !row.extraNames.includes(operation.name)) row.extraNames.push(operation.name);
+      if (operation.unit !== row.unit && !row.extraUnits.includes(operation.unit)) row.extraUnits.push(operation.unit);
       const internal = num(operation.totalQuantity);
       const external = num(operation.externalQuantity);
       const combined = num(operation.combinedTotalQuantity ?? internal + external);
@@ -111,7 +113,14 @@ export function mergeOperationSummaries(summaries, orders = []) {
 
   const operations = [...byNumber.values()]
     .sort((a, b) => a.operationNumber - b.operationNumber)
-    .map(({ contributorLists, ...row }) => ({ ...row, contributors: mergeContributors(contributorLists) }));
+    .map(({ contributorLists, ...row }) => {
+      const templateName = (template?.operations ?? []).find((item) => item.operationNumber === row.operationNumber && item.isActive !== false)?.name;
+      return {
+        ...row,
+        ...(templateName ? { name: templateName, extraNames: [] } : {}),
+        contributors: mergeContributors(contributorLists),
+      };
+    });
 
   const orderIds = list.map((summary) => summary.orderId);
   const plannedQuantity = orderIds.reduce((sum, id) => sum + num(orders.find((order) => String(order.id) === String(id))?.plannedQuantity), 0);
