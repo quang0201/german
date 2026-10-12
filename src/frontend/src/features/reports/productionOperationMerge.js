@@ -39,7 +39,7 @@ function sortByDayThenOrder(days) {
 function mergeContributors(lists) {
   const merged = new Map();
   for (const { orderCode, items } of lists) for (const item of items) {
-    const key = `${item.isExternal ? "x" : "e"}:${item.employeeCode || item.employeeName}`;
+    const key = item.isExternal ? `x:${item.employeeCode}|${item.employeeName}` : `e:${item.employeeCode || item.employeeName}`;
     const target = merged.get(key);
     if (!target) {
       merged.set(key, { ...item, dailyTotals: mergeDaily(item.dailyTotals ?? []), dailyByOrder: sortByDayThenOrder(withOrder(item.dailyTotals, orderCode)) });

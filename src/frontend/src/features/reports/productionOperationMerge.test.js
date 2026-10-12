@@ -83,6 +83,17 @@ describe("mergeOperationSummaries", () => {
     expect(binh.totalQuantity).toBe(2);
   });
 
+  test("keeps different external sources apart even though they share the external code", () => {
+    const external = (name, qty) => ({ employeeCode: "__EXTERNAL__", employeeName: name, isExternal: true, hcQuantity: 0, tcQuantity: 0, totalQuantity: qty, dailyTotals: [{ workDate: "2026-09-11", hcQuantity: 0, tcQuantity: 0, totalQuantity: qty }] });
+    const result = mergeOperationSummaries([
+      summary("a", "A", [operation(1, "Cắt", [0, 0], { contributors: [external("Hoàng Kim Nhung", 100), external("Xưởng B", 50)] })]),
+      summary("b", "B", [operation(1, "Cắt", [0, 0], { contributors: [external("Hoàng Kim Nhung", 20), external("Xưởng C", 7)] })]),
+    ], []);
+
+    const contributors = result.operations[0].contributors;
+    expect(contributors.map((x) => [x.employeeName, x.totalQuantity])).toEqual([["Hoàng Kim Nhung", 120], ["Xưởng B", 50], ["Xưởng C", 7]]);
+  });
+
   test("keeps the order code on every daily row, one row per day and order", () => {
     const contributor = (hc, day) => ({ employeeCode: "E1", employeeName: "An", isExternal: false, hcQuantity: hc, tcQuantity: 0, totalQuantity: hc, dailyTotals: [{ workDate: day, hcQuantity: hc, tcQuantity: 0, totalQuantity: hc }] });
     const result = mergeOperationSummaries([
