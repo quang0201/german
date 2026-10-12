@@ -19,9 +19,11 @@ export function currentReportMonthRange(today = new Date()) {
   return { fromDate: localIsoDate(first), untilDate: localIsoDate(last) };
 }
 
-export function buildProductionReportExportUrl(fromDate, untilDate, orderId = "") {
+export function buildProductionReportExportUrl(fromDate, untilDate, orders = []) {
   const params = new URLSearchParams({ fromDate, untilDate });
-  if (orderId) params.set("orderId", orderId);
+  const ids = Array.isArray(orders) ? orders : orders ? [orders] : [];
+  if (ids.length === 1) params.set("orderId", ids[0]);
+  else if (ids.length > 1) params.set("orderIds", ids.join(","));
   return `/api/reports/production/export.xlsx?${params.toString()}`;
 }
 
@@ -200,13 +202,9 @@ export function ReportPage() {
       setError("Chức năng xuất báo cáo chưa sẵn sàng. Vui lòng tải lại trang.");
       return;
     }
-    if (orderIds.length > 1) {
-      setError("Chọn một Mã SX để xuất Excel.");
-      return;
-    }
     setExporting(true);
     try {
-      await api.download(buildProductionReportExportUrl(fromDate, untilDate, orderIds[0] ?? ""), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
+      await api.download(buildProductionReportExportUrl(fromDate, untilDate, orderIds), productionExportFileName(fromDate, untilDate, "bao-cao-san-luong"));
       toast.success("Đã tải báo cáo sản lượng.");
     } catch (requestError) {
       setError(requestError.message || "Không thể xuất báo cáo.");
@@ -250,7 +248,7 @@ export function ReportPage() {
         >
           <Icon name="refresh" size={18} />
         </button>
-        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting || orderIds.length > 1} title={orderIds.length > 1 ? "Chọn một Mã SX để xuất Excel" : undefined}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
+        <button className="erp-button erp-button-primary" type="button" onClick={exportReport} disabled={exporting}>{exporting ? "Đang xuất..." : "Xuất Excel"}</button>
       </div>
       {summaryError && <Alert variant="error" title="Không thể tải báo cáo công đoạn.">{summaryError}</Alert>}
       {summaryLoading && <div className="erp-report-state">Đang tải tổng hợp sản lượng...</div>}

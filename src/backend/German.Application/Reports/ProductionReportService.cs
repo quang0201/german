@@ -343,6 +343,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 "Khoảng thời gian export tối đa là 366 ngày.");
         }
 
+        var orderIds = filter.OrderIds is { Count: > 0 } ? filter.OrderIds.Distinct().ToArray() : null;
         var query =
             from entry in db.ProductionEntries.AsNoTracking()
             join employee in db.Employees.AsNoTracking() on entry.EmployeeId equals employee.Id
@@ -354,6 +355,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 && (entry.HcQuantity != 0m || entry.TcQuantity != 0m || entry.TotalQuantity != 0m)
                 && (!filter.EmployeeId.HasValue || entry.EmployeeId == filter.EmployeeId.Value)
                 && (!filter.OrderId.HasValue || entry.ProductionOrderId == filter.OrderId.Value)
+                && (orderIds == null || orderIds.Contains(entry.ProductionOrderId))
                 && (!filter.OperationId.HasValue || entry.ProductionOperationId == filter.OperationId.Value)
             select new { entry, employee, order, operation };
 
@@ -419,6 +421,7 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                     && external.ReceivedDate <= untilDate
                     && (!filter.EmployeeId.HasValue || external.SourceEmployeeId == filter.EmployeeId.Value)
                     && (!filter.OrderId.HasValue || external.ProductionOrderId == filter.OrderId.Value)
+                    && (orderIds == null || orderIds.Contains(external.ProductionOrderId))
                     && (!filter.OperationId.HasValue || external.ProductionOperationId == filter.OperationId.Value)
                 select new { external, order, operation, sourceEmployee, externalSource };
 
@@ -601,7 +604,9 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             new ProductionReportData(fromDate, untilDate, rows)
             {
                 EmployeeLabel = await GetEmployeeLabelAsync(filter.EmployeeId, cancellationToken),
-                OrderLabel = await GetOrderLabelAsync(filter.OrderId, cancellationToken),
+                OrderLabel = orderIds is null
+                    ? await GetOrderLabelAsync(filter.OrderId, cancellationToken)
+                    : await GetOrdersLabelAsync(orderIds, cancellationToken),
                 OperationLabel = await GetOperationLabelAsync(filter.OperationId, cancellationToken),
                 SearchLabel = search?.Text ?? "Tất cả",
                 FinalMetricLabel = filter.OperationId.HasValue ? "Tổng sản lượng" : "Tổng lượt công đoạn",
@@ -641,6 +646,16 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .Select(item => new { item.Code, item.ProductName })
             .SingleOrDefaultAsync(cancellationToken);
         return order is null ? "Tất cả" : $"{order.Code} — {order.ProductName}";
+    }
+
+    private async Task<string> GetOrdersLabelAsync(Guid[] orderIds, CancellationToken cancellationToken)
+    {
+        var orders = await db.ProductionOrders.AsNoTracking()
+            .Where(item => orderIds.Contains(item.Id))
+            .OrderBy(item => item.Code)
+            .Select(item => new { item.Code, item.ProductName })
+            .ToListAsync(cancellationToken);
+        return orders.Count == 0 ? "Tất cả" : string.Join("; ", orders.Select(item => $"{item.Code} — {item.ProductName}"));
     }
 
     private async Task<string> GetOperationLabelAsync(Guid? operationId, CancellationToken cancellationToken)

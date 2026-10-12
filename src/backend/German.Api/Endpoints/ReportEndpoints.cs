@@ -93,6 +93,19 @@ public static class ReportEndpoints
         return Results.File(bytes, XlsxContentType, fileName);
     }
 
+    private static Guid[]? ParseOrderIds(string? text)
+    {
+        var ids = (text ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(item => Guid.TryParse(item, out var id) ? id : (Guid?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .Take(8)
+            .ToArray();
+        return ids.Length == 0 ? null : ids;
+    }
+
     private static void SetNoStoreHeaders(HttpContext httpContext)
     {
         httpContext.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
@@ -125,6 +138,7 @@ public static class ReportEndpoints
         DateOnly? untilDate,
         Guid? employeeId,
         Guid? orderId,
+        string? orderIds,
         Guid? operationId,
         string? search,
         bool? excludeSundays,
@@ -141,7 +155,8 @@ public static class ReportEndpoints
                 orderId,
                 operationId,
                 search,
-                excludeSundays ?? false),
+                excludeSundays ?? false,
+                ParseOrderIds(orderIds)),
             cancellationToken);
 
         if (!result.IsSuccess)

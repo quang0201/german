@@ -216,6 +216,32 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual("Tổng sản lượng", result.Value.FinalMetricLabel);
     }
 
+    [TestMethod]
+    public async Task BuildAsync_OrderIds_KeepsOnlyTheSelectedOrdersAndLabelsThem()
+    {
+        await using var db = CreateDb();
+        var first = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var second = new ProductionOrder { Code = "0521", ProductName = "Túi 0521", PlannedQuantity = 500m, Status = ProductionOrderStatus.InProduction };
+        var third = new ProductionOrder { Code = "0999", ProductName = "Túi 0999", PlannedQuantity = 500m, Status = ProductionOrderStatus.InProduction };
+        var secondOperation = new ProductionOperation { ProductionOrderId = second.Id, OperationNumber = 11, Name = "May thân", Unit = "cái", SortOrder = 1 };
+        var thirdOperation = new ProductionOperation { ProductionOrderId = third.Id, OperationNumber = 11, Name = "May thân", Unit = "cái", SortOrder = 1 };
+        db.AddRange(second, third, secondOperation, thirdOperation);
+        await db.SaveChangesAsync();
+        await AddEntryAsync(db, first.Employee, second, secondOperation, new DateOnly(2026, 8, 12), 30m, 0m);
+        await AddEntryAsync(db, first.Employee, third, thirdOperation, new DateOnly(2026, 8, 12), 40m, 0m);
+        db.ChangeTracker.Clear();
+
+        var result = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12), null, null, null, null, OrderIds: [first.Order.Id, second.Id]),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        CollectionAssert.AreEquivalent(new[] { "0417", "0521" }, result.Value!.Rows.Select(row => row.ProductionOrderCode).ToArray());
+        StringAssert.Contains(result.Value.OrderLabel, "0417");
+        StringAssert.Contains(result.Value.OrderLabel, "0521");
+        Assert.IsFalse(result.Value.OrderLabel.Contains("0999"));
+    }
+
     [DataTestMethod]
     [DataRow(" e001 ")]
     [DataRow("NGUYỄN VĂN A")]

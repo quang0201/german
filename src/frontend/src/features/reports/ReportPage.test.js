@@ -41,6 +41,15 @@ describe("ReportPage", () => {
     );
   });
 
+  test("exports exactly the selected production orders", () => {
+    expect(buildProductionReportExportUrl("2026-08-01", "2026-09-30", ["a", "b"])).toBe(
+      "/api/reports/production/export.xlsx?fromDate=2026-08-01&untilDate=2026-09-30&orderIds=a%2Cb",
+    );
+    expect(buildProductionReportExportUrl("2026-08-01", "2026-09-30", ["a"])).toBe(
+      "/api/reports/production/export.xlsx?fromDate=2026-08-01&untilDate=2026-09-30&orderId=a",
+    );
+  });
+
   test("renders the production order selector and operation summary details", () => {
     const pageHtml = renderToString(React.createElement(ToastProvider, null, React.createElement(ReportPage)));
     expect(pageHtml).toContain("Chọn Mã SX");
@@ -113,7 +122,7 @@ describe("ReportPage", () => {
     expect(source).toContain("mergeOperationSummaries(");
     expect(source).toContain("parseOrderParam(initialQuery.order)");
     expect(source).toContain("order: buildOrderParam(orderIds)");
-    expect(source).toContain("orderIds.length > 1");
-    expect(source).toContain("Chọn một Mã SX để xuất Excel");
+    expect(source).not.toContain("Chọn một Mã SX để xuất Excel");
+    expect(source).toContain("buildProductionReportExportUrl(fromDate, untilDate, orderIds)");
   });
 });
