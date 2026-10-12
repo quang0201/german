@@ -153,7 +153,7 @@ export function ProductionOperationDetails({ operation }) {
             <span>{item.isExternal ? "—" : quantity(item.tcQuantity)}</span>
             <span><strong>{quantity(item.totalQuantity)}</strong> {unit}</span>
           </div>
-          {expanded && <ProductionOperationEmployeeDailyDetails employee={item} unit={unit} id={`erp-report-contributor-days-${key}`} />}
+          {expanded && <ProductionOperationEmployeeDailyDetails employee={item} unit={unit} id={`erp-report-contributor-days-${key}`} showOrder={operation?.byOrder?.length > 1} />}
         </React.Fragment>;
       })}
       {contributors.length > 0 && <div className="erp-report-operation-details-total"><strong>Tổng CĐ{operation.operationNumber}</strong><strong>{quantity(total)} {unit}</strong></div>}
@@ -161,16 +161,16 @@ export function ProductionOperationDetails({ operation }) {
   );
 }
 
-export function ProductionOperationEmployeeDailyDetails({ employee, unit, id }) {
-  const dailyTotals = employee?.dailyTotals || [];
+export function ProductionOperationEmployeeDailyDetails({ employee, unit, id, showOrder = false }) {
+  const dailyTotals = showOrder && employee?.dailyByOrder ? employee.dailyByOrder : employee?.dailyTotals || [];
 
   return (
     <div className="erp-report-contributor-days" id={id} role="region" aria-label={`Chi tiết theo ngày ${employee?.employeeName}`}>
       <div className="erp-report-contributor-days-header"><strong>Chi tiết theo ngày</strong><span>HC</span><span>TC</span><span>Tổng</span></div>
       {dailyTotals.length === 0 && <p className="erp-report-operation-details-empty">Chưa có dữ liệu theo ngày.</p>}
       {dailyTotals.map((day) => (
-        <div className="erp-report-contributor-day-row" key={day.workDate}>
-          <strong>{reportDate(day.workDate)}</strong>
+        <div className="erp-report-contributor-day-row" key={`${day.workDate}|${day.orderCode ?? ""}`}>
+          <strong>{reportDate(day.workDate)}{showOrder && day.orderCode ? <small className="erp-report-day-order">{day.orderCode}</small> : null}</strong>
           <span>{employee.isExternal ? "—" : quantity(day.hcQuantity)}</span>
           <span>{employee.isExternal ? "—" : quantity(day.tcQuantity)}</span>
           <span><strong>{quantity(day.totalQuantity)}</strong> {unit}</span>

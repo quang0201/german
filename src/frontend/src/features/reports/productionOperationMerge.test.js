@@ -83,6 +83,21 @@ describe("mergeOperationSummaries", () => {
     expect(binh.totalQuantity).toBe(2);
   });
 
+  test("keeps the order code on every daily row, one row per day and order", () => {
+    const contributor = (hc, day) => ({ employeeCode: "E1", employeeName: "An", isExternal: false, hcQuantity: hc, tcQuantity: 0, totalQuantity: hc, dailyTotals: [{ workDate: day, hcQuantity: hc, tcQuantity: 0, totalQuantity: hc }] });
+    const result = mergeOperationSummaries([
+      summary("a", "A", [operation(1, "Cắt", [10, 0], { contributors: [contributor(10, "2026-09-11")] })]),
+      summary("b", "B", [operation(1, "Cắt", [5, 0], { contributors: [contributor(5, "2026-09-11"), contributor(3, "2026-09-10")] })]),
+    ], []);
+
+    const [an] = result.operations[0].contributors;
+    expect(an.dailyByOrder.map((x) => [x.workDate, x.orderCode, x.totalQuantity])).toEqual([
+      ["2026-09-10", "B", 3],
+      ["2026-09-11", "A", 10],
+      ["2026-09-11", "B", 5],
+    ]);
+  });
+
   test("a single summary keeps its numbers and has a one-entry breakdown", () => {
     const single = mergeOperationSummaries([summary("a", "4004 xanh", [operation(1, "Cắt", [100, 10])])], orders);
 

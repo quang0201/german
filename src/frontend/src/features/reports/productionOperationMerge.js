@@ -28,13 +28,21 @@ export function groupOrdersByProduct(orders, productNames = {}) {
 
 const num = (value) => Number(value || 0);
 
+function withOrder(days, orderCode) {
+  return (days ?? []).map((day) => ({ workDate: day.workDate, orderCode, hcQuantity: num(day.hcQuantity), tcQuantity: num(day.tcQuantity), totalQuantity: num(day.totalQuantity) }));
+}
+
+function sortByDayThenOrder(days) {
+  return days.sort((a, b) => String(a.workDate).localeCompare(String(b.workDate)) || String(a.orderCode).localeCompare(String(b.orderCode), "vi", { numeric: true }));
+}
+
 function mergeContributors(lists) {
   const merged = new Map();
-  for (const item of lists.flat()) {
+  for (const { orderCode, items } of lists) for (const item of items) {
     const key = `${item.isExternal ? "x" : "e"}:${item.employeeCode || item.employeeName}`;
     const target = merged.get(key);
     if (!target) {
-      merged.set(key, { ...item, dailyTotals: mergeDaily(item.dailyTotals ?? []) });
+      merged.set(key, { ...item, dailyTotals: mergeDaily(item.dailyTotals ?? []), dailyByOrder: sortByDayThenOrder(withOrder(item.dailyTotals, orderCode)) });
       continue;
     }
 
@@ -42,6 +50,7 @@ function mergeContributors(lists) {
     target.tcQuantity = num(target.tcQuantity) + num(item.tcQuantity);
     target.totalQuantity = num(target.totalQuantity) + num(item.totalQuantity);
     target.dailyTotals = mergeDaily([...target.dailyTotals, ...(item.dailyTotals ?? [])]);
+    target.dailyByOrder = sortByDayThenOrder([...target.dailyByOrder, ...withOrder(item.dailyTotals, orderCode)]);
   }
   return [...merged.values()];
 }
@@ -98,7 +107,7 @@ export function mergeOperationSummaries(summaries, orders = [], template = null)
       row.totalQuantity += internal;
       row.externalQuantity += external;
       row.combinedTotalQuantity += combined;
-      row.contributorLists.push(operation.contributors ?? []);
+      row.contributorLists.push({ orderCode: summary.orderCode, items: operation.contributors ?? [] });
       row.byOrder.push({
         orderId: summary.orderId,
         orderCode: summary.orderCode,

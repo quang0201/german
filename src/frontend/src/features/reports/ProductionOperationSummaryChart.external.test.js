@@ -146,6 +146,24 @@ describe("ProductionOperationSummaryChart", () => {
     expect(details).toContain("4004 đen");
   });
 
+  test("daily rows show the order code only when several orders are merged", () => {
+    const contributor = { employeeCode: "E1", employeeName: "An", isExternal: false, hcQuantity: 15, tcQuantity: 0, totalQuantity: 15, dailyTotals: [], dailyByOrder: [
+      { workDate: "2026-09-11", orderCode: "4004 xanh", hcQuantity: 10, tcQuantity: 0, totalQuantity: 10 },
+      { workDate: "2026-09-11", orderCode: "4004 đen", hcQuantity: 5, tcQuantity: 0, totalQuantity: 5 },
+    ] };
+    const base = { operationNumber: 1, name: "Cắt", extraNames: [], unit: "cái", hcQuantity: 15, tcQuantity: 0, totalQuantity: 15, contributors: [contributor] };
+    const order = (id, code) => ({ orderId: id, orderCode: code, hcQuantity: 1, tcQuantity: 0, totalQuantity: 1, externalQuantity: 0, combinedTotalQuantity: 1 });
+
+    const many = renderToString(React.createElement(ProductionOperationEmployeeDailyDetails, { employee: contributor, unit: "cái", id: "x", showOrder: true }));
+    const single = renderToString(React.createElement(ProductionOperationEmployeeDailyDetails, { employee: { ...contributor, dailyTotals: [{ workDate: "2026-09-11", hcQuantity: 15, tcQuantity: 0, totalQuantity: 15 }] }, unit: "cái", id: "x", showOrder: false }));
+
+    expect(many).toContain("4004 xanh");
+    expect(many).toContain("4004 đen");
+    expect(single).not.toContain("4004");
+    expect(single).toContain("15");
+    expect(renderToString(React.createElement(ProductionOperationDetails, { operation: { ...base, byOrder: [order("a", "4004 xanh"), order("b", "4004 đen")] } }))).toContain("Theo mã sản xuất");
+  });
+
   test("a single order has no per-order breakdown", () => {
     const operation = { operationNumber: 1, name: "Cắt", extraNames: [], unit: "cái", hcQuantity: 1, tcQuantity: 0, totalQuantity: 1, contributors: [], byOrder: [{ orderId: "a", orderCode: "A", hcQuantity: 1, tcQuantity: 0, totalQuantity: 1, externalQuantity: 0, combinedTotalQuantity: 1 }] };
 
