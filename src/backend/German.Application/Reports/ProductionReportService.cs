@@ -545,13 +545,10 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .Where(row => row.EmployeeId.HasValue)
             .GroupBy(row => row.EmployeeId!.Value)
             .ToDictionary(group => group.Key, group => (group.First().EmployeeCode, group.First().EmployeeName));
-        // An unfiltered report is the whole workforce: also list people who have attendance but no output.
-        var isUnfiltered = !filter.EmployeeId.HasValue
-            && !filter.OrderId.HasValue
-            && orderIds is null
-            && !filter.OperationId.HasValue
-            && search is null;
-        if (isUnfiltered)
+        // Attendance is about the person, not the order: unless the report is narrowed to one employee or a search,
+        // also list people who have attendance in the period but no output in the selected orders.
+        var listsWholeWorkforce = !filter.EmployeeId.HasValue && search is null;
+        if (listsWholeWorkforce)
         {
             var attendanceOnly = await db.AttendanceDays.AsNoTracking()
                 .Where(day => day.WorkDate >= fromDate

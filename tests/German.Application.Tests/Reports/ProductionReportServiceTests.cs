@@ -303,7 +303,7 @@ public sealed class ProductionReportServiceTests
     }
 
     [TestMethod]
-    public async Task BuildAsync_WithoutFilters_AlsoListsEmployeesWhoOnlyHaveAttendance()
+    public async Task BuildAsync_WithoutEmployeeOrSearchFilter_AlsoListsEmployeesWhoOnlyHaveAttendance()
     {
         await using var db = CreateDb();
         var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
@@ -324,11 +324,18 @@ public sealed class ProductionReportServiceTests
             new ProductionReportFilter(range.Item1, range.Item2, null, null, null, null), CancellationToken.None);
         var byOrder = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
             new ProductionReportFilter(range.Item1, range.Item2, null, seed.Order.Id, null, null), CancellationToken.None);
+        var byEmployee = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(range.Item1, range.Item2, seed.Employee.Id, null, null, null), CancellationToken.None);
+        var bySearch = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(range.Item1, range.Item2, null, null, null, "E001"), CancellationToken.None);
 
         CollectionAssert.AreEquivalent(new[] { "E009" }, all.Value!.WorkHours.Select(x => x.EmployeeCode).Where(code => code != "E001").ToArray(), "Attendance-only worker is listed; an empty attendance record is not.");
         Assert.AreEqual(8m, all.Value.WorkHours.Single(x => x.EmployeeCode == "E009").RegularHours);
         Assert.AreEqual(1, all.Value.Rows.Count, "Production rows are unchanged.");
-        Assert.IsFalse(byOrder.Value!.WorkHours.Any(x => x.EmployeeCode == "E009"), "A filtered export keeps only the people who worked it.");
+        Assert.IsTrue(byOrder.Value!.WorkHours.Any(x => x.EmployeeCode == "E009"), "Filtering by production order still lists everyone with attendance.");
+        Assert.IsFalse(byOrder.Value.WorkHours.Any(x => x.EmployeeCode == "E010"), "An empty attendance record is never listed.");
+        Assert.IsFalse(byEmployee.Value!.WorkHours.Any(x => x.EmployeeCode == "E009"), "Filtering by employee keeps only that employee.");
+        Assert.IsFalse(bySearch.Value!.WorkHours.Any(x => x.EmployeeCode == "E009"), "A search narrows the people listed.");
     }
 
     [TestMethod]
