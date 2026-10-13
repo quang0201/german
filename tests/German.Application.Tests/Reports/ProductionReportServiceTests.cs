@@ -303,6 +303,35 @@ public sealed class ProductionReportServiceTests
     }
 
     [TestMethod]
+    public async Task BuildAsync_WithoutFilters_AlsoListsEmployeesWhoOnlyHaveAttendance()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var idle = new Employee { EmployeeCode = "E009", FullName = "Lê Thị Nghỉ" };
+        var empty = new Employee { EmployeeCode = "E010", FullName = "Trần Trống" };
+        db.AddRange(idle, empty);
+        db.AttendanceDays.Add(new AttendanceDay
+        {
+            EmployeeId = idle.Id,
+            WorkDate = new DateOnly(2026, 8, 12),
+            Shifts = [new AttendanceShiftEntry { SlotNumber = 1, ShiftName = "Ca 1", ScheduledHours = 8m, WorkedHours = 8m, ValueKind = AttendanceShiftValueKind.Hours }]
+        });
+        db.AttendanceDays.Add(new AttendanceDay { EmployeeId = empty.Id, WorkDate = new DateOnly(2026, 8, 12) });
+        await db.SaveChangesAsync();
+        var range = (new DateOnly(2026, 8, 12), new DateOnly(2026, 8, 12));
+
+        var all = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(range.Item1, range.Item2, null, null, null, null), CancellationToken.None);
+        var byOrder = await new ProductionReportService(db, TimeProvider.System).BuildAsync(
+            new ProductionReportFilter(range.Item1, range.Item2, null, seed.Order.Id, null, null), CancellationToken.None);
+
+        CollectionAssert.AreEquivalent(new[] { "E009" }, all.Value!.WorkHours.Select(x => x.EmployeeCode).Where(code => code != "E001").ToArray(), "Attendance-only worker is listed; an empty attendance record is not.");
+        Assert.AreEqual(8m, all.Value.WorkHours.Single(x => x.EmployeeCode == "E009").RegularHours);
+        Assert.AreEqual(1, all.Value.Rows.Count, "Production rows are unchanged.");
+        Assert.IsFalse(byOrder.Value!.WorkHours.Any(x => x.EmployeeCode == "E009"), "A filtered export keeps only the people who worked it.");
+    }
+
+    [TestMethod]
     public async Task BuildAsync_AddsDailyOrderTotalsAndAttendanceHoursForFilteredWorkers()
     {
         await using var db = CreateDb();

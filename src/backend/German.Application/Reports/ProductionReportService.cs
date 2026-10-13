@@ -545,6 +545,35 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             .Where(row => row.EmployeeId.HasValue)
             .GroupBy(row => row.EmployeeId!.Value)
             .ToDictionary(group => group.Key, group => (group.First().EmployeeCode, group.First().EmployeeName));
+        // An unfiltered report is the whole workforce: also list people who have attendance but no output.
+        var isUnfiltered = !filter.EmployeeId.HasValue
+            && !filter.OrderId.HasValue
+            && orderIds is null
+            && !filter.OperationId.HasValue
+            && search is null;
+        if (isUnfiltered)
+        {
+            var attendanceOnly = await db.AttendanceDays.AsNoTracking()
+                .Where(day => day.WorkDate >= fromDate
+                    && day.WorkDate <= untilDate
+                    && (day.OvertimeHours > 0m || day.Shifts.Any(shift => shift.ValueKind != AttendanceShiftValueKind.Empty)))
+                .Select(day => day.EmployeeId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+            var missingIds = attendanceOnly.Where(id => !employeeNames.ContainsKey(id)).ToArray();
+            if (missingIds.Length > 0)
+            {
+                var missing = await db.Employees.AsNoTracking()
+                    .Where(employee => missingIds.Contains(employee.Id))
+                    .Select(employee => new { employee.Id, employee.EmployeeCode, employee.FullName })
+                    .ToListAsync(cancellationToken);
+                foreach (var employee in missing)
+                {
+                    employeeNames[employee.Id] = (employee.EmployeeCode, employee.FullName);
+                }
+            }
+        }
+
         var attendanceQuery = db.AttendanceDays.AsNoTracking()
             .Include(day => day.Shifts)
             .Where(day => employeeNames.Keys.Contains(day.EmployeeId)
