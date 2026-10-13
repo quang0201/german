@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useRef } from "react";
 import { attendanceDayKey, calculateDisplayTotals } from "./attendanceModel.js";
 
 const weekdayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -23,6 +23,20 @@ function draftDay(drafts, employee, day) {
 export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertimeChange, loading, onLoadMore, loadingMore, onRetryBlock, today = new Date() }) {
   const employees = data?.employees ?? [];
   const days = employees[0]?.days ?? [];
+  const moreRef = useRef(null);
+  const hasMore = Boolean(data?.hasMoreEmployees);
+  const employeeCount = employees.length;
+  // The matrix does not always scroll inside its own frame (the page may scroll instead), so a scroll handler alone
+  // would never load the next employees. Also load them whenever the end of the list comes into view.
+  useEffect(() => {
+    const target = moreRef.current;
+    if (!hasMore || loadingMore || !target || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) onLoadMore?.();
+    }, { rootMargin: "400px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, employeeCount, onLoadMore]);
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   if (loading) return <div className="erp-empty-state">Đang tải dữ liệu chấm công...</div>;
@@ -89,7 +103,7 @@ export function AttendanceMonthlyMatrix({ data, drafts, onCellChange, onOvertime
         </table>
         {Object.values(data.blockStatus ?? {}).some((status) => status === "loading") && <div className="erp-attendance-block-loading">Đang tải dữ liệu ngày...</div>}
         {Object.entries(data.blockErrors ?? {}).filter(([, message]) => message).map(([blockKey, message]) => <div key={blockKey} className="erp-attendance-block-error"><span>{message}</span><button type="button" className="erp-button erp-button-secondary" onClick={() => onRetryBlock?.(blockKey)}>Thử lại</button></div>)}
-        {data.hasMoreEmployees && <div className="erp-attendance-load-more">{loadingMore ? "Đang tải thêm nhân viên..." : "Cuộn xuống để tải thêm nhân viên"}</div>}
+        {data.hasMoreEmployees && <div className="erp-attendance-load-more" ref={moreRef}>{loadingMore ? "Đang tải thêm nhân viên..." : <button type="button" className="erp-button erp-button-secondary" onClick={() => onLoadMore?.()}>Tải thêm nhân viên</button>}</div>}
       </div>
     </section>
   );

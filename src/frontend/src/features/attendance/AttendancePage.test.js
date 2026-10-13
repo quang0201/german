@@ -64,6 +64,17 @@ describe("AttendancePage", () => {
     expect(html).toContain('value="0"');
   });
 
+  test("offers a button and an in-view trigger to load more employees, not only an inner scroll", () => {
+    const base = { employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-22", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] };
+    const more = renderToStaticMarkup(<AttendanceMonthlyMatrix data={{ ...base, hasMoreEmployees: true }} drafts={{}} loading={false} />);
+    const done = renderToStaticMarkup(<AttendanceMonthlyMatrix data={{ ...base, hasMoreEmployees: false }} drafts={{}} loading={false} />);
+    const source = require("node:fs").readFileSync(require("node:path").resolve(import.meta.dir, "AttendanceMonthlyMatrix.jsx"), "utf8");
+
+    expect(more).toContain("Tải thêm nhân viên");
+    expect(done).not.toContain("Tải thêm nhân viên");
+    expect(source).toContain("IntersectionObserver");
+  });
+
   test("marks today's attendance column with a dedicated style", () => {
     const html = renderToStaticMarkup(<AttendanceMonthlyMatrix
       data={{ employees: [{ employeeId: "e1", employeeCode: "E1", fullName: "An", days: [{ workDate: "2026-08-22", hasShiftSetup: true, shifts: [{ slotNumber: 1, scheduledHours: 4 }] }] }] }}
