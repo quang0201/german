@@ -104,7 +104,6 @@ export function ProductionEntryFormPage({ session, entry = null, onSaved, onCanc
         if (canChooseEmployee) {
           const activeEmployees = (employeeRows ?? []).filter((item) => item.isActive !== false);
           setEmployees(activeEmployees);
-          if (!entry?.employeeId && !form.employeeId && activeEmployees[0]) setForm((current) => ({ ...current, employeeId: String(activeEmployees[0].id) }));
         }
       })
       .catch((requestError) => active && setError(mapProductionEntryError(requestError, "Không thể tải dữ liệu nhập sản lượng.")))

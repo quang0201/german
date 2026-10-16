@@ -192,7 +192,7 @@ export function ProductionMonthlyMatrix({ data, monthKey, fromDate = "", untilDa
       {error && <p className="erp-inline-message erp-inline-error" role="alert">{error}</p>}
       <div className="erp-month-matrix-guide">
         <div className="erp-month-matrix-legend" role="list" aria-label="Chú giải màu trạng thái">
-          <span role="listitem"><i className="is-no-attendance" aria-hidden="true">?</i>Chưa chấm công</span>
+          <span role="listitem"><i className="is-no-attendance" aria-hidden="true">·</i>Chưa chấm công</span>
           <span role="listitem"><i className="is-missing-operation" aria-hidden="true">!</i>Chưa nhập công đoạn</span>
           <span role="listitem"><i className="is-paid-leave" aria-hidden="true">P</i>Nghỉ phép</span>
           <span role="listitem"><i className="is-future-date" aria-hidden="true">—</i>Chưa tới ngày</span>

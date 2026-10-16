@@ -14,7 +14,7 @@
   --color-border-strong: #9c8e81;
   --color-text: #2f241a;
   --color-text-muted: #5f5347;
-  --color-text-subtle: #7a6d60;
+  --color-text-subtle: #6b5e52;
   --color-focus-ring: #c2410c;
   --color-paid-leave: #2563eb;
   --color-paid-leave-soft: #eff6ff;
@@ -790,7 +790,7 @@
 
 @media (min-width: 768px) {
   .erp-report-summary-card { gap: 12px; margin-top: 0; padding: 12px; border-radius: var(--radius-sm); }
-  .erp-attendance-matrix-table td > input.erp-attendance-cell { width: 72px; min-width: 72px; }
+  .erp-attendance-matrix-table td > input.erp-attendance-cell { width: 58px; min-width: 58px; }
 }
 
 @media (min-width: 768px) {
@@ -839,3 +839,10 @@
   .erp-pill-select { max-width: 52vw; }
   .erp-period-popover, .erp-order-popover { position: fixed; top: auto; right: 16px; bottom: 16px; left: 16px; width: auto; }
 }
+
+/* UX pass: a disabled button must read as "nothing to do", not as a faded primary action. */
+.erp-button:disabled,
+.erp-button-primary:disabled { opacity: 1; color: var(--color-text-subtle); background: var(--color-surface-soft); border-color: var(--color-border); box-shadow: none; }
+/* Row actions: the destructive one stays quiet until pointed at (it still asks for confirmation). */
+.erp-table-actions .erp-button-danger-quiet { border-color: transparent; background: transparent; color: var(--color-text-muted); }
+.erp-table-actions .erp-button-danger-quiet:hover:not(:disabled) { color: #fff; background: var(--color-error); border-color: var(--color-error); }

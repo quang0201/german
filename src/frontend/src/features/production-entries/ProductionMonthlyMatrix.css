@@ -192,3 +192,14 @@
 
 /* Merged employee cell: name sits in the middle of its operation rows instead of leaving a gap below */
 .erp-month-matrix-table td.erp-month-employee { vertical-align:middle; padding-top:0 !important; }
+
+/* UX pass: "no attendance" is information, not an error. Keep it quiet so the cells that need action
+   (worked but no operation entered, "!") stand out, and use light grid lines instead of heavy ones. */
+.erp-month-matrix-table .erp-month-value-cell { border-right:1px solid var(--color-grid-line) !important; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-no-attendance { background:var(--color-surface) !important; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance { box-shadow:none; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance button:empty::after { content:"·"; color:var(--color-text-subtle); font-weight:900; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-no-attendance button:not(:empty)::before { content:""; }
+.erp-month-matrix-legend .is-no-attendance { border-color:var(--color-border-strong); background:var(--color-surface); color:var(--color-text-subtle); }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-missing { background:color-mix(in srgb, var(--color-warning) 16%, var(--color-surface)) !important; }
+.erp-month-matrix-table .erp-month-value-cell.erp-month-status-marker.erp-month-missing { box-shadow:inset 3px 0 var(--color-warning); }

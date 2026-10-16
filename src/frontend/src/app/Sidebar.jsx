@@ -3,10 +3,11 @@ import { Icon } from "../components/erp/Icon.jsx";
 import { navigate } from "./navigation.js";
 import { routes } from "./routes.js";
 
+// Daily work comes first: office staff open these several times a day.
 const navigationGroups = [
+  { label: "Hằng ngày", paths: ["/production", "/attendance"] },
   { label: "Báo cáo", paths: ["/reports", "/reports/monthly"] },
   { label: "Danh mục", paths: ["/employees", "/orders", "/products", "/settings/external-sources", "/shifts"] },
-  { label: "Vận hành", paths: ["/attendance", "/production"] },
   { label: "Quản trị", paths: ["/admin/accounts", "/admin/audit"] },
 ];
 
@@ -21,13 +22,14 @@ function navGroups(role) {
 
 const icons = {
   "/production": "production",
+  "/attendance": "attendance",
   "/employees": "employees",
   "/orders": "orders",
-  "/products": "orders",
-  "/settings/external-sources": "orders",
+  "/products": "products",
+  "/settings/external-sources": "external",
   "/shifts": "shifts",
   "/reports": "reports",
-  "/reports/monthly": "reports",
+  "/reports/monthly": "calendar",
   "/admin/accounts": "accounts",
   "/admin/audit": "audit",
 };

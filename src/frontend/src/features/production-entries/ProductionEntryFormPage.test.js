@@ -3,6 +3,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 describe("ProductionEntryFormPage attendance defaults", () => {
+  test("does not pick the first employee on its own, so output is never saved for the wrong person", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryFormPage.jsx"), "utf8");
+    expect(source).not.toContain("activeEmployees[0]");
+    expect(source).toContain('<option value="">Chọn nhân viên</option>');
+  });
+
   test("loads attendance hours for new entries and sends editable HC hours to backend", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionEntryFormPage.jsx"), "utf8");
 
