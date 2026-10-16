@@ -150,6 +150,9 @@ internal static class ProductionMonthlyMatrixBuilder
             rows.Sum(row => row.HcQuantity),
             rows.Sum(row => row.TcQuantity),
             rows.Sum(row => row.TotalQuantity),
-            cells);
+            cells)
+        {
+            Unit = group.First().OperationUnit
+        };
     }
 }

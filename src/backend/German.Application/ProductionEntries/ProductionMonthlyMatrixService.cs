@@ -114,7 +114,10 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
                 item.employee.Id, item.employee.EmployeeCode, item.employee.FullName, item.employee.IsActive, item.employee.DeactivatedAt, item.employee.CompensationType, item.employee.CreatedAt, item.employee.EmploymentStartDate,
                 item.order.Id, item.order.Code, item.order.ProductName,
                 item.order.CreatedAt,
-                item.operation.Id, item.operation.OperationNumber, item.operation.Name))
+                item.operation.Id, item.operation.OperationNumber, item.operation.Name)
+            {
+                OperationUnit = item.operation.Unit
+            })
             .ToListAsync(cancellationToken);
         var groupRows = operationId.HasValue
             ? allGroupRows.Where(row => row.OperationId == operationId.Value).ToList()
@@ -225,10 +228,79 @@ public sealed class ProductionMonthlyMatrixService(IGermanDbContext db)
             })
             .ToList();
 
+        var attendanceOnlyEmployees = orderId.HasValue || operationId.HasValue
+            ? []
+            : await GetAttendanceOnlyEmployeesAsync(fromDate, untilDate, groupFromDate, employeeId, search,
+                employeeIds.ToHashSet(), cancellationToken);
+
         return AppResult<ProductionMonthlyMatrixResult>.Success(
-            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, allGroupRows, hourlyEmployees, workedDates, attendanceDates, paidLeaveDates));
+            ProductionMonthlyMatrixBuilder.Build(fromDate, untilDate, orderId, excludeSundays, rows, groupRows, allGroupRows, hourlyEmployees, workedDates, attendanceDates, paidLeaveDates)
+                with { AttendanceOnlyEmployees = attendanceOnlyEmployees });
+    }
+    private async Task<IReadOnlyList<ProductionMatrixHourlyEmployeeDto>> GetAttendanceOnlyEmployeesAsync(
+        DateOnly fromDate,
+        DateOnly untilDate,
+        DateOnly groupFromDate,
+        Guid? employeeId,
+        ProductionEntrySearchCriteria? search,
+        IReadOnlySet<Guid> listedEmployeeIds,
+        CancellationToken cancellationToken)
+    {
+        var days = await db.AttendanceDays.AsNoTracking()
+            .Where(day => day.WorkDate >= fromDate
+                && day.WorkDate <= untilDate
+                && (!employeeId.HasValue || day.EmployeeId == employeeId.Value)
+                && (day.OvertimeHours > 0m
+                    || day.Shifts.Any(shift => shift.ValueKind == AttendanceShiftValueKind.Hours
+                        || shift.ValueKind == AttendanceShiftValueKind.PaidLeave)))
+            .Select(day => new
+            {
+                day.EmployeeId,
+                day.WorkDate,
+                Worked = day.OvertimeHours > 0m || day.Shifts.Any(shift => shift.ValueKind == AttendanceShiftValueKind.Hours),
+                PaidLeave = day.Shifts.Any(shift => shift.ValueKind == AttendanceShiftValueKind.PaidLeave)
+            })
+            .ToListAsync(cancellationToken);
+        var candidateIds = days.Select(day => day.EmployeeId).Where(id => !listedEmployeeIds.Contains(id)).Distinct().ToArray();
+        if (candidateIds.Length == 0)
+        {
+            return [];
+        }
+
+        var employeeQuery = db.Employees.AsNoTracking()
+            .Where(employee => candidateIds.Contains(employee.Id)
+                && employee.CompensationType != EmployeeCompensationType.Hourly
+                && (employee.IsActive || !employee.DeactivatedAt.HasValue || employee.DeactivatedAt.Value >= groupFromDate));
+        if (search is not null)
+        {
+            var text = search.LoweredText;
+            employeeQuery = employeeQuery.Where(employee =>
+                employee.EmployeeCode.ToLower().Contains(text) || employee.FullName.ToLower().Contains(text));
+        }
+
+        var employees = await employeeQuery
+            .OrderBy(employee => employee.EmployeeCode)
+            .Select(employee => new { employee.Id, employee.EmployeeCode, employee.FullName, employee.IsActive, employee.DeactivatedAt, employee.CompensationType, employee.CreatedAt, employee.EmploymentStartDate })
+            .ToListAsync(cancellationToken);
+        return employees
+            .Select(employee => new ProductionMatrixHourlyEmployeeDto(
+                employee.Id,
+                employee.EmployeeCode,
+                employee.FullName,
+                employee.IsActive,
+                employee.CompensationType,
+                employee.EmploymentStartDate ?? DateOnly.FromDateTime(employee.CreatedAt.Date))
+            {
+                DeactivatedAt = employee.DeactivatedAt,
+                WorkedDates = days.Where(day => day.EmployeeId == employee.Id && day.Worked).Select(day => day.WorkDate).Distinct().Order().ToArray(),
+                AttendanceDates = days.Where(day => day.EmployeeId == employee.Id).Select(day => day.WorkDate).Distinct().Order().ToArray(),
+                PaidLeaveDates = days.Where(day => day.EmployeeId == employee.Id && day.PaidLeave).Select(day => day.WorkDate).Distinct().Order().ToArray()
+            })
+            .ToList();
     }
 }
+
+
 
 internal sealed record ProductionMonthlyMatrixRow(
     Guid Id, int Version, DateOnly WorkDate, ProductionEntryMode EntryMode,
@@ -236,4 +308,7 @@ internal sealed record ProductionMonthlyMatrixRow(
     string? Note, DateTimeOffset CreatedAt,
     Guid EmployeeId, string EmployeeCode, string EmployeeName, bool EmployeeIsActive, DateOnly? EmployeeDeactivatedAt, EmployeeCompensationType CompensationType, DateTimeOffset EmployeeCreatedAt, DateOnly? EmployeeEmploymentStartDate,
     Guid OrderId, string OrderCode, string ProductName, DateTimeOffset OrderCreatedAt,
-    Guid OperationId, int OperationNumber, string OperationName);
+    Guid OperationId, int OperationNumber, string OperationName)
+{
+    public string OperationUnit { get; init; } = string.Empty;
+}

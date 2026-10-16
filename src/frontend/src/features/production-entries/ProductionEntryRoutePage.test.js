@@ -25,7 +25,7 @@ describe("ProductionEntryRoutePage", () => {
   test("routes Manager and Admin to the grouped weekly matrix flow without a second workspace tab bar", () => {
     for (const role of ["Manager", "Admin"]) {
       const html = renderFor(role);
-      expect(html).toContain('<h1 class="erp-visually-hidden">Sản lượng</h1>');
+      expect(html).toContain('<h1 class="erp-production-title">Sản lượng</h1>');
       expect(html).toContain("erp-production-controls");
       expect(html).toContain("Xuất Excel");
       expect(html).toContain("<svg class=\"erp-icon\"");
@@ -56,9 +56,19 @@ describe("ProductionEntryRoutePage", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
 
     expect(source).toContain("buildProductionWeeklyMatrixUrl");
-    expect(source).toContain('excludeSundays={false}');
-    expect(source).toContain('showSundayToggle={false}');
-    expect(source).toContain("availableOrders[0].id");
+    expect(source).toContain("excludeSundays: false");
+    expect(source).toContain("<ProductionWeekGrid");
+  });
+
+  test("shows all production codes by default and applies filters as soon as they change", () => {
+    const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
+
+    expect(source).not.toContain("availableOrders[0].id");
+    expect(source).toContain("Tất cả mã SX");
+    expect(source).not.toContain("<FilterBar");
+    expect(source).toContain("onPendingDayClick");
+    expect(source).toContain("Chỉ Tổng");
+    expect(source).toContain("Tuần này");
   });
 
   test("does not block an inactive employee's production cell before the deactivation date", () => {
@@ -72,9 +82,9 @@ describe("ProductionEntryRoutePage", () => {
     const source = readFileSync(resolve(import.meta.dir, "ProductionEntryManagerMatrixPage.jsx"), "utf8");
 
     expect(source).toContain("erp-production-controls");
-    expect(source).toContain("showOrderFilter={false}");
     expect(source).toContain("<Field label=\"Mã sản xuất\">");
     expect(source).not.toContain("<PageHeader");
+    expect(source).toContain('<h1 className="erp-production-title">Sản lượng</h1>');
   });
 
   test("provides a compact mobile filter entry point while retaining desktop filters", () => {

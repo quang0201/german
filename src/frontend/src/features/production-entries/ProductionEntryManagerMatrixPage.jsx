@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useReducer, useState } from "react";
 import { navigate } from "../../app/navigation.js";
 import { DetailPanel } from "../../components/erp/DetailPanel.jsx";
 import { Field } from "../../components/erp/Field.jsx";
-import { FilterBar } from "../../components/erp/FilterBar.jsx";
 import { Icon } from "../../components/erp/Icon.jsx";
 import { useToast } from "../../components/erp/ToastProvider.jsx";
 import { api } from "../../lib/api.js";
@@ -13,7 +12,8 @@ import { ProductionExportDialog } from "./ProductionExportDialog.jsx";
 import { ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDialog.jsx";
 import { ProductionMatrixCellRecordsDialog } from "./ProductionMatrixCellRecordsDialog.jsx";
 import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
-import { ProductionMonthlyMatrix } from "./ProductionMonthlyMatrix.jsx";
+import { ProductionWeekGrid } from "./ProductionWeekGrid.jsx";
+import "./ProductionMonthlyMatrix.css";
 import { buildProductionExportUrl } from "./productionEntryQuery.js";
 import { productionExportFileName } from "./productionExport.js";
 import { buildProductionWeeklyMatrixUrl, currentMonthKey, isEmployeeReadOnlyOnDate, matrixCellAction } from "./productionMonthlyMatrix.js";
@@ -21,10 +21,18 @@ import { localIsoDate } from "./productionPeriod.js";
 import { derivePeriodRange, shiftPeriod } from "./productionPeriod.js";
 import { ProductionWeekNavigator } from "./ProductionWeekNavigator.jsx";
 import { mobileFilterPanelReducer } from "./productionFilterPanel.js";
-import "./ProductionMonthlyMatrix.css";
 
 const emptyMatrix = { summary: {}, availableOrders: [], orders: [] };
 const emptyFilters = { employeeId: "", operationId: "", search: "" };
+const COMPACT_KEY = "german.production.compactGrid";
+
+function readCompact() {
+  try { return window.localStorage.getItem(COMPACT_KEY) === "1"; } catch { return false; }
+}
+
+function saveCompact(value) {
+  try { window.localStorage.setItem(COMPACT_KEY, value ? "1" : "0"); } catch { /* per-viewer convenience only */ }
+}
 
 export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPanelClose }) {
   const [initialQuery] = useState(() => readQuery(["date", "order", "employee", "operation", "q"]));
@@ -32,7 +40,8 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   const [weekAnchorDate, setWeekAnchorDate] = useState(() => queryDate(initialQuery.date, localIsoDate()));
   const [selectedOrderId, setSelectedOrderId] = useState(initialQuery.order);
   const [filters, setFilters] = useState(initialFilters);
-  const [draft, setDraft] = useState(initialFilters);
+  const [searchText, setSearchText] = useState(initialFilters.search ?? "");
+  const [compact, setCompact] = useState(() => typeof window === "undefined" ? false : readCompact());
   const [mobileFiltersOpen, dispatchMobileFilterPanel] = useReducer(mobileFilterPanelReducer, false);
   const [employees, setEmployees] = useState([]);
   const [operations, setOperations] = useState([]);
@@ -61,9 +70,6 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     const visibleIds = new Set(
       employees.filter((employee) => employeeVisibleForMonth(employee, monthKey)).map((employee) => String(employee.id)),
     );
-    setDraft((current) => current.employeeId && !visibleIds.has(String(current.employeeId))
-      ? { ...current, employeeId: "" }
-      : current);
     setFilters((current) => current.employeeId && !visibleIds.has(String(current.employeeId))
       ? { ...current, employeeId: "" }
       : current);
@@ -85,31 +91,30 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     return () => { active = false; };
   }, [weekRange, selectedOrderId, filters, reloadKey]);
 
+  // An empty selection means "all production codes"; only a code that disappeared from the week is cleared.
   useEffect(() => {
+    if (loading || !selectedOrderId) return;
     const availableOrders = data.availableOrders ?? [];
-    if (!availableOrders.length) {
-      if (selectedOrderId) setSelectedOrderId("");
-      return;
-    }
-    if (!selectedOrderId) {
-      setSelectedOrderId(String(availableOrders[0].id));
-      return;
-    }
     if (!availableOrders.some((order) => String(order.id) === String(selectedOrderId))) {
       setSelectedOrderId("");
       setFilters((current) => ({ ...current, operationId: "" }));
-      setDraft((current) => ({ ...current, operationId: "" }));
     }
-  }, [data.availableOrders, selectedOrderId]);
+  }, [data.availableOrders, selectedOrderId, loading]);
+
+  // Filters apply as soon as they change; typing in the search box waits for a short pause.
+  useEffect(() => {
+    const timer = setTimeout(() => setFilters((current) => current.search === searchText ? current : { ...current, search: searchText }), 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   function selectOrder(orderId) {
     setSelectedOrderId(String(orderId || ""));
     setFilters((current) => ({ ...current, operationId: "" }));
-    setDraft((current) => ({ ...current, operationId: "" }));
   }
 
-  function applyFilters() { setFilters({ ...draft }); dispatchMobileFilterPanel("apply"); }
-  function resetFilters() { setDraft(emptyFilters); setFilters(emptyFilters); dispatchMobileFilterPanel("reset"); }
+  function setFilter(key, value) { setFilters((current) => ({ ...current, [key]: value })); }
+  function resetFilters() { setSelectedOrderId(""); setSearchText(""); setFilters(emptyFilters); dispatchMobileFilterPanel("reset"); }
+  function toggleCompact(value) { setCompact(value); saveCompact(value); }
   function reload() { setQuickContext(null); setBatchDay(null); setRecordsContext(null); setReloadKey((value) => value + 1); }
 
   function handleQuickSaved() {
@@ -137,6 +142,10 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     setBatchDay({ ...day, preferredOrderId: selectedOrderId, preferredEmployeeId: filters.employeeId });
   }
 
+  function handlePendingDay(employee, day) {
+    setBatchDay({ ...day, preferredOrderId: selectedOrderId, preferredEmployeeId: String(employee.employeeId) });
+  }
+
   function handleCell(context) {
     if (isEmployeeReadOnlyOnDate(context.employee, context.workDate)) return;
     const action = matrixCellAction(context.cell);
@@ -152,18 +161,22 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
     } catch (requestError) { toast.error(requestError.message || "Không thể xuất Excel."); }
   }
 
+  const availableOrders = data.availableOrders ?? [];
+  const filtering = Boolean(selectedOrderId || filters.employeeId || filters.operationId || filters.search);
+
   return (
     <div className="erp-feature-page erp-production-manager-page">
-      <h1 className="erp-visually-hidden">Sản lượng</h1>
       <div className="erp-production-controls">
         <div className="erp-production-controls-header">
+          <h1 className="erp-production-title">Sản lượng</h1>
           <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} />
+          <button type="button" className="erp-button erp-button-secondary erp-button-small" onClick={() => setWeekAnchorDate(localIsoDate())}>Tuần này</button>
           <div className="erp-page-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}><Icon name="download" size={17} />Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}><Icon name="plus" size={17} />Nhập sản lượng</button></div>
         </div>
         <button type="button" className="erp-production-mobile-filter-toggle" aria-expanded={mobileFiltersOpen} aria-controls="erp-production-filter-panel" onClick={() => dispatchMobileFilterPanel("toggle")}>
           <span>Bộ lọc</span>
-          <strong>{data.availableOrders?.find((order) => String(order.id) === String(selectedOrderId))?.code ?? "Chọn mã SX"}</strong>
-          {(filters.employeeId || filters.operationId || filters.search) && <span className="erp-production-filter-active">Đang lọc</span>}
+          <strong>{availableOrders.find((order) => String(order.id) === String(selectedOrderId))?.code ?? "Tất cả mã SX"}</strong>
+          {filtering && <span className="erp-production-filter-active">Đang lọc</span>}
           <span className="erp-production-filter-open-label">{mobileFiltersOpen ? "Đóng" : "Mở lọc"}<span aria-hidden="true">{mobileFiltersOpen ? "⌃" : "⌄"}</span></span>
         </button>
         <div id="erp-production-filter-panel" className={`erp-production-filter-panel${mobileFiltersOpen ? " is-open" : ""}`}>
@@ -171,15 +184,26 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
             <strong>Bộ lọc</strong>
             <button type="button" className="erp-button erp-button-secondary erp-production-filter-close" aria-label="Đóng bộ lọc" onClick={() => dispatchMobileFilterPanel("close")}>Đóng</button>
           </div>
-          <FilterBar loading={loading} onSubmit={applyFilters} onReset={resetFilters}>
-            <Field label="Mã sản xuất"><select className="erp-control" value={selectedOrderId} onChange={(event) => selectOrder(event.target.value)}><option value="">Chọn Mã SX</option>{(data.availableOrders ?? []).map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select></Field>
-            <Field label="Nhân viên"><select className="erp-control" value={draft.employeeId} onChange={(event) => setDraft((current) => ({ ...current, employeeId: event.target.value }))}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
-            <Field label="Công đoạn"><select className="erp-control" value={draft.operationId} disabled={!selectedOrderId} onChange={(event) => setDraft((current) => ({ ...current, operationId: event.target.value }))}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
-            <Field label="Tìm kiếm"><input className="erp-control" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
-          </FilterBar>
+          <div className="erp-production-filter-row">
+            <Field label="Mã sản xuất"><select className="erp-control" value={selectedOrderId} onChange={(event) => selectOrder(event.target.value)}><option value="">Tất cả mã SX ({availableOrders.length})</option>{availableOrders.map((order) => <option key={order.id} value={order.id}>{order.code} — {order.productName}</option>)}</select></Field>
+            <Field label="Nhân viên"><select className="erp-control" value={filters.employeeId} onChange={(event) => setFilter("employeeId", event.target.value)}><option value="">Tất cả</option>{employees.filter((item) => employeeVisibleForMonth(item, monthKey)).map((item) => <option key={item.id} value={item.id}>{item.employeeCode} — {item.fullName}</option>)}</select></Field>
+            <Field label="Công đoạn"><select className="erp-control" value={filters.operationId} disabled={!selectedOrderId} title={selectedOrderId ? undefined : "Chọn một mã SX để lọc theo công đoạn"} onChange={(event) => setFilter("operationId", event.target.value)}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
+            <Field label="Tìm kiếm"><input className="erp-control" value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
+            {filtering && <button type="button" className="erp-button erp-button-secondary erp-production-filter-reset" onClick={resetFilters}>Xóa lọc</button>}
+            <div className="erp-production-view-switch" role="group" aria-label="Cách hiện mỗi ngày">
+              <button type="button" className={compact ? "" : "is-on"} aria-pressed={!compact} onClick={() => toggleCompact(false)}>HC · TC · Tổng</button>
+              <button type="button" className={compact ? "is-on" : ""} aria-pressed={compact} onClick={() => toggleCompact(true)}>Chỉ Tổng</button>
+            </div>
+          </div>
         </div>
       </div>
-      <ProductionMonthlyMatrix data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} selectedOrderId={selectedOrderId} excludeSundays={false} showSundayToggle={false} showOrderFilter={false} loading={loading} error={error} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} />
+      <div className="erp-week-legend" role="list" aria-label="Chú giải">
+        <span role="listitem"><i className="is-missing" aria-hidden="true">!</i>Đã đi làm, chưa nhập công đoạn</span>
+        <span role="listitem"><i className="is-leave" aria-hidden="true">P</i>Nghỉ phép</span>
+        <span role="listitem"><i className="is-future" aria-hidden="true" />Chưa tới ngày</span>
+        <span className="erp-week-legend-help">Bấm vào ô để nhập hoặc sửa · Bấm tiêu đề ngày để nhập nhiều người</span>
+      </div>
+      <ProductionWeekGrid data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} compact={compact} loading={loading} error={error} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} onPendingDayClick={handlePendingDay} />
       <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} onReload={reload} />
       <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />

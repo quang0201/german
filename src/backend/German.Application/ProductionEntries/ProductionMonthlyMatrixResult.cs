@@ -34,7 +34,10 @@ public sealed record ProductionMatrixOperationRowDto(
     decimal HcQuantity,
     decimal TcQuantity,
     decimal TotalQuantity,
-    IReadOnlyList<ProductionMatrixCellDto> Cells);
+    IReadOnlyList<ProductionMatrixCellDto> Cells)
+{
+    public string Unit { get; init; } = string.Empty;
+}
 
 public sealed record ProductionMatrixEmployeeGroupDto(
     Guid EmployeeId,
@@ -81,4 +84,8 @@ public sealed record ProductionMonthlyMatrixResult(
     ProductionMonthlyMatrixSummary Summary,
     IReadOnlyList<ProductionMatrixOrderOptionDto> AvailableOrders,
     IReadOnlyList<ProductionMatrixOrderBlockDto> Orders,
-    IReadOnlyList<ProductionMatrixHourlyEmployeeDto> HourlyEmployees);
+    IReadOnlyList<ProductionMatrixHourlyEmployeeDto> HourlyEmployees)
+{
+    /// <summary>Piece-rate employees with attendance in the range but no output yet (only when no order or operation is selected).</summary>
+    public IReadOnlyList<ProductionMatrixHourlyEmployeeDto> AttendanceOnlyEmployees { get; init; } = [];
+}

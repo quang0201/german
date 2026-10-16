@@ -1,0 +1,88 @@
+/* Week production grid, laid out like the Excel export (HC blue, TC orange). */
+.erp-week-wrap {
+  --wk-line: #c9d3dd; --wk-line-strong: #8aa0b4;
+  --wk-head: #d9eaf7; --wk-hc-head: #9dc3e6; --wk-hc: #eaf4fb; --wk-tc-head: #f4b183; --wk-tc: #ffe6cc;
+  --wk-c1: 160px; --wk-c2: 108px; --wk-c3: 50px; --wk-c4: 44px;
+  overflow: auto; max-width: 100%; width: max-content; max-height: calc(100dvh - 220px);
+  border: 1px solid var(--wk-line-strong); border-radius: 4px; background: var(--color-surface);
+}
+.erp-week-grid { border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--color-text); }
+.erp-week-grid th, .erp-week-grid td { border: 0; border-right: 1px solid var(--wk-line); border-bottom: 1px solid var(--wk-line); height: 30px; padding: 0 8px; white-space: nowrap; background-clip: padding-box; }
+.erp-week-grid thead th { position: sticky; z-index: 2; background: var(--wk-head); font-weight: 700; text-align: center; }
+.erp-week-grid thead tr:first-child th { top: 0; height: 32px; }
+.erp-week-grid thead tr:nth-child(2) th { top: 32px; height: 24px; font-size: 12px; }
+.erp-week-grid .erp-week-sub.is-hc { background: var(--wk-hc-head); }
+.erp-week-grid .erp-week-sub.is-tc { background: var(--wk-tc-head); }
+.erp-week-day button { border: 0; background: transparent; font: inherit; font-weight: 700; color: inherit; cursor: pointer; padding: 0 4px; }
+.erp-week-day button:hover { text-decoration: underline; }
+.erp-week-grid thead .erp-week-day.is-sat { background: #dfe7ef; }
+.erp-week-grid thead .erp-week-day.is-sun { background: #f8d4d4; color: #9b1c1c; }
+.erp-week-grid thead .erp-week-day.is-today { background: #fbd3b0; color: var(--color-primary-strong); box-shadow: inset 0 -3px 0 var(--color-primary); }
+
+/* Fixed left columns */
+.erp-week-fix { position: sticky; z-index: 3; background: var(--color-surface); text-align: left; }
+.erp-week-grid thead .erp-week-fix { z-index: 5; background: var(--wk-head); text-align: left; }
+.erp-week-c1 { left: 0; min-width: var(--wk-c1); max-width: var(--wk-c1); }
+.erp-week-c2 { left: var(--wk-c1); min-width: var(--wk-c2); max-width: var(--wk-c2); overflow: hidden; text-overflow: ellipsis; }
+.erp-week-c3 { left: calc(var(--wk-c1) + var(--wk-c2)); min-width: var(--wk-c3); text-align: center !important; }
+.erp-week-c4 { left: calc(var(--wk-c1) + var(--wk-c2) + var(--wk-c3)); min-width: var(--wk-c4); text-align: center !important; border-right: 2px solid var(--wk-line-strong) !important; }
+.erp-week-employee { padding: 6px 8px !important; line-height: 1.25; font-weight: 700; vertical-align: middle; }
+.erp-week-employee span { display: block; overflow: hidden; text-overflow: ellipsis; }
+.erp-week-employee small { display: block; margin-top: 2px; font-weight: 400; color: var(--color-text-subtle); }
+.erp-week-c2.is-pending { color: var(--color-warning); font-style: italic; }
+
+/* Day separators: drawn inside the cell so they never shift the grid. The first day has none:
+   the ĐVT column already draws that line. */
+.erp-week-grid .is-day-start { box-shadow: inset 2px 0 0 var(--wk-line-strong); }
+.erp-week-grid thead .erp-week-day.is-today.is-day-start { box-shadow: inset 2px 0 0 var(--wk-line-strong), inset 0 -3px 0 var(--color-primary); }
+
+/* Cells */
+.erp-week-cell { padding: 0 !important; min-width: 42px; text-align: right; }
+.erp-week-cell button { width: 100%; height: 100%; min-height: 29px; border: 0; background: transparent; padding: 0 8px; font: inherit; color: inherit; text-align: inherit; cursor: pointer; }
+.erp-week-cell button:hover, .erp-week-cell button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.erp-week-cell.is-hc { background: var(--wk-hc); }
+.erp-week-cell.is-tc { background: var(--wk-tc); }
+.erp-week-cell.is-total { font-weight: 700; }
+.erp-week-cell.is-zero { color: #b7c0c9; font-weight: 400; }
+.erp-week-cell sup { margin-left: 2px; color: var(--color-text-subtle); font-size: 10px; }
+.erp-week-cell.is-missing { background: #fff4d6; color: var(--color-warning); font-weight: 900; text-align: center; }
+.erp-week-cell.is-leave { background: #e8efff; color: #2563eb; font-weight: 900; text-align: center; }
+.erp-week-cell.is-empty { text-align: center; }
+.erp-week-cell.is-future { background: #f7f8fa; }
+.erp-week-cell.is-locked { background: repeating-linear-gradient(45deg, #f3f4f6 0 4px, #fff 4px 8px); }
+.erp-week-grid tbody tr.is-employee-end > td, .erp-week-grid tbody tr.is-employee-end > th, .erp-week-employee { border-bottom: 2px solid var(--wk-line-strong); }
+
+/* Week totals and footer */
+.erp-week-sum { text-align: right; font-weight: 700; min-width: 54px; }
+.erp-week-sum.is-hc, .erp-week-foot.is-hc { background: var(--wk-hc); }
+.erp-week-sum.is-tc, .erp-week-foot.is-tc { background: var(--wk-tc); }
+.erp-week-sum.is-all, .erp-week-foot.is-all { background: #fff3e6; color: var(--color-primary-strong); }
+.erp-week-grid tfoot td { position: sticky; bottom: 0; z-index: 2; background: #f2f6fa; font-weight: 800; text-align: right; }
+.erp-week-grid tfoot td.erp-week-fix { z-index: 4; background: #f2f6fa; text-align: left; }
+
+.erp-week-empty { padding: 16px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); color: var(--color-text-muted); }
+
+/* Production page controls around the grid */
+.erp-production-title { margin: 0 4px 0 0; font-size: 20px; font-weight: 700; color: var(--color-text); }
+.erp-production-controls-header .erp-production-month-nav { flex: 0 0 auto; }
+.erp-production-controls-header .erp-page-actions { margin-left: auto; }
+.erp-production-filter-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 10px 0 2px; }
+.erp-production-filter-row .erp-field { min-width: 200px; margin: 0; }
+.erp-production-filter-row .erp-field:nth-child(4) { min-width: 240px; }
+.erp-production-view-switch { display: inline-flex; margin-left: auto; border: 1px solid var(--color-border); border-radius: var(--radius-button); overflow: hidden; }
+.erp-production-view-switch button { height: var(--control-height); border: 0; background: var(--color-surface); padding: 0 12px; font: inherit; font-weight: 600; color: var(--color-text-muted); cursor: pointer; }
+.erp-production-view-switch button.is-on { background: var(--color-text); color: #fff; }
+.erp-week-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 4px 0 6px; color: var(--color-text-muted); font-size: 12px; }
+.erp-week-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.erp-week-legend i { display: inline-grid; place-items: center; width: 16px; height: 16px; border: 1px solid #c9d3dd; font-size: 11px; font-style: normal; font-weight: 900; }
+.erp-week-legend i.is-missing { background: #fff4d6; border-color: #f0c47a; color: var(--color-warning); }
+.erp-week-legend i.is-leave { background: #e8efff; border-color: #b9cdf7; color: #2563eb; }
+.erp-week-legend i.is-future { background: #f7f8fa; }
+.erp-week-legend-help { margin-left: auto; }
+@media (max-width: 767px) {
+  .erp-production-filter-row { flex-direction: column; align-items: stretch; }
+  .erp-production-filter-row .erp-field { min-width: 0; }
+  .erp-production-view-switch { margin-left: 0; }
+  .erp-week-legend-help { margin-left: 0; }
+  .erp-week-wrap { --wk-c1: 110px; --wk-c2: 84px; width: 100%; }
+}

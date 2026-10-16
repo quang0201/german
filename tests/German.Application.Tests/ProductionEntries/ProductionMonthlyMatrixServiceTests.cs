@@ -124,6 +124,40 @@ public sealed class ProductionMonthlyMatrixServiceTests
     }
 
     [TestMethod]
+    public async Task GetWeeklyAsync_ListsPieceRateEmployeesWhoOnlyHaveAttendanceThisWeek()
+    {
+        await using var db = CreateDb();
+        var producing = new Employee { EmployeeCode = "E001", FullName = "Nguyễn Thị Lan" };
+        var attendanceOnly = new Employee { EmployeeCode = "5", FullName = "Trần Thị Loan" };
+        var emptyRecord = new Employee { EmployeeCode = "9", FullName = "Bản ghi trống" };
+        var order = NewOrder("4004 đen", "Túi 4004 đen");
+        var operation = NewOperation(order, 1, "Cắt");
+        db.AddRange(producing, attendanceOnly, emptyRecord, order, operation);
+        AddEntry(db, producing, order, operation, new DateOnly(2026, 9, 14), 100m, 0m);
+        var worked = new AttendanceDay { EmployeeId = attendanceOnly.Id, WorkDate = new DateOnly(2026, 9, 19) };
+        worked.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 1, ValueKind = AttendanceShiftValueKind.Hours, WorkedHours = 8m });
+        var leave = new AttendanceDay { EmployeeId = attendanceOnly.Id, WorkDate = new DateOnly(2026, 9, 15) };
+        leave.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 1, ValueKind = AttendanceShiftValueKind.PaidLeave });
+        var otherWeek = new AttendanceDay { EmployeeId = attendanceOnly.Id, WorkDate = new DateOnly(2026, 9, 22) };
+        otherWeek.Shifts.Add(new AttendanceShiftEntry { SlotNumber = 1, ValueKind = AttendanceShiftValueKind.Hours, WorkedHours = 8m });
+        db.AddRange(worked, leave, otherWeek, new AttendanceDay { EmployeeId = emptyRecord.Id, WorkDate = new DateOnly(2026, 9, 16) });
+        await db.SaveChangesAsync();
+        var service = new ProductionMonthlyMatrixService(db);
+        var week = (From: new DateOnly(2026, 9, 14), Until: new DateOnly(2026, 9, 20));
+
+        var all = await service.GetWeeklyAsync(new ProductionWeeklyMatrixQuery(week.From, week.Until, null, null, null, null), CancellationToken.None);
+        var byOrder = await service.GetWeeklyAsync(new ProductionWeeklyMatrixQuery(week.From, week.Until, null, order.Id, null, null), CancellationToken.None);
+
+        Assert.IsTrue(all.IsSuccess, all.Error?.Message);
+        var loan = all.Value!.AttendanceOnlyEmployees.Single();
+        Assert.AreEqual("5", loan.EmployeeCode);
+        CollectionAssert.AreEqual(new[] { new DateOnly(2026, 9, 19) }, loan.WorkedDates.ToArray());
+        CollectionAssert.AreEqual(new[] { new DateOnly(2026, 9, 15) }, loan.PaidLeaveDates.ToArray());
+        Assert.AreEqual(0, byOrder.Value!.AttendanceOnlyEmployees.Count, "A single selected order shows only the people who worked on it.");
+        Assert.AreEqual("cái", all.Value.Orders.Single().Employees.Single().Operations.Single().Unit, "Each line carries its unit (ĐVT).");
+    }
+
+    [TestMethod]
     public async Task GetAsync_ListsActiveHourlyEmployeesWithoutProductionSeparately()
     {
         await using var db = CreateDb();
