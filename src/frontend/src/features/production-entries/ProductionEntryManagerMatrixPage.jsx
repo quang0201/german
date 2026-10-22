@@ -13,6 +13,7 @@ import { ProductionMatrixBatchEntryDialog } from "./ProductionMatrixBatchEntryDi
 import { ProductionMatrixCellRecordsDialog } from "./ProductionMatrixCellRecordsDialog.jsx";
 import { ProductionMatrixQuickEntryDialog } from "./ProductionMatrixQuickEntryDialog.jsx";
 import { ProductionWeekGrid } from "./ProductionWeekGrid.jsx";
+import { ProductionDailyView } from "./ProductionDailyView.jsx";
 import "./ProductionMonthlyMatrix.css";
 import { buildProductionExportUrl } from "./productionEntryQuery.js";
 import { productionExportFileName } from "./productionExport.js";
@@ -35,7 +36,8 @@ function saveCompact(value) {
 }
 
 export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPanelClose }) {
-  const [initialQuery] = useState(() => readQuery(["date", "order", "employee", "operation", "q"]));
+  const [initialQuery] = useState(() => readQuery(["date", "order", "employee", "operation", "q", "view"]));
+  const [view, setView] = useState(initialQuery.view === "week" ? "week" : "day");
   const initialFilters = { employeeId: initialQuery.employee, operationId: initialQuery.operation, search: initialQuery.q };
   const [weekAnchorDate, setWeekAnchorDate] = useState(() => queryDate(initialQuery.date, localIsoDate()));
   const [selectedOrderId, setSelectedOrderId] = useState(initialQuery.order);
@@ -57,8 +59,8 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
   const weekRange = useMemo(() => derivePeriodRange({ periodMode: "week", anchorDate: weekAnchorDate }), [weekAnchorDate]);
   const monthKey = currentMonthKey(weekAnchorDate);
   useQuerySync(
-    { date: weekAnchorDate, order: selectedOrderId, employee: filters.employeeId, operation: filters.operationId, q: filters.search },
-    { date: localIsoDate() },
+    { date: weekAnchorDate, order: selectedOrderId, employee: filters.employeeId, operation: filters.operationId, q: filters.search, view },
+    { date: localIsoDate(), view: "day" },
   );
 
   useEffect(() => {
@@ -169,8 +171,12 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
       <div className="erp-production-controls">
         <div className="erp-production-controls-header">
           <h1 className="erp-production-title">Sản lượng</h1>
-          <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} />
-          <button type="button" className="erp-button erp-button-secondary erp-button-small" onClick={() => setWeekAnchorDate(localIsoDate())}>Tuần này</button>
+          <div className="erp-production-view-switch" role="group" aria-label="Khoảng xem sản lượng">
+            <button type="button" className={view === "day" ? "is-on" : ""} aria-pressed={view === "day"} onClick={() => setView("day")}>Theo ngày</button>
+            <button type="button" className={view === "week" ? "is-on" : ""} aria-pressed={view === "week"} onClick={() => setView("week")}>Theo tuần</button>
+          </div>
+          {view === "week" ? <ProductionWeekNavigator fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} onPrevious={() => setWeekAnchorDate((value) => shiftPeriod("week", value, -1))} onNext={() => setWeekAnchorDate((value) => shiftPeriod("week", value, 1))} /> : <div className="erp-daily-date-nav" role="group" aria-label="Chọn ngày sản lượng"><button type="button" className="erp-button erp-button-secondary erp-button-small" onClick={() => setWeekAnchorDate((value) => shiftPeriod("day", value, -1))}>Ngày trước</button><input type="date" className="erp-control" aria-label="Ngày sản lượng" value={weekAnchorDate} onChange={(event) => { if (event.target.value) setWeekAnchorDate(event.target.value); }} /><button type="button" className="erp-button erp-button-secondary erp-button-small" onClick={() => setWeekAnchorDate((value) => shiftPeriod("day", value, 1))}>Ngày sau</button></div>}
+          <button type="button" className="erp-button erp-button-secondary erp-button-small" onClick={() => setWeekAnchorDate(localIsoDate())}>{view === "day" ? "Hôm nay" : "Tuần này"}</button>
           <div className="erp-page-actions"><button type="button" className="erp-button erp-button-secondary" onClick={() => setExportOpen(true)}><Icon name="download" size={17} />Xuất Excel</button><button type="button" className="erp-button erp-button-primary" onClick={() => navigate("/production/new")}><Icon name="plus" size={17} />Nhập sản lượng</button></div>
         </div>
         <button type="button" className="erp-production-mobile-filter-toggle" aria-expanded={mobileFiltersOpen} aria-controls="erp-production-filter-panel" onClick={() => dispatchMobileFilterPanel("toggle")}>
@@ -190,24 +196,24 @@ export function ProductionEntryManagerMatrixPage({ session, panelEntryId, onPane
             <Field label="Công đoạn"><select className="erp-control" value={filters.operationId} disabled={!selectedOrderId} title={selectedOrderId ? undefined : "Chọn một mã SX để lọc theo công đoạn"} onChange={(event) => setFilter("operationId", event.target.value)}><option value="">Tất cả</option>{operations.map((item) => <option key={item.id} value={item.id}>CĐ{item.operationNumber} — {item.name}</option>)}</select></Field>
             <Field label="Tìm kiếm"><input className="erp-control" value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Mã NV, họ tên, Mã SX..." /></Field>
             {filtering && <button type="button" className="erp-button erp-button-secondary erp-production-filter-reset" onClick={resetFilters}>Xóa lọc</button>}
-            <div className="erp-production-view-switch" role="group" aria-label="Cách hiện mỗi ngày">
+            {view === "week" && <div className="erp-production-view-switch" role="group" aria-label="Cách hiện mỗi ngày">
               <button type="button" className={compact ? "" : "is-on"} aria-pressed={!compact} onClick={() => toggleCompact(false)}>HC · TC · Tổng</button>
               <button type="button" className={compact ? "is-on" : ""} aria-pressed={compact} onClick={() => toggleCompact(true)}>Chỉ Tổng</button>
-            </div>
+            </div>}
           </div>
         </div>
       </div>
-      <div className="erp-week-legend" role="list" aria-label="Chú giải">
+      {view === "week" && <div className="erp-week-legend" role="list" aria-label="Chú giải">
         <span role="listitem"><i className="is-missing" aria-hidden="true">!</i>Đã đi làm, chưa nhập công đoạn</span>
         <span role="listitem"><i className="is-leave" aria-hidden="true">P</i>Nghỉ phép</span>
         <span role="listitem"><i className="is-future" aria-hidden="true" />Chưa tới ngày</span>
         <span className="erp-week-legend-help">Bấm vào ô để nhập hoặc sửa · Bấm tiêu đề ngày để nhập nhiều người</span>
-      </div>
-      <ProductionWeekGrid data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} compact={compact} loading={loading} error={error} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} onPendingDayClick={handlePendingDay} />
+      </div>}
+      {view === "day" ? <ProductionDailyView data={data} date={weekAnchorDate} employees={employees} filters={filters} selectedOrderId={selectedOrderId} loading={loading} error={error} reloadKey={reloadKey} onCellClick={handleCell} onEmployeeClick={(employee, day) => employee ? handlePendingDay(employee, day) : handleDayHeaderClick(day)} /> : <ProductionWeekGrid data={data} fromDate={weekRange.fromDate} untilDate={weekRange.untilDate} compact={compact} loading={loading} error={error} onCellClick={handleCell} onDayHeaderClick={handleDayHeaderClick} onPendingDayClick={handlePendingDay} />}
       <ProductionMatrixQuickEntryDialog context={quickContext} onClose={() => setQuickContext(null)} onSaved={handleQuickSaved} onReload={reload} />
       <ProductionMatrixBatchEntryDialog day={batchDay} employees={employees} onClose={() => setBatchDay(null)} onSaved={handleBatchSaved} />
       <ProductionMatrixCellRecordsDialog context={recordsContext} onClose={() => setRecordsContext(null)} onOpenEntry={openEntry} />
-      <ProductionExportDialog open={exportOpen} initialMode="week" initialAnchorDate={weekAnchorDate} initialFromDate={weekRange.fromDate} initialUntilDate={weekRange.untilDate} onClose={() => setExportOpen(false)} onExport={exportRows} />
+      <ProductionExportDialog open={exportOpen} initialMode={view} initialAnchorDate={weekAnchorDate} initialFromDate={view === "day" ? weekAnchorDate : weekRange.fromDate} initialUntilDate={view === "day" ? weekAnchorDate : weekRange.untilDate} onClose={() => setExportOpen(false)} onExport={exportRows} />
       <DetailPanel open={Boolean(panelEntryId)} title="Chi tiết sản lượng" onClose={onPanelClose}>
         {panelEntryId && <ProductionEntryDetailPage session={session} entryId={panelEntryId} inPanel onClose={onPanelClose} onChanged={reload} />}
       </DetailPanel>

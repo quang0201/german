@@ -22,7 +22,7 @@ describe("ProductionEntryRoutePage", () => {
     expect(html).not.toContain("Theo dõi và nhập sản lượng theo ma trận tháng");
   });
 
-  test("routes Manager and Admin to the grouped weekly matrix flow without a second workspace tab bar", () => {
+  test("routes Manager and Admin to daily review by default, retaining the week switch", () => {
     for (const role of ["Manager", "Admin"]) {
       const html = renderFor(role);
       expect(html).toContain('<h1 class="erp-production-title">Sản lượng</h1>');
@@ -36,8 +36,10 @@ describe("ProductionEntryRoutePage", () => {
       expect(html).toContain('aria-label="Đóng bộ lọc"');
       expect(html).toContain("Mở lọc");
       expect(html).toContain("erp-production-filter-open-label");
-      expect(html).toContain("Tuần trước");
-      expect(html).toContain("Tuần sau");
+      expect(html).toContain("Ngày trước");
+      expect(html).toContain("Ngày sau");
+      expect(html).toContain("Theo tuần");
+      expect(html).toContain('aria-label="Ngày sản lượng"');
       expect(html).not.toContain("Tổng lượt công đoạn");
       expect(html).not.toContain("Bản ghi");
       expect(html).not.toContain("14/09/2026 → 20/09/2026");

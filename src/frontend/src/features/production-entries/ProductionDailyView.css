@@ -1,0 +1,56 @@
+.erp-daily { display: grid; gap: 16px; padding-block: 12px; }
+.erp-daily-overview, .erp-daily-toolbar, .erp-daily-person header { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; }
+.erp-daily-overview { justify-content: space-between; }
+.erp-daily h2 { margin: 0; font-size: 19px; }
+.erp-daily-overview p, .erp-daily-note { margin: 5px 0 0; color: var(--color-text-muted); font-size: 13px; }
+.erp-daily-toolbar { padding-block: 10px; border-block: 1px solid var(--color-border); }
+.erp-daily-counts { display: flex; gap: 16px; flex-wrap: wrap; margin-right: auto; font-size: 14px; }
+.erp-daily-toolbar label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.erp-daily-toolbar select { width: auto; }
+.erp-daily-checkbox input { width: 18px; height: 18px; accent-color: var(--color-primary); }
+.erp-daily-person { border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface); overflow: hidden; }
+.erp-daily-person header { padding: 14px 18px; border-bottom: 1px solid var(--color-border); background: var(--color-surface-subtle, #faf9f7); }
+.erp-daily h3 { display: inline; margin: 0 10px 0 0; font-size: 16px; }
+.erp-daily-code { color: var(--color-text-muted); font-size: 12px; }
+.erp-daily-status { font-size: 12px; font-weight: 600; border-radius: 4px; padding: 5px 8px; }
+.erp-daily-status.is-success { color: #16613a; background: #e9f5ed; }
+.erp-daily-status.is-warning { color: #85500d; background: #fff1d8; }
+.erp-daily-status.is-muted { color: #525b66; background: #edf0f3; }
+.erp-daily-hours { display: flex; gap: 16px; margin-left: auto; font-size: 13px; font-variant-numeric: tabular-nums; }
+.erp-daily-hours strong { margin-left: 4px; }
+.erp-daily-table-wrap { overflow-x: auto; }
+.erp-daily table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.erp-daily th { text-align: left; color: var(--color-text-muted); font-size: 12px; font-weight: 600; }
+.erp-daily th, .erp-daily td { padding: 12px 18px; border-bottom: 1px solid var(--color-border); }
+.erp-daily tbody tr:last-child td { border-bottom: 0; }
+.erp-daily td:first-child { width: 28%; min-width: 180px; }
+.erp-daily td:nth-child(2) { width: 30%; min-width: 180px; }
+.erp-daily th:nth-child(n+3):nth-child(-n+5), .erp-daily td:nth-child(n+3):nth-child(-n+5) { text-align: right; }
+.erp-daily td small { display: block; color: var(--color-text-muted); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
+.erp-daily .is-total { font-size: 18px; font-weight: 700; }
+.erp-daily .is-overtime { color: var(--color-primary-strong); }
+.erp-daily-no-output { margin: 0; padding: 18px; font-size: 14px; color: var(--color-text-muted); }
+.erp-daily button:focus-visible, .erp-daily-table-wrap:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.erp-daily-date-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.erp-daily-date-nav input { width: auto; min-height: 38px; }
+.erp-production-controls-header > .erp-production-view-switch { margin-left: 0; }
+@media (max-width: 767px) {
+  .erp-daily-person header { padding: 12px; gap: 10px; }
+  .erp-daily-person header > div:first-child { width: 100%; }
+  .erp-daily-hours { margin-left: 0; }
+  .erp-daily-person header > button { min-height: 40px; }
+  .erp-daily th, .erp-daily td { padding: 10px 12px; }
+  .erp-daily-overview > button { width: 100%; }
+  .erp-daily-toolbar { align-items: flex-start; }
+  .erp-daily-counts { width: 100%; }
+  .erp-daily-table-wrap { overflow: visible; }
+  .erp-daily table, .erp-daily tbody { display: block; }
+  .erp-daily thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .erp-daily tbody tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 6px; border-bottom: 1px solid var(--color-border); }
+  .erp-daily tbody tr:last-child { border-bottom: 0; }
+  .erp-daily td { display: block; border: 0; min-width: 0 !important; width: auto !important; }
+  .erp-daily td:first-child, .erp-daily td:nth-child(2) { grid-column: 1 / -1; }
+  .erp-daily td[data-label]::before { content: attr(data-label); display: block; color: var(--color-text-muted); font-size: 12px; font-weight: 400; margin-bottom: 4px; }
+  .erp-daily td:nth-child(n+3):nth-child(-n+5) { text-align: left; }
+  .erp-daily td:last-child { grid-column: 2 / -1; text-align: right; }
+}
