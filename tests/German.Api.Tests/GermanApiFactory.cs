@@ -1,6 +1,7 @@
 using German.Application.Abstractions;
 using German.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -18,6 +19,8 @@ public sealed class GermanApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.ConfigureServices(services =>
         {
+            // API tests must not share or write the production container's /app-keys volume.
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
             var providerConfiguration = services.SingleOrDefault(
                 descriptor => descriptor.ServiceType == typeof(IDbContextOptionsConfiguration<GermanDbContext>));
             if (providerConfiguration is not null)

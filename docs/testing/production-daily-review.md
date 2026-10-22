@@ -10,6 +10,7 @@ Validation:
 
 - Frontend: 432 tests pass, including daily joins, missing attendance/output, zero records, historical/inactive employees, partial leave, and rendered identity/units/error states.
 - Production frontend build passes.
+- API suite: 82 tests pass. The test factory uses ephemeral Data Protection so Linux CI never writes the production `/app-keys` volume; production key persistence is unchanged.
 - `bun audit`: no vulnerabilities after pinning the transitive build dependency `source-map-js` to patched 1.2.2.
 - Local browser QA with synthetic read-only fixtures: 1440px desktop and 390px mobile; no document horizontal overflow at mobile width; status filters, show-empty toggle, date switching, attendance error, and weekly view verified.
 - Mobile tables reflow into stacked rows; persistent employee identity and status remain visible above each table.
