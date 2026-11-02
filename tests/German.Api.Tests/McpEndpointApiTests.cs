@@ -95,7 +95,7 @@ public sealed class McpEndpointApiTests
         foreach (var tool in new[]
                  {
                      "list_production_entries", "get_production_entry", "update_production_entry",
-                     "delete_production_entry", "get_attendance", "save_attendance"
+                     "delete_production_entry", "get_attendance", "save_attendance", "set_employee_start_date"
                  })
         {
             StringAssert.Contains(toolsBody, tool);

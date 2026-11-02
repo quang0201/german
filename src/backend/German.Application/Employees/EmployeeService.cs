@@ -167,6 +167,38 @@ public sealed class EmployeeService(IGermanDbContext db)
         return AppResult<EmployeeDto>.Success(ToDto(employee));
     }
 
+    /// <summary>
+    /// Sets the employment start date. If the employee's earliest shift assignment starts later,
+    /// it is moved back to the new start date so attendance and production can be recorded from that day.
+    /// </summary>
+    public async Task<AppResult<EmployeeDto>> SetStartDateAsync(Guid id, DateOnly startDate, CancellationToken cancellationToken)
+    {
+        var employee = await db.Employees.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (employee is null)
+        {
+            return AppResult<EmployeeDto>.Failure("employee.not_found", "Không tìm thấy nhân viên.");
+        }
+
+        if (employee.DeactivatedAt.HasValue && startDate >= employee.DeactivatedAt.Value)
+        {
+            return AppResult<EmployeeDto>.Failure("employee.invalid_start_date", "Ngày vào phải trước ngày nghỉ việc.");
+        }
+
+        var firstAssignment = await db.EmployeeShiftAssignments
+            .Where(x => x.EmployeeId == id)
+            .OrderBy(x => x.EffectiveFrom)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (firstAssignment is not null && firstAssignment.EffectiveFrom > startDate)
+        {
+            firstAssignment.EffectiveFrom = startDate;
+        }
+
+        employee.EmploymentStartDate = startDate;
+        employee.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return AppResult<EmployeeDto>.Success(ToDto(employee));
+    }
+
     public async Task<AppResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var employee = await db.Employees.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);

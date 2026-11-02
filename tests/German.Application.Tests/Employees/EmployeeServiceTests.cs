@@ -89,6 +89,47 @@ public sealed class EmployeeServiceTests
     }
 
     [TestMethod]
+    public async Task SetStartDateAsyncMovesStartDateAndExtendsFirstShiftAssignmentBackwards()
+    {
+        await using var db = CreateDb();
+        var shift = new ShiftTemplate { Name = "Ca hành chính", IsActive = true };
+        var employee = new Employee { EmployeeCode = "E010", FullName = "Nguyễn Thị Thu Hiền", EmploymentStartDate = new DateOnly(2026, 10, 15) };
+        db.AddRange(shift, employee);
+        db.EmployeeShiftAssignments.Add(new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id, ShiftTemplateId = shift.Id, EffectiveFrom = new DateOnly(2026, 10, 15)
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).SetStartDateAsync(employee.Id, new DateOnly(2026, 10, 7), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(new DateOnly(2026, 10, 7), (await db.Employees.SingleAsync()).EmploymentStartDate);
+        var assignment = await db.EmployeeShiftAssignments.SingleAsync();
+        Assert.AreEqual(new DateOnly(2026, 10, 7), assignment.EffectiveFrom);
+        Assert.AreEqual(shift.Id, assignment.ShiftTemplateId);
+    }
+
+    [TestMethod]
+    public async Task SetStartDateAsyncLeavesEarlierShiftAssignmentUntouched()
+    {
+        await using var db = CreateDb();
+        var shift = new ShiftTemplate { Name = "Ca hành chính", IsActive = true };
+        var employee = new Employee { EmployeeCode = "E011", FullName = "Test", EmploymentStartDate = new DateOnly(2026, 10, 1) };
+        db.AddRange(shift, employee);
+        db.EmployeeShiftAssignments.Add(new EmployeeShiftAssignment
+        {
+            EmployeeId = employee.Id, ShiftTemplateId = shift.Id, EffectiveFrom = new DateOnly(2026, 9, 1)
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new EmployeeService(db).SetStartDateAsync(employee.Id, new DateOnly(2026, 10, 7), CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message);
+        Assert.AreEqual(new DateOnly(2026, 9, 1), (await db.EmployeeShiftAssignments.SingleAsync()).EffectiveFrom);
+    }
+
+    [TestMethod]
     public async Task UpdateAsyncPersistsHourlyCompensationType()
     {
         await using var db = CreateDb();

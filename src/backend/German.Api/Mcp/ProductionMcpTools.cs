@@ -232,6 +232,27 @@ public sealed class ProductionMcpTools(
             : McpToolResponse<ProductionExternalQuantityDto>.Failure(result.Error!.Code, result.Error.Message);
     }
 
+    [McpServerTool(Name = "set_employee_start_date", Destructive = true, Idempotent = true)]
+    [Description("Sửa ngày vào làm của nhân viên. Nếu lịch ca đầu tiên bắt đầu muộn hơn, lùi ngày hiệu lực về ngày vào mới để chấm công và ghi sản lượng được. Bắt buộc confirm=true và requestId.")]
+    public async Task<McpToolResponse<EmployeeDto>> SetEmployeeStartDate(
+        [Description("ID nhân viên.")] Guid employeeId,
+        [Description("Ngày vào làm mới, định dạng yyyy-MM-dd.")] string startDate,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép ghi dữ liệu.")] bool confirm,
+        CancellationToken cancellationToken)
+    {
+        var guard = ValidateWrite<EmployeeDto>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        if (!DateOnly.TryParseExact(startDate, "yyyy-MM-dd", out var date))
+        {
+            return McpToolResponse<EmployeeDto>.Failure("invalid_input", "startDate phải có định dạng yyyy-MM-dd.");
+        }
+
+        LogInvocation(nameof(SetEmployeeStartDate), from: date, requestId: requestId);
+        return ToResponse(await employeeService.SetStartDateAsync(employeeId, date, cancellationToken));
+    }
+
     [McpServerTool(Name = "list_production_entries", ReadOnly = true, Idempotent = true)]
     [Description("Liệt kê từng dòng sản lượng (nhật ký) theo khoảng ngày tối đa 31 ngày, lọc theo nhân viên, mã sản xuất, công đoạn hoặc từ khóa. Trả về id và version để sửa/xóa.")]
     public async Task<McpToolResponse<ProductionEntryListResult>> ListProductionEntries(
