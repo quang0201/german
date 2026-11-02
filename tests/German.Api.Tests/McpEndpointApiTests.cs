@@ -92,6 +92,58 @@ public sealed class McpEndpointApiTests
         var toolsBody = await tools.Content.ReadAsStringAsync();
         StringAssert.Contains(toolsBody, "find_employees");
         StringAssert.Contains(toolsBody, "get_production_summary");
+        foreach (var tool in new[]
+                 {
+                     "list_production_entries", "get_production_entry", "update_production_entry",
+                     "delete_production_entry", "get_attendance", "save_attendance"
+                 })
+        {
+            StringAssert.Contains(toolsBody, tool);
+        }
+
+        var list = await SendMcpAsync(client, new
+        {
+            jsonrpc = "2.0",
+            id = 10,
+            method = "tools/call",
+            @params = new
+            {
+                name = "list_production_entries",
+                arguments = new { fromDate = "2026-10-01", untilDate = "2026-10-31" }
+            }
+        });
+        Assert.AreEqual(HttpStatusCode.OK, list.StatusCode);
+        var listBody = await list.Content.ReadAsStringAsync();
+        StringAssert.Contains(listBody, "totalCount");
+        Assert.IsFalse(listBody.Contains("\"isError\":true"), listBody);
+
+        var deleteWithoutConfirmation = await SendMcpAsync(client, new
+        {
+            jsonrpc = "2.0",
+            id = 11,
+            method = "tools/call",
+            @params = new
+            {
+                name = "delete_production_entry",
+                arguments = new { entryId = Guid.NewGuid(), expectedVersion = 1, requestId = "t-del", confirm = false }
+            }
+        });
+        StringAssert.Contains(await deleteWithoutConfirmation.Content.ReadAsStringAsync(), "confirmation_required");
+
+        var attendance = await SendMcpAsync(client, new
+        {
+            jsonrpc = "2.0",
+            id = 12,
+            method = "tools/call",
+            @params = new
+            {
+                name = "get_attendance",
+                arguments = new { year = 2026, month = 10 }
+            }
+        });
+        var attendanceBody = await attendance.Content.ReadAsStringAsync();
+        StringAssert.Contains(attendanceBody, "employees");
+        Assert.IsFalse(attendanceBody.Contains("\"isError\":true"), attendanceBody);
 
         var call = await SendMcpAsync(client, new
         {

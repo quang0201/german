@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using German.Api.Auth;
+using German.Application.Attendance;
 using German.Application.Common;
+using German.Domain.Attendance;
 using German.Application.Employees;
 using German.Application.Lookups;
 using German.Application.ProductionEntries;
@@ -19,6 +21,8 @@ public sealed class ProductionMcpTools(
     ProductionReportService productionReportService,
     ProductionExternalQuantityService externalQuantityService,
     ProductionEntryService productionEntryService,
+    ProductionEntryQueryService productionEntryQueryService,
+    AttendanceService attendanceService,
     IHttpContextAccessor httpContextAccessor,
     ILogger<ProductionMcpTools> logger)
 {
@@ -228,6 +232,208 @@ public sealed class ProductionMcpTools(
             : McpToolResponse<ProductionExternalQuantityDto>.Failure(result.Error!.Code, result.Error.Message);
     }
 
+    [McpServerTool(Name = "list_production_entries", ReadOnly = true, Idempotent = true)]
+    [Description("Liệt kê từng dòng sản lượng (nhật ký) theo khoảng ngày tối đa 31 ngày, lọc theo nhân viên, mã sản xuất, công đoạn hoặc từ khóa. Trả về id và version để sửa/xóa.")]
+    public async Task<McpToolResponse<ProductionEntryListResult>> ListProductionEntries(
+        [Description("Ngày bắt đầu, định dạng yyyy-MM-dd.")] string fromDate,
+        [Description("Ngày kết thúc, định dạng yyyy-MM-dd (tối đa 31 ngày tính từ fromDate).")] string untilDate,
+        [Description("ID nhân viên, nếu muốn lọc.")] Guid? employeeId = null,
+        [Description("ID mã sản xuất, nếu muốn lọc.")] Guid? orderId = null,
+        [Description("ID công đoạn, nếu muốn lọc.")] Guid? operationId = null,
+        [Description("Từ khóa tìm theo mã/tên nhân viên, mã hàng, tên công đoạn.")] string? search = null,
+        [Description("Số trang, bắt đầu từ 1.")] int? page = null,
+        [Description("Kích thước trang: 25, 50 hoặc 100. Mặc định 100.")] int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryParseRange(fromDate, untilDate, out var from, out var until, out var error)
+            || from is null || until is null)
+        {
+            return McpToolResponse<ProductionEntryListResult>.Failure(
+                "invalid_date",
+                error ?? "fromDate và untilDate là bắt buộc, định dạng yyyy-MM-dd.");
+        }
+
+        LogInvocation(nameof(ListProductionEntries), orderId, from, until);
+        var result = await productionEntryQueryService.ListAsync(
+            new ProductionEntryListQuery(null, from, until, employeeId, orderId, operationId, search, page, pageSize ?? 100),
+            cancellationToken);
+        return ToResponse(result);
+    }
+
+    [McpServerTool(Name = "get_production_entry", ReadOnly = true, Idempotent = true)]
+    [Description("Xem chi tiết một dòng sản lượng, gồm các giá trị nhập gốc (entryMode, số lượng ca, HC/TC, giờ TC) và version hiện tại.")]
+    public async Task<McpToolResponse<ProductionEntryDetailDto>> GetProductionEntry(
+        [Description("ID dòng sản lượng.")] Guid entryId,
+        CancellationToken cancellationToken)
+    {
+        LogInvocation(nameof(GetProductionEntry));
+        var result = await productionEntryQueryService.GetDetailAsync(GetActor(), entryId, cancellationToken);
+        return ToResponse(result);
+    }
+
+    [McpServerTool(Name = "update_production_entry", Destructive = true, Idempotent = false)]
+    [Description("Sửa một dòng sản lượng: có thể đổi ngày, nhân viên, mã sản xuất (ví dụ mã cũ sang mã T10), công đoạn và số lượng. Gửi đầy đủ giá trị mới như khi tạo. Bắt buộc expectedVersion lấy từ list/get, confirm=true và requestId. Có audit log.")]
+    public async Task<McpToolResponse<ProductionEntryDto>> UpdateProductionEntry(
+        [Description("ID dòng sản lượng cần sửa.")] Guid entryId,
+        [Description("Version hiện tại của dòng, lấy từ list_production_entries hoặc get_production_entry.")] int expectedVersion,
+        McpProductionEntryInput input,
+        [Description("Phải là true để cho phép ghi dữ liệu.")] bool confirm,
+        CancellationToken cancellationToken)
+    {
+        var guard = ValidateWrite<ProductionEntryDto>(confirm, input.RequestId);
+        if (guard is not null) return guard;
+
+        if (!TryBuildCommand(input, out var command, out var error))
+        {
+            return McpToolResponse<ProductionEntryDto>.Failure("invalid_input", error!);
+        }
+
+        LogInvocation(nameof(UpdateProductionEntry), input.ProductionOrderId, requestId: input.RequestId);
+        var result = await productionEntryService.UpdateAsync(
+            GetActor(),
+            entryId,
+            expectedVersion,
+            new UpdateProductionEntryCommand(
+                command!.WorkDate,
+                command.EmployeeId,
+                command.ProductionOrderId,
+                command.ProductionOperationId,
+                command.EntryMode,
+                command.Shift1Quantity,
+                command.Shift2Quantity,
+                command.DirectHcQuantity,
+                command.DirectTcQuantity,
+                command.TotalInputQuantity,
+                command.OvertimeHours,
+                command.OvertimeQuantity,
+                command.WorkStart,
+                command.WorkEnd,
+                command.Note,
+                command.HcHours),
+            cancellationToken);
+        return ToResponse(result);
+    }
+
+    [McpServerTool(Name = "delete_production_entry", Destructive = true, Idempotent = false)]
+    [Description("Xóa mềm một dòng sản lượng (ví dụ dòng trùng). Bắt buộc expectedVersion, confirm=true và requestId. Có audit log.")]
+    public async Task<McpToolResponse<DeletedEntryResult>> DeleteProductionEntry(
+        [Description("ID dòng sản lượng cần xóa.")] Guid entryId,
+        [Description("Version hiện tại của dòng.")] int expectedVersion,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép xóa.")] bool confirm,
+        CancellationToken cancellationToken)
+    {
+        var guard = ValidateWrite<DeletedEntryResult>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        LogInvocation(nameof(DeleteProductionEntry), requestId: requestId);
+        var result = await productionEntryService.DeleteAsync(GetActor(), entryId, expectedVersion, cancellationToken);
+        return result.IsSuccess
+            ? McpToolResponse<DeletedEntryResult>.Success(new DeletedEntryResult(entryId))
+            : McpToolResponse<DeletedEntryResult>.Failure(result.Error!.Code, result.Error.Message);
+    }
+
+    [McpServerTool(Name = "get_attendance", ReadOnly = true, Idempotent = true)]
+    [Description("Xem chấm công theo tháng: từng ngày, từng ca (Hours/PaidLeave=P/SickLeave/Empty), giờ TC và tổng. Lọc theo một nhân viên hoặc phân trang nhân viên.")]
+    public async Task<McpToolResponse<AttendanceMonthlyResult>> GetAttendance(
+        [Description("Năm, ví dụ 2026.")] int year,
+        [Description("Tháng 1-12.")] int month,
+        [Description("ID nhân viên, nếu chỉ xem một người.")] Guid? employeeId = null,
+        [Description("Ngày bắt đầu trong tháng, mặc định 1.")] int? dayFrom = null,
+        [Description("Số ngày cần xem, 1-11, mặc định 11. Dùng nextDayFrom để xem tiếp.")] int? dayCount = null,
+        [Description("Cursor nhân viên từ lần gọi trước (nextEmployeeCursor).")] string? employeeCursor = null,
+        [Description("Số nhân viên mỗi lần, 1-100, mặc định 50.")] int? employeeLimit = null,
+        CancellationToken cancellationToken = default)
+    {
+        LogInvocation(nameof(GetAttendance));
+        try
+        {
+            var from = dayFrom ?? 1;
+            var daysInMonth = DateTime.DaysInMonth(year, Math.Clamp(month, 1, 12));
+            var count = Math.Min(dayCount ?? 11, Math.Max(daysInMonth - from + 1, 1));
+            var result = await attendanceService.GetMonthAsync(
+                new AttendanceMonthlyQuery(
+                    year,
+                    month,
+                    null,
+                    employeeCursor,
+                    employeeLimit ?? 50,
+                    employeeId.HasValue ? [employeeId.Value] : null,
+                    from,
+                    count),
+                cancellationToken);
+            return McpToolResponse<AttendanceMonthlyResult>.Success(result);
+        }
+        catch (ArgumentException exception)
+        {
+            return McpToolResponse<AttendanceMonthlyResult>.Failure("invalid_input", exception.Message);
+        }
+    }
+
+    [McpServerTool(Name = "save_attendance", Destructive = true, Idempotent = true)]
+    [Description("Ghi chấm công cho một hoặc nhiều ngày trong cùng tháng. Mỗi ngày gửi overtimeHours và danh sách ca (slotNumber, kind: Hours|PaidLeave|SickLeave|Empty, workedHours khi kind=Hours). Ca không gửi sẽ bị đặt về Empty. Bắt buộc confirm=true và requestId.")]
+    public async Task<McpToolResponse<AttendanceSaveResult>> SaveAttendance(
+        [Description("Năm.")] int year,
+        [Description("Tháng 1-12.")] int month,
+        IReadOnlyList<McpAttendanceDayInput> days,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép ghi dữ liệu.")] bool confirm,
+        CancellationToken cancellationToken)
+    {
+        var guard = ValidateWrite<AttendanceSaveResult>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        var inputs = new List<AttendanceDayInput>();
+        foreach (var day in days)
+        {
+            if (!DateOnly.TryParseExact(day.WorkDate, "yyyy-MM-dd", out var workDate))
+            {
+                return McpToolResponse<AttendanceSaveResult>.Failure("invalid_input", "workDate phải có định dạng yyyy-MM-dd.");
+            }
+
+            var shifts = new List<AttendanceShiftInput>();
+            foreach (var shift in day.Shifts)
+            {
+                if (!Enum.TryParse<AttendanceShiftValueKind>(shift.Kind, true, out var kind))
+                {
+                    return McpToolResponse<AttendanceSaveResult>.Failure(
+                        "invalid_input",
+                        "kind phải là Hours, PaidLeave, SickLeave hoặc Empty.");
+                }
+
+                shifts.Add(new AttendanceShiftInput(shift.SlotNumber, kind, shift.WorkedHours));
+            }
+
+            inputs.Add(new AttendanceDayInput(day.EmployeeId, workDate, day.OvertimeHours, shifts));
+        }
+
+        LogInvocation(nameof(SaveAttendance), requestId: requestId);
+        var result = await attendanceService.SaveMonthAsync(new SaveAttendanceMonthCommand(year, month, inputs), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static McpToolResponse<T>? ValidateWrite<T>(bool confirm, string? requestId)
+    {
+        if (!confirm)
+        {
+            return McpToolResponse<T>.Failure(
+                "confirmation_required",
+                "Cần kiểm tra dữ liệu trước, sau đó gửi lại với confirm=true.");
+        }
+
+        if (string.IsNullOrWhiteSpace(requestId) || requestId.Trim().Length > 100)
+        {
+            return McpToolResponse<T>.Failure("request_id_required", "requestId là bắt buộc và tối đa 100 ký tự.");
+        }
+
+        return null;
+    }
+
+    private static McpToolResponse<T> ToResponse<T>(AppResult<T> result) =>
+        result.IsSuccess
+            ? McpToolResponse<T>.Success(result.Value!)
+            : McpToolResponse<T>.Failure(result.Error!.Code, result.Error.Message);
+
     private CurrentActor GetActor() => httpContextAccessor.HttpContext!.User.ToCurrentActor();
 
     private void LogInvocation(
@@ -389,6 +595,19 @@ public sealed record McpProductionEntryInput(
     string? Note = null,
     bool ExpectedEmpty = false,
     decimal? HcHours = null);
+
+public sealed record DeletedEntryResult(Guid EntryId);
+
+public sealed record McpAttendanceDayInput(
+    Guid EmployeeId,
+    string WorkDate,
+    decimal OvertimeHours,
+    IReadOnlyList<McpAttendanceShiftInput> Shifts);
+
+public sealed record McpAttendanceShiftInput(
+    int SlotNumber,
+    string Kind,
+    decimal? WorkedHours = null);
 
 public sealed record McpExternalQuantityInput(
     string RequestId,
