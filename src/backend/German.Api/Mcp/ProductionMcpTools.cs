@@ -253,6 +253,54 @@ public sealed class ProductionMcpTools(
         return ToResponse(await employeeService.SetStartDateAsync(employeeId, date, cancellationToken));
     }
 
+    [McpServerTool(Name = "create_employee", Destructive = true, Idempotent = false)]
+    [Description("Tạo hồ sơ nhân viên mới (không có thao tác xóa). Bộ ca: nếu không truyền shiftTemplateId thì dùng bộ ca đang được nhiều nhân viên đang làm sử dụng nhất. Ngày vào làm đồng thời là ngày hiệu lực bộ ca. Bắt buộc confirm=true và requestId.")]
+    public async Task<McpToolResponse<EmployeeDto>> CreateEmployee(
+        [Description("Mã nhân viên, duy nhất (không phân biệt hoa thường).")] string employeeCode,
+        [Description("Họ tên đầy đủ.")] string fullName,
+        [Description("Ngày vào làm, định dạng yyyy-MM-dd.")] string startDate,
+        [Description("Cách tính tiền: PieceRate (theo sản lượng, mặc định) hoặc Hourly (theo giờ/công).")] string? compensationType,
+        [Description("ID bộ ca HC; để trống để dùng bộ ca phổ biến nhất.")] Guid? shiftTemplateId,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép ghi dữ liệu.")] bool confirm,
+        CancellationToken cancellationToken)
+    {
+        var guard = ValidateWrite<EmployeeDto>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        if (!DateOnly.TryParseExact(startDate, "yyyy-MM-dd", out var date))
+        {
+            return McpToolResponse<EmployeeDto>.Failure("invalid_input", "startDate phải có định dạng yyyy-MM-dd.");
+        }
+
+        var compensation = German.Domain.Employees.EmployeeCompensationType.PieceRate;
+        if (!string.IsNullOrWhiteSpace(compensationType)
+            && !Enum.TryParse(compensationType.Trim(), ignoreCase: true, out compensation))
+        {
+            return McpToolResponse<EmployeeDto>.Failure("invalid_input", "compensationType không hợp lệ.");
+        }
+
+        var templateId = shiftTemplateId;
+        if (!templateId.HasValue)
+        {
+            templateId = (await employeeService.ListAsync(cancellationToken))
+                .Where(x => x.IsActive && x.CurrentShiftTemplateId.HasValue)
+                .GroupBy(x => x.CurrentShiftTemplateId!.Value)
+                .OrderByDescending(g => g.Count())
+                .Select(g => (Guid?)g.Key)
+                .FirstOrDefault();
+            if (!templateId.HasValue)
+            {
+                return McpToolResponse<EmployeeDto>.Failure("shift.not_found", "Không xác định được bộ ca mặc định; hãy truyền shiftTemplateId.");
+            }
+        }
+
+        LogInvocation(nameof(CreateEmployee), from: date, requestId: requestId);
+        return ToResponse(await employeeService.CreateAsync(
+            new CreateEmployeeCommand(employeeCode, fullName, templateId, date, compensation, null, date),
+            cancellationToken));
+    }
+
     [McpServerTool(Name = "list_production_entries", ReadOnly = true, Idempotent = true)]
     [Description("Liệt kê từng dòng sản lượng (nhật ký) theo khoảng ngày tối đa 31 ngày, lọc theo nhân viên, mã sản xuất, công đoạn hoặc từ khóa. Trả về id và version để sửa/xóa.")]
     public async Task<McpToolResponse<ProductionEntryListResult>> ListProductionEntries(
