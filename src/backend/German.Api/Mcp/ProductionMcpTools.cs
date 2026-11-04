@@ -232,6 +232,58 @@ public sealed class ProductionMcpTools(
             : McpToolResponse<ProductionExternalQuantityDto>.Failure(result.Error!.Code, result.Error.Message);
     }
 
+    [McpServerTool(Name = "update_external_quantity", Destructive = true, Idempotent = true)]
+    [Description("Sửa một dòng sản lượng gia công ngoài (đổi nguồn gia công, ngày nhận, số lượng, ghi chú). Truyền đầy đủ các trường vì dòng sẽ được ghi đè. Bắt buộc confirm=true và requestId.")]
+    public async Task<McpToolResponse<ProductionExternalQuantityDto>> UpdateExternalQuantity(
+        [Description("ID dòng gia công ngoài.")] Guid id,
+        [Description("Ngày nhận, định dạng yyyy-MM-dd.")] string receivedDate,
+        [Description("Số lượng, lớn hơn 0.")] decimal quantity,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép ghi dữ liệu.")] bool confirm,
+        [Description("Tên nguồn gia công (dùng khi không truyền externalSourceId).")] string? sourceName = null,
+        [Description("Ghi chú.")] string? note = null,
+        [Description("ID nguồn gia công có sẵn.")] Guid? externalSourceId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var guard = ValidateWrite<ProductionExternalQuantityDto>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        if (!DateOnly.TryParseExact(receivedDate, "yyyy-MM-dd", out var date))
+        {
+            return McpToolResponse<ProductionExternalQuantityDto>.Failure(
+                "invalid_input",
+                "receivedDate phải có định dạng yyyy-MM-dd.");
+        }
+
+        LogInvocation(nameof(UpdateExternalQuantity), requestId: requestId);
+        var result = await externalQuantityService.UpdateAsync(
+            GetActor(),
+            id,
+            new UpdateProductionExternalQuantityCommand(date, quantity, sourceName, note, externalSourceId),
+            cancellationToken);
+        return result.IsSuccess
+            ? McpToolResponse<ProductionExternalQuantityDto>.Success(result.Value!)
+            : McpToolResponse<ProductionExternalQuantityDto>.Failure(result.Error!.Code, result.Error.Message);
+    }
+
+    [McpServerTool(Name = "delete_external_quantity", Destructive = true, Idempotent = false)]
+    [Description("Xóa một dòng sản lượng gia công ngoài (ví dụ dòng nhập nhầm hoặc trùng). Bắt buộc confirm=true và requestId.")]
+    public async Task<McpToolResponse<DeletedEntryResult>> DeleteExternalQuantity(
+        [Description("ID dòng gia công ngoài cần xóa.")] Guid id,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép xóa.")] bool confirm,
+        CancellationToken cancellationToken)
+    {
+        var guard = ValidateWrite<DeletedEntryResult>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        LogInvocation(nameof(DeleteExternalQuantity), requestId: requestId);
+        var result = await externalQuantityService.DeleteAsync(GetActor(), id, cancellationToken);
+        return result.IsSuccess
+            ? McpToolResponse<DeletedEntryResult>.Success(new DeletedEntryResult(id))
+            : McpToolResponse<DeletedEntryResult>.Failure(result.Error!.Code, result.Error.Message);
+    }
+
     [McpServerTool(Name = "set_employee_start_date", Destructive = true, Idempotent = true)]
     [Description("Sửa ngày vào làm của nhân viên. Nếu lịch ca đầu tiên bắt đầu muộn hơn, lùi ngày hiệu lực về ngày vào mới để chấm công và ghi sản lượng được. Bắt buộc confirm=true và requestId.")]
     public async Task<McpToolResponse<EmployeeDto>> SetEmployeeStartDate(
