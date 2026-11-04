@@ -96,7 +96,7 @@ public sealed class McpEndpointApiTests
                  {
                      "list_production_entries", "get_production_entry", "update_production_entry",
                      "delete_production_entry", "get_attendance", "save_attendance", "set_employee_start_date", "create_employee",
-                     "update_external_quantity", "delete_external_quantity"
+                     "update_external_quantity", "delete_external_quantity", "update_employee_profile"
                  })
         {
             StringAssert.Contains(toolsBody, tool);

@@ -284,6 +284,55 @@ public sealed class ProductionMcpTools(
             : McpToolResponse<DeletedEntryResult>.Failure(result.Error!.Code, result.Error.Message);
     }
 
+    [McpServerTool(Name = "update_employee_profile", Destructive = true, Idempotent = true)]
+    [Description("Đổi họ tên và/hoặc ngày sinh của nhân viên (các trường khác giữ nguyên, không có xóa). Chỉ truyền trường cần đổi. Bắt buộc confirm=true và requestId.")]
+    public async Task<McpToolResponse<EmployeeDto>> UpdateEmployeeProfile(
+        [Description("ID nhân viên.")] Guid employeeId,
+        [Description("Mã yêu cầu để truy vết, tối đa 100 ký tự.")] string requestId,
+        [Description("Phải là true để cho phép ghi dữ liệu.")] bool confirm,
+        [Description("Họ tên đầy đủ mới; để trống nếu không đổi.")] string? fullName = null,
+        [Description("Ngày sinh mới, định dạng yyyy-MM-dd; để trống nếu không đổi.")] string? dateOfBirth = null,
+        CancellationToken cancellationToken = default)
+    {
+        var guard = ValidateWrite<EmployeeDto>(confirm, requestId);
+        if (guard is not null) return guard;
+
+        if (string.IsNullOrWhiteSpace(fullName) && string.IsNullOrWhiteSpace(dateOfBirth))
+        {
+            return McpToolResponse<EmployeeDto>.Failure("invalid_input", "Cần truyền fullName hoặc dateOfBirth.");
+        }
+
+        DateOnly? birth = null;
+        if (!string.IsNullOrWhiteSpace(dateOfBirth))
+        {
+            if (!DateOnly.TryParseExact(dateOfBirth, "yyyy-MM-dd", out var parsed))
+            {
+                return McpToolResponse<EmployeeDto>.Failure("invalid_input", "dateOfBirth phải có định dạng yyyy-MM-dd.");
+            }
+
+            birth = parsed;
+        }
+
+        var current = (await employeeService.ListAsync(cancellationToken)).FirstOrDefault(x => x.Id == employeeId);
+        if (current is null)
+        {
+            return McpToolResponse<EmployeeDto>.Failure("employee.not_found", "Không tìm thấy nhân viên.");
+        }
+
+        LogInvocation(nameof(UpdateEmployeeProfile), requestId: requestId);
+        return ToResponse(await employeeService.UpdateAsync(
+            employeeId,
+            new UpdateEmployeeCommand(
+                current.EmployeeCode,
+                string.IsNullOrWhiteSpace(fullName) ? current.FullName : fullName.Trim(),
+                current.IsActive,
+                current.CompensationType,
+                current.DeactivatedAt,
+                birth ?? current.DateOfBirth,
+                current.EmploymentStartDate),
+            cancellationToken));
+    }
+
     [McpServerTool(Name = "set_employee_start_date", Destructive = true, Idempotent = true)]
     [Description("Sửa ngày vào làm của nhân viên. Nếu lịch ca đầu tiên bắt đầu muộn hơn, lùi ngày hiệu lực về ngày vào mới để chấm công và ghi sản lượng được. Bắt buộc confirm=true và requestId.")]
     public async Task<McpToolResponse<EmployeeDto>> SetEmployeeStartDate(

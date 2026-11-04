@@ -28,6 +28,7 @@ Authorization: Bearer <MCP_TOKEN>
 - `create_external_quantity`
 - `update_external_quantity` (sửa nguồn, ngày, số lượng, ghi chú của một dòng gia công ngoài)
 - `delete_external_quantity` (xóa một dòng gia công ngoài nhập nhầm)
+- `update_employee_profile` (đổi họ tên và/hoặc ngày sinh nhân viên, các trường khác giữ nguyên, không có xóa)
 
 Các tool ghi dữ liệu chỉ chạy với tài khoản Manager/Admin, bắt buộc `confirm=true` và `requestId`. Luồng an toàn là gọi `preview_production_entry`, kiểm tra HC/TC/tổng, rồi mới gọi tool ghi dữ liệu.
 
