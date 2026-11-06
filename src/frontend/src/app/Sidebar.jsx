@@ -6,7 +6,7 @@ import { routes } from "./routes.js";
 // Daily work comes first: office staff open these several times a day.
 const navigationGroups = [
   { label: "Hằng ngày", paths: ["/production", "/attendance"] },
-  { label: "Báo cáo", paths: ["/reports", "/reports/monthly"] },
+  { label: "Báo cáo", paths: ["/reports", "/reports/monthly", "/reports/employees"] },
   { label: "Danh mục", paths: ["/employees", "/orders", "/products", "/settings/external-sources", "/shifts"] },
   { label: "Quản trị", paths: ["/admin/accounts", "/admin/audit"] },
 ];
@@ -30,6 +30,7 @@ const icons = {
   "/shifts": "shifts",
   "/reports": "reports",
   "/reports/monthly": "calendar",
+  "/reports/employees": "people",
   "/admin/accounts": "accounts",
   "/admin/audit": "audit",
 };
@@ -47,7 +48,7 @@ export function Sidebar({ role, pathname, collapsed, onToggle, onNavigate }) {
           {!collapsed && <div className="erp-nav-group-label" aria-hidden="true">{group.label}</div>}
           {group.routes.map((route) => {
             const active = pathname === route.path
-              || (route.path === "/reports" && pathname !== "/reports/monthly" && pathname.startsWith("/reports/"))
+              || (route.path === "/reports" && pathname !== "/reports/monthly" && pathname !== "/reports/employees" && pathname.startsWith("/reports/"))
               || (route.path === "/production" && pathname.startsWith("/production/"));
             const label = typeof route.navLabel === "function" ? route.navLabel(role) : route.navLabel;
             return (

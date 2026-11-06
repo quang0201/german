@@ -9,6 +9,7 @@ import { useState } from "react";
 export function Topbar({ session, pathname = "", breadcrumbs = [], onLogout, onMenu }) {
   const pageContexts = [
     ["/reports/monthly", "Báo cáo tháng"],
+    ["/reports/employees", "Tổng theo người"],
     ["/reports", "Báo cáo"],
     ["/production/new", "Nhập sản lượng"],
     ["/production", "Sản lượng"],

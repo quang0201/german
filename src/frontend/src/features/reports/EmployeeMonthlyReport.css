@@ -1,0 +1,69 @@
+.erp-emp-report { display: flex; flex-direction: column; gap: 14px; }
+
+.erp-emp-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.erp-emp-toolbar .erp-production-month-nav { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; }
+.erp-emp-search { position: relative; display: flex; flex: 1 1 240px; align-items: center; max-width: 360px; color: var(--color-text-subtle); }
+.erp-emp-search svg { position: absolute; left: 10px; pointer-events: none; }
+.erp-emp-search .erp-control { width: 100%; padding-left: 34px; }
+.erp-emp-toolbar-actions { display: flex; gap: 8px; margin-left: auto; }
+
+.erp-emp-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.erp-emp-summary-card { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); padding: 10px 14px; }
+.erp-emp-summary-card span { color: var(--color-text-muted); font-size: 12px; font-weight: 700; }
+.erp-emp-summary-card strong { color: var(--color-text); font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.erp-emp-summary-card small { color: var(--color-text-subtle); font-size: 11px; }
+
+.erp-emp-table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+.erp-emp-table { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 14px; }
+.erp-emp-table th { position: sticky; top: 0; z-index: 1; border-bottom: 1px solid var(--color-border); background: var(--color-grid-head); color: var(--color-text-muted); padding: 9px 12px; font-size: 12px; font-weight: 800; letter-spacing: .025em; text-align: left; white-space: nowrap; }
+.erp-emp-table th.erp-report-number { text-align: right; }
+.erp-emp-table td { border-bottom: 1px solid var(--color-grid-line-soft); padding: 6px 12px; vertical-align: middle; }
+.erp-emp-table td.erp-report-number { width: 96px; }
+.erp-emp-bar-head, .erp-emp-bar-cell { width: 150px; }
+
+.erp-emp-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; border: 0; background: transparent; color: inherit; padding: 0; font: inherit; text-align: left; cursor: pointer; }
+.erp-emp-toggle:hover .erp-emp-name, .erp-emp-toggle:hover .erp-emp-operation-name { color: var(--color-primary-strong); text-decoration: underline; }
+.erp-emp-toggle:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; border-radius: 6px; }
+.erp-emp-chevron { display: inline-flex; flex: 0 0 auto; color: var(--color-text-subtle); transition: transform 120ms ease; }
+.erp-emp-chevron.is-open { transform: rotate(90deg); }
+.erp-emp-name { font-weight: 800; color: var(--color-text); }
+.erp-emp-meta { color: var(--color-text-subtle); font-size: 12px; }
+
+.erp-emp-row-person { background: var(--color-surface); }
+.erp-emp-row-person.is-open { background: var(--color-grid-total-strong); }
+.erp-emp-row-person.is-open td { border-bottom-color: var(--color-border); }
+.erp-emp-total { font-weight: 800; color: var(--color-text); }
+
+.erp-emp-row-order { background: var(--color-surface-soft); }
+.erp-emp-row-order td:first-child { padding-left: 36px; }
+.erp-emp-order-code { display: inline-flex; align-items: center; min-height: 22px; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-primary-strong); padding: 0 10px; font-size: 12px; font-weight: 800; }
+
+.erp-emp-row-operation td:first-child { padding-left: 60px; }
+.erp-emp-toggle-operation { gap: 8px; }
+.erp-emp-operation-number { flex: 0 0 auto; min-width: 42px; color: var(--color-primary-strong); font-weight: 800; font-variant-numeric: tabular-nums; }
+.erp-emp-operation-name { flex: 1 1 auto; min-width: 0; color: var(--color-text); }
+.erp-emp-row-operation.is-open { background: var(--color-grid-total); }
+
+.erp-emp-row-day td { border-bottom-color: var(--color-grid-line-soft); background: var(--color-grid-total); color: var(--color-text-muted); font-size: 13px; }
+.erp-emp-row-day td:first-child { padding-left: 106px; }
+.erp-emp-row-day.is-sunday td { background: var(--color-today-bg); }
+.erp-emp-day b { display: inline-block; min-width: 26px; color: var(--color-text); }
+.erp-emp-row-day.is-sunday .erp-emp-day b { color: var(--color-error); }
+
+.erp-emp-bar { display: block; height: 8px; overflow: hidden; border-radius: 999px; background: var(--color-grid-line); }
+.erp-emp-bar > span { display: block; height: 100%; border-radius: 999px; background: var(--color-primary); }
+.erp-emp-row-day .erp-emp-bar > span { background: #e0a26e; }
+
+@media (max-width: 900px) {
+  .erp-emp-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .erp-emp-toolbar-actions { margin-left: 0; }
+  .erp-emp-search { max-width: none; }
+}
+
+@media (max-width: 640px) {
+  .erp-emp-table td { padding: 6px 8px; }
+  .erp-emp-bar-head, .erp-emp-bar-cell { display: none; }
+  .erp-emp-row-order td:first-child { padding-left: 24px; }
+  .erp-emp-row-operation td:first-child { padding-left: 36px; }
+  .erp-emp-row-day td:first-child { padding-left: 64px; }
+}

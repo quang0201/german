@@ -8,7 +8,7 @@ describe("Sidebar navigation order", () => {
     const html = renderToString(React.createElement(Sidebar, { role: "Manager", pathname: "/reports", collapsed: false }));
     const labels = [...html.matchAll(/<span class="erp-nav-label">([^<]+)<\/span>/g)].map((match) => match[1]);
 
-    expect(labels).toEqual(["Sản lượng", "Chấm công", "Báo cáo", "Báo cáo tháng", "Nhân viên", "Mã sản xuất", "Sản phẩm", "Gia công ngoài", "Ca làm việc"]);
+    expect(labels).toEqual(["Sản lượng", "Chấm công", "Báo cáo", "Báo cáo tháng", "Tổng theo người", "Nhân viên", "Mã sản xuất", "Sản phẩm", "Gia công ngoài", "Ca làm việc"]);
     expect(html).toContain('aria-label="Hằng ngày"');
     expect(html).toContain('aria-label="Báo cáo"');
     expect(html).toContain('aria-label="Danh mục"');
@@ -27,5 +27,13 @@ describe("Sidebar navigation order", () => {
       .map((match) => match[1]);
 
     expect(activeLabels).toEqual(["Báo cáo tháng"]);
+  });
+
+  test("marks only the per-employee totals item active on its own screen", () => {
+    const html = renderToString(React.createElement(Sidebar, { role: "Manager", pathname: "/reports/employees", collapsed: false }));
+    const activeLabels = [...html.matchAll(/<button[^>]*class="erp-nav-item is-active"[^>]*>[\s\S]*?<span class="erp-nav-label">([^<]+)<\/span><\/button>/g)]
+      .map((match) => match[1]);
+
+    expect(activeLabels).toEqual(["Tổng theo người"]);
   });
 });

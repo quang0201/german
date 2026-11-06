@@ -45,4 +45,12 @@ describe("ERP route metadata", () => {
     expect(route?.navLabel).toBe("Báo cáo tháng");
     expect(matchRoute("/reports/monthly", routes)?.route.path).toBe("/reports/monthly");
   });
+
+  test("exposes the per-employee monthly totals report only to Manager and Admin", () => {
+    const route = routes.find((item) => item.path === "/reports/employees");
+    expect(route?.roles).toEqual(["Manager", "Admin"]);
+    expect(route?.navLabel).toBe("Tổng theo người");
+    expect(route?.breadcrumb()).toEqual([{ label: "Báo cáo", href: "/reports" }, { label: "Tổng theo người" }]);
+    expect(matchRoute("/reports/employees", routes)?.route.path).toBe("/reports/employees");
+  });
 });
