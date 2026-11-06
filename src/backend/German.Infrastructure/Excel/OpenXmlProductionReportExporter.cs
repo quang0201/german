@@ -35,7 +35,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private const uint AttendanceTcLabelStyle = 25U;
     private const uint MergedTextStyle = 26U;
     private const uint MergedExternalTextStyle = 27U;
-    private const uint BaseCellFormatCount = 28U;
+    private const uint HighlightedNameStyle = 28U;
+    private const uint BaseCellFormatCount = 29U;
     private static readonly uint[] BorderedBaseStyles =
     [
         0U,
@@ -62,7 +63,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
         SundayHeaderStyle,
         AttendanceTcLabelStyle,
         MergedTextStyle,
-        MergedExternalTextStyle
+        MergedExternalTextStyle,
+        HighlightedNameStyle
     ];
 
     public byte[] Export(ProductionReportData report)
@@ -488,7 +490,7 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var tcReferences = new List<string>();
             var cells = new List<Cell>
             {
-                At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, mergedTextStyle)),
+                At($"A{row}", Text(isNewEmployee ? first.EmployeeName : string.Empty, NameStyle(report, first.EmployeeCode, mergedTextStyle))),
                 At($"B{row}", Text(isNewOrderCode ? first.ProductionOrderCode : string.Empty, mergedTextStyle)),
                 At($"C{row}", Text($"CĐ{first.OperationNumber}", textStyle)),
                 At($"D{row}", Text(first.Unit, textStyle))
@@ -603,7 +605,9 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             var endRow = row + (uint)shiftCount;
             var regularReferences = new List<string>();
             var overtimeReferences = new List<string>();
+            var nameStyle = NameStyle(report, employee.EmployeeCode, MergedTextStyle);
             var notes = new List<string>();
+            if (report.EmployeeFlags.TryGetValue(employee.EmployeeCode, out var employeeFlag) && employeeFlag.IsHighlighted) notes.Add(employeeFlag.Label);
             for (var rowIndex = 0; rowIndex <= shiftCount; rowIndex++)
             {
                 var currentRow = row + (uint)rowIndex;
@@ -611,13 +615,13 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
                 var cells = new List<Cell>();
                 if (rowIndex == 0)
                 {
-                    cells.Add(At($"A{currentRow}", Text(employee.EmployeeCode, MergedTextStyle)));
-                    cells.Add(At($"B{currentRow}", Text(employee.EmployeeName, MergedTextStyle)));
+                    cells.Add(At($"A{currentRow}", Text(employee.EmployeeCode, nameStyle)));
+                    cells.Add(At($"B{currentRow}", Text(employee.EmployeeName, nameStyle)));
                 }
                 else
                 {
-                    cells.Add(At($"A{currentRow}", Blank(MergedTextStyle)));
-                    cells.Add(At($"B{currentRow}", Blank(MergedTextStyle)));
+                    cells.Add(At($"A{currentRow}", Blank(nameStyle)));
+                    cells.Add(At($"B{currentRow}", Blank(nameStyle)));
                 }
                 cells.Add(At($"C{currentRow}", Text(isTc ? "TC" : ShiftLabel(employeeDays, rowIndex + 1), AttendanceShiftLabelStyle(rowIndex + 1, isTc))));
                 for (var i = 0; i < days.Length; i++)
@@ -1002,6 +1006,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
     private static Cell Num(decimal value, uint style = NumericStyle) => new() { StyleIndex = style, CellValue = new CellValue(value.ToString(CultureInfo.InvariantCulture)) };
     private static Cell Formula(string formula, decimal cachedValue, uint style = NumericStyle) => new() { StyleIndex = style, CellFormula = new CellFormula(formula), CellValue = new CellValue(cachedValue.ToString(CultureInfo.InvariantCulture)) };
     private static string SumFormula(IEnumerable<string> references) => $"SUM({string.Join(",", references.DefaultIfEmpty("0"))})";
+    private static uint NameStyle(ProductionReportData report, string employeeCode, uint normalStyle)
+        => report.EmployeeFlags.TryGetValue(employeeCode, out var flag) && flag.IsHighlighted ? HighlightedNameStyle : normalStyle;
     private static Cell Blank(uint style) => new() { StyleIndex = style };
     private static Cell HcNum(decimal value) => Num(value, HcBodyStyle);
     private static Cell TcNum(decimal value) => Num(value, TcBodyStyle);
@@ -1132,7 +1138,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFFFF6F0" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFFFE2E2" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
             new Fill(new PatternFill(new ForegroundColor { Rgb = "FFD9D9D9" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
-            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFE4B7A0" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid })) { Count = 14U };
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FFE4B7A0" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid }),
+            new Fill(new PatternFill(new ForegroundColor { Rgb = "FF8EB4E3" }, new BackgroundColor { Indexed = 64U }) { PatternType = PatternValues.Solid })) { Count = 15U };
         var formatsForCells = new CellFormats(
             new CellFormat(),
             new CellFormat { NumberFormatId = 164U, ApplyNumberFormat = true },
@@ -1161,7 +1168,8 @@ public sealed class OpenXmlProductionReportExporter : IProductionReportExporter
             new CellFormat { FontId = 1U, FillId = 13U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
             new CellFormat { FontId = 1U, FillId = 4U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Horizontal = HorizontalAlignmentValues.Center } },
             new CellFormat { ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } },
-            new CellFormat { FillId = 7U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } })
+            new CellFormat { FillId = 7U, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } },
+            new CellFormat { FontId = 1U, FillId = 14U, ApplyFont = true, ApplyFill = true, ApplyAlignment = true, Alignment = new Alignment { Vertical = VerticalAlignmentValues.Center } })
         { Count = BaseCellFormatCount };
         var gridColor = new Color { Rgb = "FF8DA2B4" };
         var dividerColor = new Color { Rgb = "FF3F536B" };

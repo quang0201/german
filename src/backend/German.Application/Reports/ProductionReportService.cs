@@ -626,9 +626,17 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
             })
             .ToArray();
 
+        var flagCodes = rows.Select(row => row.EmployeeCode)
+            .Concat(employeeNames.Values.Select(item => item.EmployeeCode))
+            .Where(code => code != "__EXTERNAL__")
+            .Distinct()
+            .ToArray();
+        var employeeFlags = await LoadEmployeeFlagsAsync(flagCodes, fromDate, untilDate, cancellationToken);
+
         return AppResult<ProductionReportData>.Success(
             new ProductionReportData(fromDate, untilDate, rows)
             {
+                EmployeeFlags = employeeFlags,
                 EmployeeLabel = await GetEmployeeLabelAsync(filter.EmployeeId, cancellationToken),
                 OrderLabel = orderIds is null
                     ? await GetOrderLabelAsync(filter.OrderId, cancellationToken)
@@ -644,6 +652,30 @@ public sealed class ProductionReportService(IGermanDbContext db, TimeProvider ti
                 ByOrderAndDay = byOrderAndDay,
                 WorkHours = workHours
             });
+    }
+
+    private async Task<IReadOnlyDictionary<string, ProductionReportEmployeeFlag>> LoadEmployeeFlagsAsync(
+        string[] employeeCodes,
+        DateOnly fromDate,
+        DateOnly untilDate,
+        CancellationToken cancellationToken)
+    {
+        if (employeeCodes.Length == 0) return new Dictionary<string, ProductionReportEmployeeFlag>();
+        var employees = await db.Employees.AsNoTracking()
+            .Where(employee => employeeCodes.Contains(employee.EmployeeCode))
+            .Select(employee => new { employee.EmployeeCode, employee.DateOfBirth, employee.EmploymentStartDate, employee.CreatedAt })
+            .ToListAsync(cancellationToken);
+        var months = EnumerateMonths(fromDate, untilDate).Select(month => month.Month).ToHashSet();
+        var flags = new Dictionary<string, ProductionReportEmployeeFlag>(StringComparer.Ordinal);
+        foreach (var employee in employees)
+        {
+            var joined = employee.EmploymentStartDate ?? DateOnly.FromDateTime(employee.CreatedAt.UtcDateTime);
+            var isNew = joined >= fromDate && joined <= untilDate;
+            DateOnly? birthday = employee.DateOfBirth is { } dob && months.Contains(dob.Month) ? dob : null;
+            var flag = new ProductionReportEmployeeFlag(isNew, birthday);
+            if (flag.IsHighlighted) flags[employee.EmployeeCode] = flag;
+        }
+        return flags;
     }
 
     private async Task<string> GetEmployeeLabelAsync(Guid? employeeId, CancellationToken cancellationToken)

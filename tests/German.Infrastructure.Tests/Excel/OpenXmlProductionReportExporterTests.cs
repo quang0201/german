@@ -103,6 +103,44 @@ public sealed class OpenXmlProductionReportExporterTests
         Assert.AreEqual(expectedActive, pane.ActivePane?.Value, "activePane must be the pane that exists for the given splits.");
     }
 
+    [TestMethod]
+    public void Export_HighlightsNewEmployeesAndBirthdaysInBlueOnBothSheets()
+    {
+        var report = CreateReport() with
+        {
+            EmployeeFlags = new Dictionary<string, ProductionReportEmployeeFlag>
+            {
+                ["E001"] = new ProductionReportEmployeeFlag(true, null),
+                ["E003"] = new ProductionReportEmployeeFlag(false, new DateOnly(1990, 8, 14))
+            }
+        };
+
+        using var document = OpenWorkbook(report);
+        var production = GetSheetData(document, "Báo cáo sản lượng").Elements<Row>().ToList();
+        string? NameFill(string name)
+        {
+            var row = production.First(item => GetCells(item).Any(cell => cell.InnerText == name));
+            return GetFillColor(document, GetCell(row, $"A{row.RowIndex!.Value}"));
+        }
+        Assert.AreEqual("FF8EB4E3", NameFill("Nguyễn Văn A"));
+        Assert.AreEqual("FF8EB4E3", NameFill("Lê Văn C"));
+        Assert.AreNotEqual("FF8EB4E3", NameFill("Trần Thị B"));
+
+        var attendance = GetSheetData(document, "Bảng công").Elements<Row>().ToList();
+        Cell NameCell(string name)
+        {
+            var row = attendance.First(item => GetCells(item).Any(cell => cell.InnerText == name));
+            return GetCell(row, $"B{row.RowIndex!.Value}");
+        }
+        Assert.AreEqual("FF8EB4E3", GetFillColor(document, NameCell("Nguyễn Văn A")));
+        Assert.AreEqual("FF8EB4E3", GetFillColor(document, NameCell("Lê Văn C")));
+        Assert.AreNotEqual("FF8EB4E3", GetFillColor(document, NameCell("Trần Thị B")));
+        var texts = attendance.SelectMany(GetCells).Select(cell => cell.InnerText).ToList();
+        CollectionAssert.Contains(texts.Where(text => text.StartsWith("Nhân viên mới", StringComparison.Ordinal)).ToList(), texts.First(text => text.StartsWith("Nhân viên mới", StringComparison.Ordinal)));
+        Assert.IsTrue(texts.Any(text => text.Contains("Sinh nhật: 14/08", StringComparison.Ordinal)));
+        Assert.AreEqual(0, new OpenXmlValidator().Validate(document).Count());
+    }
+
     private static string ColumnName(int index)
     {
         var name = string.Empty;

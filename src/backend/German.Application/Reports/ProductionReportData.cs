@@ -17,4 +17,5 @@ public sealed record ProductionReportData(
     public IReadOnlyList<ProductionReportEmployeeDaySummary> ByEmployeeAndDay { get; init; } = [];
     public IReadOnlyList<ProductionReportOrderDaySummary> ByOrderAndDay { get; init; } = [];
     public IReadOnlyList<ProductionReportWorkHourSummary> WorkHours { get; init; } = [];
+    public IReadOnlyDictionary<string, ProductionReportEmployeeFlag> EmployeeFlags { get; init; } = new Dictionary<string, ProductionReportEmployeeFlag>();
 }

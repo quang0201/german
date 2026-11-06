@@ -660,6 +660,35 @@ public sealed class ProductionReportServiceTests
         Assert.AreEqual(0m, zeroOperation.Months[1].CombinedTotalQuantity);
     }
 
+    [TestMethod]
+    public async Task BuildAsync_FlagsNewEmployeesAndBirthdaysInPeriod()
+    {
+        await using var db = CreateDb();
+        var seed = await SeedAsync(db, new DateOnly(2026, 8, 12));
+        var tracked = await db.Employees.SingleAsync(item => item.Id == seed.Employee.Id);
+        tracked.EmploymentStartDate = new DateOnly(2026, 8, 3);
+        tracked.DateOfBirth = new DateOnly(1990, 8, 20);
+        await db.SaveChangesAsync();
+        var service = new ProductionReportService(db, new FixedTimeProvider(new DateTimeOffset(2026, 8, 12, 3, 0, 0, TimeSpan.Zero)));
+
+        var result = await service.BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), null, null, null, null),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.IsSuccess);
+        var flag = result.Value!.EmployeeFlags["E001"];
+        Assert.IsTrue(flag.IsNewEmployee);
+        Assert.AreEqual(new DateOnly(1990, 8, 20), flag.BirthdayThisPeriod);
+
+        tracked.EmploymentStartDate = new DateOnly(2026, 6, 1);
+        tracked.DateOfBirth = new DateOnly(1990, 9, 1);
+        await db.SaveChangesAsync();
+        var other = await service.BuildAsync(
+            new ProductionReportFilter(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 31), null, null, null, null),
+            CancellationToken.None);
+        Assert.IsFalse(other.Value!.EmployeeFlags.ContainsKey("E001"));
+    }
+
     private static GermanDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<GermanDbContext>()
