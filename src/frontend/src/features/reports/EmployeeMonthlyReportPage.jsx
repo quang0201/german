@@ -8,7 +8,27 @@ import { ProductionMonthNavigator } from "../production-entries/ProductionMonthN
 import { buildProductionMonthlyMatrixUrl, shiftMonth } from "../production-entries/productionMonthlyMatrix.js";
 import { currentReportMonthKey } from "./productionMonthlyReport.js";
 import { buildEmployeeMonthlyTotals, dayLabel, filterEmployeeTotals, formatQuantity } from "./employeeMonthlyTotals.js";
+import { attendanceWindows, buildAttendanceUrl, buildEmployeeAttendanceTotals, mergeAttendancePayloads } from "./attendanceMonthlyTotals.js";
+import { EmployeeAttendanceTab } from "./EmployeeAttendanceTab.jsx";
 import "./EmployeeMonthlyReport.css";
+
+const emptyAttendance = { rows: [], summary: { employeeCount: 0, regular: 0, overtime: 0, paidLeave: 0, missingOutputDays: 0 } };
+const tabs = [{ key: "production", label: "Sản lượng" }, { key: "attendance", label: "Chấm công" }];
+
+async function loadAttendanceMonth(monthKey) {
+  const pages = await Promise.all(attendanceWindows(monthKey).map(async (window) => {
+    const collected = [];
+    let cursor = "";
+    for (let guard = 0; guard < 20; guard += 1) {
+      const payload = await api.get(buildAttendanceUrl(monthKey, window, cursor));
+      collected.push(payload);
+      if (!payload.hasMoreEmployees || !payload.nextEmployeeCursor) break;
+      cursor = payload.nextEmployeeCursor;
+    }
+    return collected;
+  }));
+  return mergeAttendancePayloads(pages.flat());
+}
 
 const emptyTotals = { employees: [], summary: { employeeCount: 0, hc: 0, tc: 0, total: 0 } };
 
@@ -38,15 +58,17 @@ function ToggleButton({ open, onClick, children, className = "" }) {
 
 export function EmployeeMonthlyReportPage() {
   const fallbackMonth = currentReportMonthKey();
-  const [initialQuery] = useState(() => readQuery(["month", "q"]));
+  const [initialQuery] = useState(() => readQuery(["month", "q", "tab"]));
   const [monthKey, setMonthKey] = useState(() => queryMonth(initialQuery.month, fallbackMonth));
   const [search, setSearch] = useState(initialQuery.q);
+  const [tab, setTab] = useState(() => (initialQuery.tab === "attendance" ? "attendance" : "production"));
+  const [attendance, setAttendance] = useState({ monthKey: "", employees: [], loading: false, error: "" });
   const [totals, setTotals] = useState(emptyTotals);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openEmployees, setOpenEmployees] = useState(() => new Set());
   const [openOperations, setOpenOperations] = useState(() => new Set());
-  useQuerySync({ month: monthKey, q: search }, { month: fallbackMonth, q: "" });
+  useQuerySync({ month: monthKey, q: search, tab }, { month: fallbackMonth, q: "", tab: "production" });
 
   useEffect(() => {
     let active = true;
@@ -69,6 +91,21 @@ export function EmployeeMonthlyReportPage() {
       });
     return () => { active = false; };
   }, [monthKey]);
+
+  useEffect(() => {
+    if (tab !== "attendance" || attendance.monthKey === monthKey) return undefined;
+    let active = true;
+    setAttendance({ monthKey: "", employees: [], loading: true, error: "" });
+    loadAttendanceMonth(monthKey)
+      .then((employees) => { if (active) setAttendance({ monthKey, employees, loading: false, error: "" }); })
+      .catch((requestError) => { if (active) setAttendance({ monthKey: "", employees: [], loading: false, error: requestError.message || "Không thể tải chấm công." }); });
+    return () => { active = false; };
+  }, [tab, monthKey, attendance.monthKey]);
+
+  const attendanceView = useMemo(
+    () => (attendance.monthKey === monthKey ? buildEmployeeAttendanceTotals(attendance.employees, totals.employees) : emptyAttendance),
+    [attendance.monthKey, attendance.employees, monthKey, totals.employees],
+  );
 
   const visible = useMemo(() => filterEmployeeTotals(totals.employees, search), [totals.employees, search]);
   const maxEmployeeTotal = visible.reduce((max, item) => Math.max(max, item.total), 0);
@@ -161,17 +198,26 @@ export function EmployeeMonthlyReportPage() {
         title="Tổng theo người"
         description="Xem mỗi người làm bao nhiêu trong tháng. Bấm tên người để xem theo mã, bấm công đoạn để xem từng ngày."
       />
+      <div className="erp-emp-tabs" role="tablist" aria-label="Loại số liệu">
+        {tabs.map((item) => (
+          <button key={item.key} type="button" role="tab" id={`emp-tab-${item.key}`} aria-selected={tab === item.key} className={`erp-emp-tab${tab === item.key ? " is-active" : ""}`} onClick={() => setTab(item.key)}>{item.label}</button>
+        ))}
+      </div>
       <div className="erp-emp-toolbar">
         <ProductionMonthNavigator monthKey={monthKey} onPrevious={() => setMonthKey(shiftMonth(monthKey, -1))} onNext={() => setMonthKey(shiftMonth(monthKey, 1))} />
         <label className="erp-emp-search">
           <Icon name="search" size={16} />
           <input className="erp-control" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm tên hoặc mã nhân viên" aria-label="Tìm nhân viên" />
         </label>
-        <div className="erp-emp-toolbar-actions">
+        {tab === "production" && <div className="erp-emp-toolbar-actions">
           <button type="button" className="erp-button erp-button-secondary" onClick={expandAll} disabled={visible.length === 0}>Mở tất cả</button>
           <button type="button" className="erp-button erp-button-secondary" onClick={collapseAll} disabled={openEmployees.size === 0}>Thu gọn</button>
-        </div>
+        </div>}
       </div>
+      {tab === "attendance" ? (
+        <div role="tabpanel" aria-labelledby="emp-tab-attendance"><EmployeeAttendanceTab view={attendanceView} loading={attendance.loading || (attendance.monthKey !== monthKey && !attendance.error)} error={attendance.error} search={search} /></div>
+      ) : (
+        <div role="tabpanel" aria-labelledby="emp-tab-production">
       {error && <Alert variant="error" title="Không thể tải sản lượng theo người.">{error}</Alert>}
       <div className="erp-emp-summary" aria-label="Tổng kết tháng">
         <SummaryCard label="Số người có sản lượng" value={totals.summary.employeeCount} />
@@ -196,6 +242,8 @@ export function EmployeeMonthlyReportPage() {
             </thead>
             <tbody>{rows}</tbody>
           </table>
+        </div>
+      )}
         </div>
       )}
     </div>

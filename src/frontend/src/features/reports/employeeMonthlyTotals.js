@@ -108,11 +108,18 @@ export function buildEmployeeMonthlyTotals(matrix) {
     }
     if (orders.length === 0) continue;
     orders.sort((a, b) => compareByTotalThenName(a, b, (item) => item.orderCode));
+    const dayTotals = new Map();
+    for (const order of orders) {
+      for (const operation of order.operations) {
+        for (const day of operation.days) dayTotals.set(day.date, (dayTotals.get(day.date) ?? 0) + day.total);
+      }
+    }
     employees.push({
       employeeId: person.employeeId,
       code: person.code,
       name: person.name,
       isActive: person.isActive,
+      dayTotals: [...dayTotals].map(([date, total]) => ({ date, total })).sort((a, b) => a.date.localeCompare(b.date)),
       hc: orders.reduce((sum, order) => sum + order.hc, 0),
       tc: orders.reduce((sum, order) => sum + order.tc, 0),
       total: orders.reduce((sum, order) => sum + order.total, 0),

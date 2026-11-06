@@ -67,3 +67,29 @@
   .erp-emp-row-operation td:first-child { padding-left: 36px; }
   .erp-emp-row-day td:first-child { padding-left: 64px; }
 }
+
+.erp-emp-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--color-border); }
+.erp-emp-tab { position: relative; min-height: 40px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--color-text-muted); padding: 0 18px; font: inherit; font-weight: 800; cursor: pointer; }
+.erp-emp-tab:hover { color: var(--color-primary-strong); background: var(--color-primary-soft); }
+.erp-emp-tab.is-active { border-bottom-color: var(--color-primary); color: var(--color-primary-strong); }
+.erp-emp-tab:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: -2px; }
+
+.erp-emp-summary-card.is-warning { border-color: #e6c36a; background: var(--color-warning-soft); }
+.erp-emp-summary-card.is-warning strong { color: var(--color-warning); }
+
+.erp-emp-table-attendance td.erp-report-number { width: 88px; }
+.erp-emp-flag-cell { min-width: 180px; }
+.erp-emp-flag { display: inline-flex; align-items: center; min-height: 22px; margin-right: 6px; border-radius: 999px; padding: 0 9px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.erp-emp-flag.is-warning { background: var(--color-warning-soft); color: var(--color-warning); }
+.erp-emp-flag.is-info { background: var(--color-info-soft); color: var(--color-info); }
+.erp-emp-state { color: var(--color-text-muted); font-size: 12px; font-weight: 700; }
+.erp-emp-table-attendance .erp-emp-row-day td:first-child { padding-left: 42px; }
+.erp-emp-row-day.is-missing td { background: var(--color-warning-soft); }
+.erp-emp-row-day.is-missing .erp-emp-state { color: var(--color-warning); }
+.erp-emp-row-day.is-no-attendance td { background: var(--color-info-soft); }
+.erp-emp-row-day.is-no-attendance .erp-emp-state { color: var(--color-info); }
+
+@media (max-width: 640px) {
+  .erp-emp-table-attendance .erp-emp-row-day td:first-child { padding-left: 28px; }
+  .erp-emp-flag-cell { min-width: 120px; }
+}

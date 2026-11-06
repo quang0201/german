@@ -62,6 +62,14 @@ describe("buildEmployeeMonthlyTotals", () => {
     expect(result.summary).toEqual({ employeeCount: 2, hc: 3067 + 700, tc: 800, total: 3867 + 700 });
   });
 
+  test("có tổng sản lượng từng ngày của mỗi người (cộng mọi mã và công đoạn)", () => {
+    expect(result.employees[0].dayTotals).toEqual([
+      { date: "2026-10-01", total: 1200 },
+      { date: "2026-10-16", total: 1000 },
+      { date: "2026-10-19", total: 1667 },
+    ]);
+  });
+
   test("dữ liệu rỗng không gây lỗi", () => {
     expect(buildEmployeeMonthlyTotals(undefined)).toEqual({ employees: [], summary: { employeeCount: 0, hc: 0, tc: 0, total: 0 } });
   });
