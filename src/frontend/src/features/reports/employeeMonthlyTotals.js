@@ -111,7 +111,10 @@ export function buildEmployeeMonthlyTotals(matrix) {
     const dayTotals = new Map();
     for (const order of orders) {
       for (const operation of order.operations) {
-        for (const day of operation.days) dayTotals.set(day.date, (dayTotals.get(day.date) ?? 0) + day.total);
+        for (const day of operation.days) {
+          const sum = dayTotals.get(day.date) ?? { hc: 0, tc: 0, total: 0 };
+          dayTotals.set(day.date, { hc: sum.hc + day.hc, tc: sum.tc + day.tc, total: sum.total + day.total });
+        }
       }
     }
     employees.push({
@@ -119,7 +122,7 @@ export function buildEmployeeMonthlyTotals(matrix) {
       code: person.code,
       name: person.name,
       isActive: person.isActive,
-      dayTotals: [...dayTotals].map(([date, total]) => ({ date, total })).sort((a, b) => a.date.localeCompare(b.date)),
+      dayTotals: [...dayTotals].map(([date, sum]) => ({ date, ...sum })).sort((a, b) => a.date.localeCompare(b.date)),
       hc: orders.reduce((sum, order) => sum + order.hc, 0),
       tc: orders.reduce((sum, order) => sum + order.tc, 0),
       total: orders.reduce((sum, order) => sum + order.total, 0),

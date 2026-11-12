@@ -10,10 +10,13 @@ import { currentReportMonthKey } from "./productionMonthlyReport.js";
 import { buildEmployeeMonthlyTotals, dayLabel, filterEmployeeTotals, formatQuantity } from "./employeeMonthlyTotals.js";
 import { attendanceWindows, buildAttendanceUrl, buildEmployeeAttendanceTotals, mergeAttendancePayloads } from "./attendanceMonthlyTotals.js";
 import { EmployeeAttendanceTab } from "./EmployeeAttendanceTab.jsx";
+import { EmployeeDailyTab } from "./EmployeeDailyTab.jsx";
+import { buildDailyMatrix } from "./dailyMatrix.js";
 import "./EmployeeMonthlyReport.css";
 
 const emptyAttendance = { rows: [], summary: { employeeCount: 0, regular: 0, overtime: 0, paidLeave: 0, missingOutputDays: 0 } };
-const tabs = [{ key: "production", label: "Sản lượng" }, { key: "attendance", label: "Chấm công" }];
+const tabs = [{ key: "daily", label: "Theo ngày" }, { key: "production", label: "Sản lượng" }, { key: "attendance", label: "Chấm công" }];
+const tabKeys = tabs.map((item) => item.key);
 
 async function loadAttendanceMonth(monthKey) {
   const pages = await Promise.all(attendanceWindows(monthKey).map(async (window) => {
@@ -61,14 +64,14 @@ export function EmployeeMonthlyReportPage() {
   const [initialQuery] = useState(() => readQuery(["month", "q", "tab"]));
   const [monthKey, setMonthKey] = useState(() => queryMonth(initialQuery.month, fallbackMonth));
   const [search, setSearch] = useState(initialQuery.q);
-  const [tab, setTab] = useState(() => (initialQuery.tab === "attendance" ? "attendance" : "production"));
+  const [tab, setTab] = useState(() => (tabKeys.includes(initialQuery.tab) ? initialQuery.tab : "daily"));
   const [attendance, setAttendance] = useState({ monthKey: "", employees: [], loading: false, error: "" });
   const [totals, setTotals] = useState(emptyTotals);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openEmployees, setOpenEmployees] = useState(() => new Set());
   const [openOperations, setOpenOperations] = useState(() => new Set());
-  useQuerySync({ month: monthKey, q: search, tab }, { month: fallbackMonth, q: "", tab: "production" });
+  useQuerySync({ month: monthKey, q: search, tab }, { month: fallbackMonth, q: "", tab: "daily" });
 
   useEffect(() => {
     let active = true;
@@ -93,7 +96,7 @@ export function EmployeeMonthlyReportPage() {
   }, [monthKey]);
 
   useEffect(() => {
-    if (tab !== "attendance" || attendance.monthKey === monthKey) return undefined;
+    if (tab === "production" || attendance.monthKey === monthKey) return undefined;
     let active = true;
     setAttendance({ monthKey: "", employees: [], loading: true, error: "" });
     loadAttendanceMonth(monthKey)
@@ -105,6 +108,11 @@ export function EmployeeMonthlyReportPage() {
   const attendanceView = useMemo(
     () => (attendance.monthKey === monthKey ? buildEmployeeAttendanceTotals(attendance.employees, totals.employees) : emptyAttendance),
     [attendance.monthKey, attendance.employees, monthKey, totals.employees],
+  );
+
+  const dailyView = useMemo(
+    () => buildDailyMatrix(totals.employees, attendance.monthKey === monthKey ? attendance.employees : [], monthKey),
+    [totals.employees, attendance.monthKey, attendance.employees, monthKey],
   );
 
   const visible = useMemo(() => filterEmployeeTotals(totals.employees, search), [totals.employees, search]);
@@ -196,7 +204,7 @@ export function EmployeeMonthlyReportPage() {
     <div className="erp-emp-report">
       <PageHeader
         title="Tổng theo người"
-        description="Xem mỗi người làm bao nhiêu trong tháng. Bấm tên người để xem theo mã, bấm công đoạn để xem từng ngày."
+        description="Xem mỗi người làm bao nhiêu và tăng ca bao nhiêu. Tab Theo ngày hiện cả tháng trong một bảng; tab Sản lượng cho xem theo mã và công đoạn."
       />
       <div className="erp-emp-tabs" role="tablist" aria-label="Loại số liệu">
         {tabs.map((item) => (
@@ -214,7 +222,9 @@ export function EmployeeMonthlyReportPage() {
           <button type="button" className="erp-button erp-button-secondary" onClick={collapseAll} disabled={openEmployees.size === 0}>Thu gọn</button>
         </div>}
       </div>
-      {tab === "attendance" ? (
+      {tab === "daily" ? (
+        <div role="tabpanel" aria-labelledby="emp-tab-daily"><EmployeeDailyTab view={dailyView} loading={loading || attendance.loading || (attendance.monthKey !== monthKey && !attendance.error)} error={error || attendance.error} search={search} /></div>
+      ) : tab === "attendance" ? (
         <div role="tabpanel" aria-labelledby="emp-tab-attendance"><EmployeeAttendanceTab view={attendanceView} loading={attendance.loading || (attendance.monthKey !== monthKey && !attendance.error)} error={attendance.error} search={search} /></div>
       ) : (
         <div role="tabpanel" aria-labelledby="emp-tab-production">
