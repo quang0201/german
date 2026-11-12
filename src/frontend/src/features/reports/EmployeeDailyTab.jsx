@@ -45,7 +45,7 @@ function DayCell({ cell, mode, isSunday }) {
 
 export function EmployeeDailyTab({ view, loading, error, search }) {
   const [mode, setMode] = useState("all");
-  const [onlyOutput, setOnlyOutput] = useState(true);
+  const [onlyOutput, setOnlyOutput] = useState(false);
   const keyword = normalizeSearch(search);
   const visible = useMemo(
     () => view.rows.filter((row) => (!onlyOutput || row.totals.total > 0) && (!keyword || normalizeSearch(`${row.name} ${row.code}`).includes(keyword))),
